@@ -1252,7 +1252,7 @@ function moralNome(etica, moral) {
   return e + " e " + m;
 }
 function novoJog(extra) {
-  return extras({ id: idNovo(), nome: "", personagem: "", vila: "", altura: "", descricao: "", sonho: "", medo: "", etica: "", moral: "", obs: [], img: null, destreza: "", grim: "", grimRev: false, criado: new Date().toISOString() }, extra);
+  return extras({ id: idNovo(), nome: "", personagem: "", vila: "", altura: "", descricao: "", sonho: "", medo: "", etica: "", moral: "", obs: [], img: null, nivel: 1, atr: null, bonus: null, atrTravado: false, grim: "", grimRev: false, criado: new Date().toISOString() }, extra);
 }
 /* Texto digitado é gravado alguns instantes depois da última tecla; o resto, na hora.
    Só vão os campos alterados (chaves), para não apagar o que o jogador editou no Perfil dele.
@@ -1365,7 +1365,7 @@ function viewJogador(j) {
     '<label>Nome do personagem<input class="sorteio-in" type="text" maxlength="60" data-jf="personagem" value="' + esc(j.personagem) + '"></label>' +
     '<label>Vilarejo<select class="sorteio-in" data-jf="vila"><option value="">Sem vilarejo</option>' + opcoes(VILAREJOS.map(function (v) { return v.nome; }), j.vila, false) + "</select></label>" +
     '<label>Altura<input class="sorteio-in" type="text" maxlength="20" placeholder="ex.: 1,72 m" data-jf="altura" value="' + esc(j.altura || "") + '"></label>' +
-    '<label>Destreza (para o deslocamento: 6 + 1 a cada 2)<input class="sorteio-in" type="number" min="-5" max="30" data-jf="destreza" value="' + esc(j.destreza == null ? "" : j.destreza) + '"></label>' +
+    fichaJog(j) +
     '<label>Descrição<textarea class="sorteio-in" rows="4" data-jf="descricao">' + esc(j.descricao) + "</textarea></label>" +
     '<label>Sonho ou objetivo<textarea class="sorteio-in" rows="3" data-jf="sonho">' + esc(j.sonho) + "</textarea></label>" +
     '<label>Medo ou fraqueza<textarea class="sorteio-in" rows="3" data-jf="medo">' + esc(j.medo) + "</textarea></label>" +
@@ -1384,6 +1384,19 @@ function viewJogador(j) {
       '<textarea class="sorteio-in" rows="3" data-obs="' + o.id + '" aria-label="Observação">' + esc(o.texto) + "</textarea></article>";
   });
   return h;
+}
+
+/* Ficha do jogador, editável pelo mestre: nível, base (travada para o jogador depois de salva) e bônus. */
+function fichaJog(j) {
+  var n = nivelJog(j);
+  return '<fieldset class="pj-acesso"><legend>Ficha (atributos)</legend>' +
+    '<label>Nível<select class="sorteio-in" data-jf="nivel">' + [1, 2, 3, 4, 5].map(function (v) { return '<option value="' + v + '"' + (v === n ? " selected" : "") + ">Nível " + v + "</option>"; }).join("") + "</select></label>" +
+    '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Base</th><th>Bônus</th><th>Total</th></tr></thead><tbody>' + ATRS.map(function (a) {
+      return "<tr><td>" + a[1] + '</td><td><input class="sorteio-in num" type="number" min="0" max="10" data-jatr="' + a[0] + '" value="' + atrBase(j, a[0]) + '"></td>' +
+        '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
+    }).join("") + "</tbody></table></div>" +
+    '<label class="rev-label"><input type="checkbox" data-jtrav="1"' + (j.atrTravado ? " checked" : "") + '> Atributos travados (o jogador não altera mais a base)</label>' +
+    '<p class="mdica">Defesa ' + (10 + atrTotal(j, "destreza")) + ", redução de dano " + atrTotal(j, "poder") + ", deslocamento " + (6 + Math.floor(atrTotal(j, "destreza") / 2)) + ", vida " + VIDA_NIVEL[n - 1] + ", mana " + MANA_NIVEL[n - 1] + '. Desmarque “travados” para o jogador redistribuir os 5 pontos, se precisar corrigir.</p></fieldset>';
 }
 
 function acessoJog(j) {
@@ -1443,7 +1456,6 @@ function salvarCampoJog(el) {
       return;
     }
     salvarJog(j, false, [el.dataset.jf]);
-    if (el.dataset.jf === "destreza" && EST.acao) salvarAcao();
   }
   else if (el.dataset.obs) {
     (j.obs || []).forEach(function (o) { if (o.id === el.dataset.obs) o.texto = el.value; });
@@ -1694,6 +1706,9 @@ function vilaRodapeMestre() {
 /* ============================ AÇÃO ============================ */
 
 var CENAS = null, ENVIADAS = [], cenasMsg = "", tokSel = null, confirmarLimpar = false, confirmarDelCena = false, upMsg = "";
+/* Posições e combate vêm do servidor (campo), que é quem manda: o mestre e os jogadores agem ao mesmo tempo. */
+var CAMPO = { pos: {}, combate: null, revelados: {}, eventos: [], v: 0 };
+var campoTimer = null, campoGer = 0, campoRodando = false, arrastando = false;
 var TIPOS_TOKEN = [["jogador", "Jogador"], ["aliado", "Aliado"], ["inimigo", "Inimigo"]];
 
 function nomeBonito(n) { return String(n).replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/^./, function (c) { return c.toUpperCase(); }); }
@@ -1715,16 +1730,52 @@ function acharTok(id) { var r = null; acaoEst().tokens.forEach(function (t) { if
    Jogadores ligados a um perfil usam a Destreza do perfil (aba Jogadores); os outros usam a do próprio token. */
 function tokDex(t) {
   var j = t.jog ? achaJog(t.jog) : null;
-  var v = parseInt(j ? j.destreza : t.dex, 10);
+  if (j) return j.atr ? atrTotal(j, "destreza") : (parseInt(j.destreza, 10) || 0);
+  var v = parseInt(t.dex, 10);
   return isNaN(v) ? 0 : v;
 }
 function deslTok(t) { return Math.max(0, 6 + Math.floor(tokDex(t) / 2) + (parseInt(t.aj, 10) || 0)); }
 function movel(t) { return t.tipo !== "armadilha"; }
 
 /* Grava a cena. O deslocamento vai calculado junto, para o jogador ver o do próprio personagem sem conhecer a Destreza. */
+/* Grava a cena (sem as posições, que ficam no campo). O deslocamento vai calculado junto, para o jogador ver o do
+   próprio personagem sem conhecer a Destreza. Também vai o tamanho do grid, que o servidor usa para conferir os movimentos. */
 function salvarAcao() {
-  acaoEst().tokens.forEach(function (t) { if (movel(t)) t.desl = deslTok(t); });
-  salvarEstado("acao");
+  var a = acaoEst();
+  a.tokens.forEach(function (t) { if (movel(t)) t.desl = deslTok(t); });
+  if (tabGeo) { a.cols = tabGeo.cols; a.rows = tabGeo.rows; }
+  else { var gg = gridDe(a); if (gg.cols) a.cols = gg.cols; if (gg.rows) a.rows = gg.rows; }
+  var copia = JSON.parse(JSON.stringify(a));
+  copia.tokens.forEach(function (t) { delete t.x; delete t.y; delete t.gasto; });
+  adiar("est-acao", function () { gravar("estado", { chave: "acao", valor: copia }); }, 400);
+}
+
+function aplicarCampo() {
+  var pos = CAMPO.pos || {};
+  acaoEst().tokens.forEach(function (t) {
+    var p = pos[t.id];
+    if (p) { t.x = p.x; t.y = p.y; t.gasto = p.gasto || 0; }
+    else if (t.x == null) { t.x = 0; t.y = 0; t.gasto = 0; }
+  });
+}
+
+function campoOp(op, dados) {
+  return gravar("campo_op", extras({ op: op }, dados || {})).then(function (r) {
+    if (r && r.campo) { CAMPO = r.campo; aplicarCampo(); }
+    return r;
+  });
+}
+
+function enviarPos(lista, extra) {
+  var pos = {};
+  lista.forEach(function (t) { pos[t.id] = { x: t.x | 0, y: t.y | 0, gasto: parseInt(t.gasto, 10) || 0 }; });
+  return campoOp("pos", extras({ pos: pos }, extra || {}));
+}
+
+function revelado(t) { return !!(CAMPO.revelados || {})[t.id]; }
+function atualId() {
+  var cb = CAMPO.combate;
+  return cb && cb.fase === "turnos" ? (cb.ordem || [])[cb.turno] || null : null;
 }
 
 function carregarCenas() {
@@ -1757,42 +1808,147 @@ function novoTok(nome, tipo, extra) {
   acaoEst().tokens.push(t);
   return t;
 }
+
 function nomeUnico(base) {
   var usados = acaoEst().tokens.map(function (t) { return t.nome; });
   if (usados.indexOf(base) === -1) return base;
   for (var n = 2; ; n++) if (usados.indexOf(base + " " + n) === -1) return base + " " + n;
 }
 
-function linhaToken(t) {
-  var h = '<div class="tok-linha' + (tokSel === t.id ? " sel" : "") + (t.tipo === "armadilha" ? " armadilha" : "") + '">' +
-    '<input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor de ' + esc(t.nome) + '">' +
-    '<input class="sorteio-in tok-nome" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token">';
-  if (t.tipo === "armadilha") {
-    h += '<input class="sorteio-in tok-efeito" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="Efeito (ex.: 2d6 de dano, Destreza contra 13)" aria-label="Efeito da armadilha">';
+function valorCena(a) { return a.envio ? "e:" + a.envio : (a.local && a.cena ? "p:" + a.local + "/" + a.cena : ""); }
+
+function selecionarTok(id) {
+  tokSel = id;
+  document.querySelectorAll("#tabSvg .token").forEach(function (n) { n.classList.toggle("sel", n.dataset.tok === id); });
+  var p = document.getElementById("tokPainel");
+  if (p) p.innerHTML = tokPainelHTML();
+  var l = document.getElementById("tokLista");
+  if (l) l.innerHTML = tokListaHTML();
+}
+
+function tokListaHTML() {
+  var tokens = acaoEst().tokens, atual = atualId();
+  if (!tokens.length) return '<div class="empty">Nenhum token ainda. Adicione os jogadores, os inimigos e as armadilhas da cena.</div>';
+  return '<div class="tok-chips">' + tokens.map(function (t) {
+    var oculto = t.oculto && !revelado(t);
+    return '<button type="button" class="tok-chip' + (tokSel === t.id ? " sel" : "") + (t.morto ? " morto" : "") + (oculto ? " oculto" : "") + (atual === t.id ? " atual" : "") + '" data-tsel="' + t.id + '">' +
+      '<span class="tok-cor" style="background:' + corToken(t) + '"></span>' + (t.tipo === "armadilha" ? "! " : "") + esc(t.nome || "Sem nome") + " <small>" + coordNome(t.x | 0, t.y | 0) + "</small></button>";
+  }).join("") + "</div>";
+}
+
+function tokPainelHTML() {
+  var t = tokSel ? acharTok(tokSel) : null;
+  if (!t) return '<section class="panel"><h3>Token</h3><p class="mdica">Clique num token no mapa ou na lista para editar.</p></section>';
+  var trap = t.tipo === "armadilha";
+  var h = '<section class="panel tok-painel"><h3>' + (trap ? ic("alerta") : "") + esc(t.nome || "Token") + "</h3>" +
+    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>';
+  if (trap) {
+    h += '<label>Efeito<input class="sorteio-in" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="ex.: 2d6 de dano, Destreza contra 13"></label>' +
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (t.oculto && revelado(t) ? " (já acionada)" : "") + "</label>";
   } else {
-    var jog = t.jog ? achaJog(t.jog) : null, d = deslTok(t), gasto = parseInt(t.gasto, 10) || 0;
-    h += '<select class="sorteio-in" data-ttipo="' + t.id + '" aria-label="Tipo">' + TIPOS_TOKEN.map(function (o) {
+    var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0;
+    h += '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
       return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
-    }).join("") + "</select>" +
-      '<label class="tok-num">Des ' + (jog ? '<b title="Vem do perfil do jogador">' + tokDex(t) + "</b>" : '<input class="sorteio-in num" type="number" min="-5" max="30" data-tdex="' + t.id + '" value="' + (parseInt(t.dex, 10) || 0) + '">') + "</label>" +
+    }).join("") + "</select></label>" +
+      '<div class="tok-grade">' +
+      '<label class="tok-num">Destreza ' + (jog ? '<b title="Vem do perfil do jogador">' + tokDex(t) + "</b>" : '<input class="sorteio-in num" type="number" min="-5" max="30" data-tdex="' + t.id + '" value="' + (parseInt(t.dex, 10) || 0) + '">') + "</label>" +
       '<label class="tok-num" title="Ajuste manual do deslocamento, por exemplo -2 se estiver lento">Ajuste <input class="sorteio-in num" type="number" min="-10" max="10" data-taj="' + t.id + '" value="' + (parseInt(t.aj, 10) || 0) + '"></label>' +
-      '<label class="tok-num" title="Casas já andadas neste turno">Gasto <input class="sorteio-in num" type="number" min="0" max="99" data-tgasto="' + t.id + '" value="' + gasto + '"></label>' +
-      '<span class="tok-desl' + (gasto > d ? " excede" : "") + '" title="Deslocamento: 6 + 1 a cada 2 de Destreza">Desloc. <b>' + d + "</b>, restam <b>" + Math.max(0, d - gasto) + "</b></span>";
-    if (t.vidaMax) h += '<label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? t.vidaMax : t.vida) + '"> / ' + t.vidaMax + "</label>";
-    if (t.defesa) h += '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>";
+      '<label class="tok-num" title="Casas já andadas neste turno">Gasto <input class="sorteio-in num" type="number" min="0" max="99" data-tgasto="' + t.id + '" value="' + gasto + '"></label></div>' +
+      '<p class="tok-desl" id="tokDesl"></p>' +
+      '<div class="tok-grade"><label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? (t.vidaMax || "") : t.vida) + '"></label>' +
+      '<label class="tok-num">Máx. <input class="sorteio-in num" type="number" min="0" max="999" data-tvidamax="' + t.id + '" value="' + (t.vidaMax || "") + '"></label>' +
+      (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
+      '<div class="tok-vida-btn">' + [-5, -1, 1, 5].map(function (d) { return '<button type="button" data-vdelta="' + d + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + "</button>"; }).join("") + "</div>" +
+      '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado (sai dos turnos)</label>" +
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto dos jogadores</label>";
   }
-  h += '<span class="tok-coord" id="tokc-' + t.id + '">' + coordNome(t.x | 0, t.y | 0) + "</span>" +
-    '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> " + (t.tipo === "armadilha" ? "Escondida" : "Oculto") + "</label>" +
-    '<button type="button" data-tdel="' + t.id + '">Remover</button></div>';
+  return h + '<div class="controls"><button type="button" data-tdup="' + t.id + '">Duplicar</button><button type="button" data-tdel="' + t.id + '">Remover</button></div></section>';
+}
+
+function atualizarDesl(t) {
+  var s = document.getElementById("tokDesl");
+  if (!s || tokSel !== t.id) return;
+  var d = deslTok(t), gasto = parseInt(t.gasto, 10) || 0;
+  s.className = "tok-desl" + (gasto > d ? " excede" : "");
+  s.innerHTML = "Deslocamento <b>" + d + "</b> (6 + 1 a cada 2 de Destreza), restam <b>" + Math.max(0, d - gasto) + "</b>.";
+}
+
+function combatentes() {
+  return acaoEst().tokens.filter(function (t) { return (t.tipo === "jogador" || t.tipo === "aliado" || t.tipo === "inimigo") && !t.morto; });
+}
+
+function combatePainelHTML() {
+  var cb = CAMPO.combate, a = acaoEst();
+  var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
+  if (!cb) {
+    return h + '<p class="mdica">Ao iniciar, os jogadores rolam a iniciativa (d20 + Destreza) e a ordem de turnos aparece para todos.</p>' +
+      '<button type="button" class="primary" id="cmbIniciar"' + (a.ativo ? "" : " disabled") + ">Iniciar combate</button>" +
+      (a.ativo ? "" : '<p class="mdica">Coloque a cena ao vivo para iniciar.</p>') + "</section>";
+  }
+  var ini = cb.ini || {};
+  if (cb.fase === "ini") {
+    h += '<p class="mdica">Iniciativa: os jogadores rolam ou digitam o valor deles. Você define a dos inimigos.</p><ul class="cmb-lista">' + combatentes().map(function (t) {
+      var v = ini[t.id];
+      return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span><span class="cmb-nome">' + esc(t.nome) + (t.oculto ? " (oculto)" : "") + "</span>" +
+        '<input class="sorteio-in num" type="number" min="-20" max="80" data-cini="' + t.id + '" value="' + (v ? v.v : "") + '" placeholder="–" aria-label="Iniciativa de ' + esc(t.nome) + '">' +
+        '<button type="button" data-crolar="' + t.id + '">Rolar</button></li>';
+    }).join("") + "</ul>" +
+      '<div class="controls"><button type="button" id="cmbRolarInim">Rolar inimigos e aliados</button><button type="button" class="primary" id="cmbComecar">Começar os turnos</button><button type="button" id="cmbEncerrar">Cancelar</button></div>' +
+      '<p class="mdica">Quem ficar sem iniciativa age por último.</p></section>';
+    return h;
+  }
+  h += "<p><b>Rodada " + cb.rodada + '</b></p><ol class="cmb-ordem">' + (cb.ordem || []).map(function (id, i) {
+    var t = acharTok(id);
+    if (!t) return "";
+    var v = ini[id] ? ini[id].v : "–";
+    return '<li class="' + (i === cb.turno ? "atual" : "") + (t.morto ? " morto" : "") + '"><button type="button" class="link" data-tsel="' + id + '">' + esc(t.nome) + "</button> <small>" + v + "</small>" + (i === cb.turno ? " ◀" : "") + "</li>";
+  }).join("") + "</ol>" +
+    '<div class="controls"><button type="button" class="primary" id="cmbProximo">Próximo turno</button><button type="button" id="cmbRecalc" title="Inclui quem entrou depois e tira os derrotados, sem perder o turno atual">Recalcular ordem</button><button type="button" id="cmbEncerrar">Encerrar combate</button></div></section>';
   return h;
 }
 
-function tokensHTML(a) {
-  if (!a.tokens.length) return '<div class="empty">Nenhum token ainda. Adicione os jogadores, os inimigos e as armadilhas da cena.</div>';
-  return '<div class="tok-tabela">' + a.tokens.map(linhaToken).join("") + "</div>";
+function logHTML() {
+  var ev = (CAMPO.eventos || []).slice(-8).reverse();
+  if (!ev.length) return "";
+  return '<h2>Registro</h2><ul class="tok-log">' + ev.map(function (e) {
+    var hora = "";
+    try { hora = new Date(e.t * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch (x) { hora = ""; }
+    return "<li><small>" + hora + "</small> " + esc(e.txt) + "</li>";
+  }).join("") + '</ul><p><button type="button" id="logLimpar">Limpar registro</button></p>';
 }
 
-function valorCena(a) { return a.envio ? "e:" + a.envio : (a.local && a.cena ? "p:" + a.local + "/" + a.cena : ""); }
+function emEdicao(id) {
+  var c = document.getElementById(id), f = document.activeElement;
+  return !!(c && f && c.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName));
+}
+
+function renderAcaoUI() {
+  var c = document.getElementById("combatePainel");
+  if (c && !emEdicao("combatePainel")) c.innerHTML = combatePainelHTML();
+  var p = document.getElementById("tokPainel");
+  if (p && !emEdicao("tokPainel")) { p.innerHTML = tokPainelHTML(); var t = tokSel ? acharTok(tokSel) : null; if (t) atualizarDesl(t); }
+  var l = document.getElementById("tokLista");
+  if (l) l.innerHTML = tokListaHTML();
+  var g = document.getElementById("campoLog");
+  if (g) g.innerHTML = logHTML();
+  desenharAcaoMestre();
+}
+function redesenharTokens() { renderAcaoUI(); }
+
+/* Enquanto a aba Ação está aberta, busca o campo a cada 2,5 s para ver o que os jogadores fizeram. */
+function iniciarCampoPoll() { if (!campoRodando) { campoRodando = true; pollCampo(++campoGer); } }
+function pararCampoPoll() { clearTimeout(campoTimer); campoTimer = null; campoRodando = false; campoGer++; }
+function pollCampo(ger) {
+  if (ger !== campoGer || rotaAtual() !== "acao") { campoRodando = false; return; }
+  var depois = function () { if (ger === campoGer) campoTimer = setTimeout(function () { pollCampo(ger); }, 2500); };
+  if (document.hidden || arrastando || pendentes || Object.keys(timers).length) { depois(); return; }
+  api("campo").then(function (r) {
+    if (ger !== campoGer || !r.campo || r.campo.v === CAMPO.v) return;
+    CAMPO = r.campo;
+    aplicarCampo();
+    renderAcaoUI();
+  }, function () { /* sem conexão: tenta de novo no próximo ciclo */ }).then(depois);
+}
 
 function viewAcaoMestre() {
   if (CENAS === null) carregarCenas();
@@ -1825,7 +1981,8 @@ function viewAcaoMestre() {
   if (!ok) return h + '<div class="empty">Escolha um cenário.</div>';
   var g = gridDe(a);
   h += '<div class="acao-ctl">' +
-    '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Mostrar aos jogadores</label>" +
+    '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Cena ao vivo (os jogadores veem e movem o personagem)</label>" +
+    '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>" +
     '<label>Título para os jogadores<input class="sorteio-in" type="text" maxlength="80" data-acao="titulo" value="' + esc(a.titulo || "") + '" placeholder="Cena atual"></label>' +
     '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" data-grid="cols" value="' + (g.cols || 20) + '"></label>' +
     '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" data-grid="rows" value="' + (g.rows || "") + '" placeholder="auto"></label>' +
@@ -1833,12 +1990,12 @@ function viewAcaoMestre() {
       '<button type="button" id="cenaDel">' + (confirmarDelCena ? "Clique de novo para excluir" : "Excluir este cenário") + "</button>" : "") + "</div>";
   h += '<p class="mdica">Deixe as linhas em branco para o site calcular e manter as casas quadradas.</p>';
   h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m e a diagonal conta como 1 casa.</p>';
-  h += tabuleiroHTML(cenaImgUrl(a), env ? env.nome : nomeBonito(a.cena));
-  h += "<h2>Tokens</h2>" + '<div class="controls">' +
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(cenaImgUrl(a), env ? env.nome : nomeBonito(a.cena)) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="controls">' +
     '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
     '<button type="button" id="tokArmadilha">' + ic("alerta") + "Adicionar armadilha</button>" +
-    '<button type="button" id="tokTurno">Novo turno (zerar movimentos)</button></div>';
+    '<button type="button" id="tokTurno">Zerar movimentos</button></div>';
   h += '<div class="controls"><label class="tok-best">Inimigo do Bestiário <select class="sorteio-in" id="tokBestSel">' + FASES.map(function (f) {
     var lista = INIMIGOS.map(function (m, i) { return [m, i]; }).filter(function (p) { return p[0].fase === f; });
     return lista.length ? '<optgroup label="' + esc(f) + '">' + lista.map(function (p) {
@@ -1848,8 +2005,8 @@ function viewAcaoMestre() {
     '<button type="button" id="tokInimigo">Inimigo avulso</button>' +
     '<button type="button" id="tokSemInimigos">Remover inimigos</button>' +
     '<button type="button" id="tokLimpar">' + (confirmarLimpar ? "Clique de novo para remover todos" : "Remover todos") + "</button></div>" +
-    '<p class="mdica">Tokens ocultos e armadilhas escondidas aparecem só para você, com aparência esmaecida. Desmarque “Oculto” ou “Escondida” para revelar aos jogadores. A vida e a defesa dos inimigos nunca vão para os jogadores.</p>' +
-    '<div id="tokTabela">' + tokensHTML(a) + "</div>";
+    '<p class="mdica">Os tokens são salvos por cenário: ao trocar de cena e voltar, tudo continua onde estava. Tokens ocultos e armadilhas escondidas aparecem só para você. A vida e a defesa dos inimigos nunca vão para os jogadores.</p>' +
+    '<div id="tokLista"></div><div id="campoLog"></div>';
   return h;
 }
 
@@ -1879,7 +2036,8 @@ function enviarCenario(input) {
 
 function desenharAcaoMestre() {
   var a = acaoEst(), g = gridDe(a);
-  desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: a.tokens, sel: tokSel, mestre: true, depois: ligarArraste });
+  var tokens = a.tokens.map(function (t) { var c = extras({}, t); c.oculto = !!t.oculto && !revelado(t); return c; });
+  desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: tokens, sel: tokSel, atual: atualId(), mestre: true, depois: ligarArraste });
 }
 
 function infoTok(txt, aviso) {
@@ -1910,12 +2068,11 @@ function moverTok(t, c, ox, oy) {
   if (movel(t)) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
   t.x = c.x;
   t.y = c.y;
-  tokSel = null;
-  salvarAcao();
-  redesenharTokens();
+  enviarPos([t]);
+  renderAcaoUI();
   if (movel(t)) {
     armadilhasEm(c, t).forEach(function (a) {
-      txt += " ARMADILHA em " + coordNome(c.x, c.y) + ": " + (a.nome || "sem nome") + (a.efeito ? " (" + a.efeito + ")" : "") + (a.oculto ? " [estava escondida]" : "") + ".";
+      txt += " ARMADILHA em " + coordNome(c.x, c.y) + ": " + (a.nome || "sem nome") + (a.efeito ? " (" + a.efeito + ")" : "") + (a.oculto && !revelado(a) ? " [estava escondida]" : "") + ".";
       aviso = true;
     });
   }
@@ -1928,34 +2085,25 @@ function ligarArraste() {
   if (!svg || !tabGeo) return;
   svg.classList.add("editavel");
   var arr = null;
-  function celula(ev) {
-    var m = svg.getScreenCTM();
-    if (!m || !tabGeo) return null;
-    var pt = svg.createSVGPoint();
-    pt.x = ev.clientX;
-    pt.y = ev.clientY;
-    var p = pt.matrixTransform(m.inverse());
-    return { x: Math.max(0, Math.min(tabGeo.cols - 1, Math.floor(p.x / tabGeo.cw))), y: Math.max(0, Math.min(tabGeo.rows - 1, Math.floor(p.y / tabGeo.ch))) };
-  }
   svg.onpointerdown = function (ev) {
     var g = ev.target.closest ? ev.target.closest(".token") : null;
     if (!g) {
-      var sel = tokSel ? acharTok(tokSel) : null, c = celula(ev);
-      if (sel && c) moverTok(sel, c, sel.x, sel.y);
+      var sel = tokSel ? acharTok(tokSel) : null, c = celulaTab(svg, ev);
+      if (sel && c && (c.x !== sel.x || c.y !== sel.y)) moverTok(sel, c, sel.x, sel.y);
       return;
     }
     var t = acharTok(g.dataset.tok);
     if (!t) return;
     ev.preventDefault();
-    tokSel = t.id;
+    selecionarTok(t.id);
     arr = { t: t, g: g, ox: t.x, oy: t.y, c: null };
+    arrastando = true;
     try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
-    document.querySelectorAll("#tabSvg .token").forEach(function (n) { n.classList.toggle("sel", n === g); });
     infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) + (movel(t) ? ". Deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + "." : ".") + " Arraste, ou toque na casa de destino.");
   };
   svg.onpointermove = function (ev) {
     if (!arr) return;
-    var c = celula(ev);
+    var c = celulaTab(svg, ev);
     if (!c) return;
     arr.c = c;
     arr.g.setAttribute("transform", "translate(" + ((c.x + 0.5) * tabGeo.cw).toFixed(1) + "," + ((c.y + 0.5) * tabGeo.ch).toFixed(1) + ")");
@@ -1966,6 +2114,7 @@ function ligarArraste() {
     if (!arr) return;
     var a2 = arr;
     arr = null;
+    arrastando = false;
     if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) moverTok(a2.t, a2.c, a2.ox, a2.oy);
   };
 }
@@ -1976,30 +2125,27 @@ function redesenharTokens() {
   desenharAcaoMestre();
 }
 
-function atualizarLinhaDesl(t) {
-  /* Atualiza só o texto de deslocamento, sem recriar a linha (para não tirar o foco de quem está digitando). */
-  var linha = document.querySelector('[data-tnome="' + t.id + '"]');
-  linha = linha && linha.parentNode;
-  var s = linha && linha.querySelector(".tok-desl");
-  if (!s) return;
-  var d = deslTok(t), gasto = parseInt(t.gasto, 10) || 0;
-  s.className = "tok-desl" + (gasto > d ? " excede" : "");
-  s.innerHTML = "Desloc. <b>" + d + "</b>, restam <b>" + Math.max(0, d - gasto) + "</b>";
-}
-
 function changeAcao(el) {
   var d = el.dataset, a = acaoEst(), t;
   if (d.acao === "cenario") {
-    var v = el.value;
+    var v = el.value, antiga = valorCena(a);
+    /* Cada cenário guarda os próprios tokens: o convés continua montado quando você volta do porão. */
+    EST.cena_tokens = EST.cena_tokens || {};
+    if (antiga) EST.cena_tokens[antiga] = { tokens: a.tokens };
     a.envio = 0; a.local = ""; a.cena = ""; a.ativo = false; tokSel = null;
     if (v.indexOf("e:") === 0) a.envio = parseInt(v.slice(2), 10);
     else if (v.indexOf("p:") === 0) { var k = v.slice(2), p = k.indexOf("/"); a.local = k.slice(0, p); a.cena = k.slice(p + 1); }
+    a.tokens = (v && (EST.cena_tokens[v] || {}).tokens) || [];
+    aplicarCampo();
+    if (CAMPO.combate) campoOp("encerrar");
     confirmarDelCena = false;
+    salvarEstado("cena_tokens");
     salvarAcao();
     renderizar();
     return true;
   }
-  if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); return true; }
+  if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); renderAcaoUI(); return true; }
+  if (d.acao === "livre") { a.livre = el.checked; salvarAcao(); return true; }
   if (d.grid) {
     var g = gridDe(a), n = parseInt(el.value, 10);
     var valido = n >= 1 && n <= 200;
@@ -2012,9 +2158,10 @@ function changeAcao(el) {
       salvarEstado("grids");
     }
     desenharAcaoMestre();
+    salvarAcao();
     return true;
   }
-  if (d.tcor && (t = acharTok(d.tcor))) { t.cor = el.value; salvarAcao(); desenharAcaoMestre(); return true; }
+  if (d.tcor && (t = acharTok(d.tcor))) { t.cor = el.value; salvarAcao(); renderAcaoUI(); return true; }
   if (d.ttipo && (t = acharTok(d.ttipo))) {
     if (t.cor === COR_TOKEN[t.tipo]) t.cor = COR_TOKEN[el.value];
     t.tipo = el.value;
@@ -2022,30 +2169,51 @@ function changeAcao(el) {
     redesenharTokens();
     return true;
   }
-  if (d.toculto && (t = acharTok(d.toculto))) { t.oculto = el.checked; salvarAcao(); desenharAcaoMestre(); return true; }
+  if (d.toculto && (t = acharTok(d.toculto))) {
+    t.oculto = el.checked;
+    /* Esconder de novo uma armadilha já acionada também apaga o "acionada" do servidor. */
+    if (t.tipo === "armadilha" && el.checked) campoOp("revelar", { id: t.id, valor: false });
+    salvarAcao();
+    renderAcaoUI();
+    return true;
+  }
+  if (d.tmorto && (t = acharTok(d.tmorto))) { t.morto = el.checked; salvarAcao(); renderAcaoUI(); return true; }
+  if (d.cini) {
+    var vn = parseInt(el.value, 10);
+    if (!isNaN(vn)) campoOp("ini", { id: d.cini, valor: vn }).then(renderAcaoUI);
+    return true;
+  }
   return false;
 }
 
 function inputAcao(el) {
   var d = el.dataset, t;
+  function chips() { var l = document.getElementById("tokLista"); if (l) l.innerHTML = tokListaHTML(); }
   if (d.acao === "titulo") { acaoEst().titulo = el.value; salvarAcao(); return true; }
+  if (d.tnome && (t = acharTok(d.tnome))) { t.nome = el.value; salvarAcao(); chips(); desenharAcaoMestre(); return true; }
+  if (d.tefeito && (t = acharTok(d.tefeito))) { t.efeito = el.value; salvarAcao(); return true; }
+  if (d.tdex && (t = acharTok(d.tdex))) { t.dex = parseInt(el.value, 10) || 0; salvarAcao(); atualizarDesl(t); return true; }
+  if (d.taj && (t = acharTok(d.taj))) { t.aj = parseInt(el.value, 10) || 0; salvarAcao(); atualizarDesl(t); return true; }
+  if (d.tgasto && (t = acharTok(d.tgasto))) {
+    t.gasto = Math.max(0, parseInt(el.value, 10) || 0);
+    atualizarDesl(t);
+    adiar("pos-" + t.id, function () { enviarPos([t]); }, 400);
+    return true;
+  }
+  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); salvarAcao(); desenharAcaoMestre(); return true; }
+  if (d.tvidamax && (t = acharTok(d.tvidamax))) { t.vidaMax = Math.max(0, parseInt(el.value, 10) || 0) || null; if (t.vidaMax && t.vida == null) t.vida = t.vidaMax; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.cenanome) {
     var ce = acharEnvio(parseInt(d.cenanome, 10));
     if (ce) { ce.nome = el.value; adiar("cenanome-" + ce.id, function () { gravar("cena_editar", { id: ce.id, nome: ce.nome }); }, 600); }
     return true;
   }
-  if (d.tnome && (t = acharTok(d.tnome))) { t.nome = el.value; salvarAcao(); desenharAcaoMestre(); return true; }
-  if (d.tefeito && (t = acharTok(d.tefeito))) { t.efeito = el.value; salvarAcao(); return true; }
-  if (d.tdex && (t = acharTok(d.tdex))) { t.dex = parseInt(el.value, 10) || 0; salvarAcao(); atualizarLinhaDesl(t); return true; }
-  if (d.taj && (t = acharTok(d.taj))) { t.aj = parseInt(el.value, 10) || 0; salvarAcao(); atualizarLinhaDesl(t); return true; }
-  if (d.tgasto && (t = acharTok(d.tgasto))) { t.gasto = Math.max(0, parseInt(el.value, 10) || 0); salvarAcao(); atualizarLinhaDesl(t); return true; }
-  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); salvarAcao(); desenharAcaoMestre(); return true; }
   return false;
 }
 
 function clickAcao(b) {
-  var a = acaoEst();
+  var a = acaoEst(), t;
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
+  if (b.dataset.tsel) { selecionarTok(b.dataset.tsel); desenharAcaoMestre(); return true; }
   if (b.id === "cenaDel" && a.envio) {
     if (!confirmarDelCena) {
       confirmarDelCena = true;
@@ -2058,6 +2226,9 @@ function clickAcao(b) {
     gravar("cena_excluir", { id: id }).then(function (r) {
       if (!r) return;
       ENVIADAS = ENVIADAS.filter(function (c) { return c.id !== id; });
+      if (EST.cena_tokens) { delete EST.cena_tokens["e:" + id]; salvarEstado("cena_tokens"); }
+      campoOp("pos", { remover: a.tokens.map(function (x) { return x.id; }) });
+      if (CAMPO.combate) campoOp("encerrar");
       a.envio = 0; a.ativo = false; a.tokens = []; tokSel = null;
       salvarAcao();
       upMsg = "Cenário excluído.";
@@ -2065,52 +2236,73 @@ function clickAcao(b) {
     });
     return true;
   }
+  /* --- tokens --- */
   if (b.id === "tokJogadores") {
-    var n = 0;
+    var novos = [];
     (jogs || []).forEach(function (j) {
       if (a.tokens.some(function (t) { return t.jog === j.id; })) return;
-      novoTok(nomeUnico(j.personagem || j.nome || "Jogador"), "jogador", { jog: j.id });
-      n++;
+      novos.push(novoTok(nomeUnico(j.personagem || j.nome || "Jogador"), "jogador", { jog: j.id }));
     });
-    infoTok(n ? n + " jogadores adicionados." : "Todos os jogadores já estão no mapa.");
-    salvarAcao();
-    redesenharTokens();
+    infoTok(novos.length ? novos.length + " jogadores adicionados." : "Todos os jogadores já estão no mapa.");
+    if (novos.length) { enviarPos(novos); salvarAcao(); }
+    renderAcaoUI();
     return true;
   }
   if (b.id === "tokBest") {
     var m = INIMIGOS[parseInt(document.getElementById("tokBestSel").value, 10)];
     if (!m) return true;
-    tokSel = novoTok(nomeUnico(m.nome), "inimigo", { vida: m.vida, vidaMax: m.vida, defesa: String(m.defesa), bestiario: m.nome }).id;
+    t = novoTok(nomeUnico(m.nome), "inimigo", { vida: m.vida, vidaMax: m.vida, defesa: String(m.defesa), bestiario: m.nome });
+    tokSel = t.id;
     infoTok(m.nome + " adicionado (vida " + m.vida + ", defesa " + m.defesa + "). Com 8 jogadores, veja a regra de escala no Bestiário.");
-    salvarAcao();
-    redesenharTokens();
+    enviarPos([t]); salvarAcao(); renderAcaoUI();
     return true;
   }
   if (b.id === "tokInimigo" || b.id === "tokAliado") {
     var tipo = b.id === "tokInimigo" ? "inimigo" : "aliado";
-    tokSel = novoTok(nomeUnico(tipo === "inimigo" ? "Inimigo" : "Aliado"), tipo).id;
-    salvarAcao();
-    redesenharTokens();
+    t = novoTok(nomeUnico(tipo === "inimigo" ? "Inimigo" : "Aliado"), tipo);
+    tokSel = t.id;
+    enviarPos([t]); salvarAcao(); renderAcaoUI();
     return true;
   }
   if (b.id === "tokArmadilha") {
-    tokSel = novoTok(nomeUnico("Armadilha"), "armadilha", { oculto: true, efeito: "" }).id;
-    infoTok("Armadilha escondida criada. Arraste até a casa certa e escreva o efeito. Só você a vê até desmarcar “Escondida”.");
-    salvarAcao();
-    redesenharTokens();
+    t = novoTok(nomeUnico("Armadilha"), "armadilha", { oculto: true, efeito: "" });
+    tokSel = t.id;
+    infoTok("Armadilha escondida criada. Arraste até a casa certa e escreva o efeito. Só você a vê até alguém pisar nela ou você desmarcar “Escondida”.");
+    enviarPos([t]); salvarAcao(); renderAcaoUI();
     return true;
   }
   if (b.id === "tokTurno") {
-    a.tokens.forEach(function (t) { t.gasto = 0; });
-    infoTok("Novo turno: os movimentos de todos foram zerados.");
+    a.tokens.forEach(function (x) { x.gasto = 0; });
+    infoTok("Os movimentos de todos foram zerados.");
+    campoOp("pos", { zerar: true }).then(renderAcaoUI);
+    return true;
+  }
+  if (b.dataset.tdup && (t = acharTok(b.dataset.tdup))) {
+    var c = casaLivre(t.tipo);
+    var cp = extras({}, t);
+    cp.id = "t" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
+    cp.nome = nomeUnico(String(t.nome).replace(/ \d+$/, ""));
+    cp.x = c.x; cp.y = c.y; cp.gasto = 0; delete cp.jog;
+    a.tokens.push(cp);
+    tokSel = cp.id;
+    enviarPos([cp]); salvarAcao(); renderAcaoUI();
+    return true;
+  }
+  if (b.dataset.vdelta && tokSel && (t = acharTok(tokSel))) {
+    var max = t.vidaMax || 0, atual = t.vida == null ? max : t.vida;
+    if (!max) { infoTok("Defina a vida máxima do token para usar os botões de vida."); return true; }
+    t.vida = Math.max(0, Math.min(max, atual + parseInt(b.dataset.vdelta, 10)));
+    t.morto = t.vida === 0;
     salvarAcao();
-    redesenharTokens();
+    renderAcaoUI();
     return true;
   }
   if (b.id === "tokSemInimigos") {
-    a.tokens = a.tokens.filter(function (t) { return t.tipo !== "inimigo"; });
-    salvarAcao();
-    redesenharTokens();
+    var fora = a.tokens.filter(function (x) { return x.tipo === "inimigo"; }).map(function (x) { return x.id; });
+    a.tokens = a.tokens.filter(function (x) { return x.tipo !== "inimigo"; });
+    if (tokSel && fora.indexOf(tokSel) !== -1) tokSel = null;
+    if (fora.length) campoOp("pos", { remover: fora });
+    salvarAcao(); renderAcaoUI();
     return true;
   }
   if (b.id === "tokLimpar") {
@@ -2121,23 +2313,37 @@ function clickAcao(b) {
       return true;
     }
     confirmarLimpar = false;
+    campoOp("pos", { remover: a.tokens.map(function (x) { return x.id; }) });
     a.tokens = [];
     tokSel = null;
     salvarAcao();
-    renderizar();
+    renderAcaoUI();
     return true;
   }
   if (b.dataset.tdel) {
-    a.tokens = a.tokens.filter(function (t) { return t.id !== b.dataset.tdel; });
+    a.tokens = a.tokens.filter(function (x) { return x.id !== b.dataset.tdel; });
     if (tokSel === b.dataset.tdel) tokSel = null;
-    salvarAcao();
-    redesenharTokens();
+    campoOp("pos", { remover: [b.dataset.tdel] });
+    salvarAcao(); renderAcaoUI();
+    return true;
+  }
+  /* --- combate --- */
+  var ops = { cmbIniciar: "iniciar", cmbRolarInim: "ini_inimigos", cmbComecar: "comecar", cmbRecalc: "comecar", cmbProximo: "proximo", cmbEncerrar: "encerrar", logLimpar: "limpar_log" };
+  if (ops[b.id]) {
+    campoOp(ops[b.id]).then(function () {
+      var at = atualId();
+      if (b.id === "cmbProximo" && at) tokSel = at;
+      renderAcaoUI();
+    });
+    return true;
+  }
+  if (b.dataset.crolar) {
+    campoOp("ini", { id: b.dataset.crolar, rolar: true }).then(renderAcaoUI);
     return true;
   }
   return false;
 }
 
-/* Ao abrir a aba Jogadores, busca a lista de novo para mostrar contas novas e o que os jogadores editaram no Perfil. */
 var ultimaRota = "";
 function atualizarJogadores() {
   if (jogSel || Object.keys(jogSujos).length) return;
@@ -2173,19 +2379,22 @@ MESTRE = {
   iniciar: function (d) {
     jogs = d.jogadores || [];
     sorteio = null;
+    if (d.campo) CAMPO = d.campo;
+    aplicarCampo();
     sincronizarPub();
   },
 
   antes: function (r) {
     if (r !== "sorteio") cer.ativa = false;
     if (r === "jogadores" && ultimaRota !== "jogadores") atualizarJogadores();
+    if (r !== "acao" && campoRodando) pararCampoPoll();
     ultimaRota = r;
   },
 
   depois: function (r) {
     if (r === "grimorios") desenharGrimorios();
     if (r === "bestiario") desenharBestiario();
-    if (r === "acao") desenharAcaoMestre();
+    if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
   },
 
   change: function (el) {
@@ -2195,6 +2404,29 @@ MESTRE = {
     if (el.classList.contains("chk")) setCheck(d.key, parseInt(d.i, 10), el.checked);
     else if (el.classList.contains("rev")) { setRev(d.id, el.checked); desenharMapa(); }
     else if (d.campo !== undefined) salvarCampo(el);
+    else if (d.jatr || d.jbonus) {
+      var jf = achaJog(jogSel);
+      if (jf) {
+        var cp = d.jatr ? "atr" : "bonus", ka = d.jatr || d.jbonus;
+        jf[cp] = jf[cp] || {};
+        jf[cp][ka] = parseInt(el.value, 10) || 0;
+        if (cp === "atr" && !jf.atrTravado) jf.atrTravado = true;
+        salvarJog(jf, true, [cp, "atrTravado"]);
+        if (EST.acao) salvarAcao();
+        renderizar();
+      }
+    }
+    else if (d.jtrav !== undefined) {
+      var jt = achaJog(jogSel);
+      if (jt) {
+        if (!el.checked && !window.confirm("Destravar apaga a base atual e o jogador distribui os 5 pontos de novo. Continuar?")) { el.checked = true; return; }
+        jt.atrTravado = el.checked;
+        /* Destravar devolve os 5 pontos para o jogador distribuir de novo. */
+        if (!el.checked) jt.atr = null;
+        salvarJog(jt, true, ["atrTravado", "atr"]);
+        renderizar();
+      }
+    }
     else if (d.jf || d.obs) salvarCampoJog(el);
     else if (el.id === "jogImg") importarImagem(el);
     else if (d.jconta !== undefined) vincularConta(el);

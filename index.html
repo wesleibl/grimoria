@@ -477,6 +477,42 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 .tok-desl { font-size: .92rem; color: var(--muted); }
 .tok-desl.excede, .tok-aviso { color: var(--poder); font-weight: 700; }
 .primary-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; display: inline-block; }
+.atr-lista { display: grid; gap: 8px; max-width: 360px; margin: .6rem 0 1rem; }
+.atr-linha { display: grid; grid-template-columns: 1fr 44px 56px 44px; gap: 8px; align-items: center; }
+.atr-linha button { padding: 6px 0; font-size: 1.2rem; line-height: 1; }
+.atr-valor { text-align: center; font-size: 1.15rem; }
+.ficha .num { width: 76px; }
+.acao-mapa { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; margin-bottom: 1rem; }
+.acao-lado { display: grid; gap: 12px; }
+.acao-lado .panel { margin: 0; }
+.acao-lado h3 { margin: 0 0 .5rem; }
+@media (max-width: 900px) { .acao-mapa { grid-template-columns: 1fr; } }
+.tok-cab { display: flex; gap: 8px; align-items: center; margin-bottom: .6rem; }
+.tok-cab .sorteio-in { flex: 1; }
+.tok-cab input[type="color"], .tok-painel input[type="color"] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
+.tok-painel label { display: block; color: var(--muted); font-size: .92rem; margin: 0 0 .5rem; }
+.tok-painel label.tok-num, .tok-painel label.rev-label { display: inline-flex; }
+.tok-grade { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: .4rem; }
+.tok-vida-btn { display: flex; gap: 6px; margin: 0 0 .6rem; }
+.tok-vida-btn button { flex: 1; padding: 4px 0; }
+.tok-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 1rem; }
+.tok-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: .92rem; }
+.tok-chip small { color: var(--muted); }
+.tok-chip.sel { border-color: var(--accent); background: var(--surface2); }
+.tok-chip.oculto { opacity: .55; border-style: dashed; }
+.tok-chip.morto, .cmb-ordem li.morto { text-decoration: line-through; opacity: .5; }
+.tok-chip.atual { box-shadow: 0 0 0 2px var(--accent); }
+.cmb-lista { list-style: none; padding: 0; margin: 0 0 .8rem; display: grid; gap: 6px; }
+.cmb-lista li { display: flex; align-items: center; gap: 8px; }
+.cmb-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmb-ordem { margin: 0 0 .8rem; padding-left: 1.4rem; }
+.cmb-ordem li { margin: 0 0 .2rem; }
+.cmb-ordem li.atual { font-weight: 700; color: var(--accent); }
+.cmb-ordem li.eu { text-decoration: underline; }
+.vez { color: var(--accent); font-size: 1.1rem; margin: 0 0 .6rem; }
+.token.morto { opacity: .35; filter: grayscale(1); }
+.token.atual circle, .token.atual polygon { stroke: var(--accent); stroke-width: 5; }
+.tok-log { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 4px; }
 .tok-best { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
 .tok-best select { width: auto; max-width: 100%; }
 .tok-linha.sel { border-color: var(--accent); }

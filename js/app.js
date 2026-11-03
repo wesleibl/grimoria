@@ -481,6 +481,7 @@ function viewInicioJogador() {
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Imagem de ' + esc(j.personagem || j.nome || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '</div><div class="pj-campos"><h2 style="margin-top:0">' + esc(j.personagem || "Personagem sem nome") + "</h2>";
   var campos = [["Jogador", j.nome], ["Vilarejo", j.vila], ["Altura", j.altura], ["Descrição", j.descricao], ["Sonho ou objetivo", j.sonho], ["Medo ou fraqueza", j.medo]];
+  if (j.atrTravado) campos.push(["Atributos", ATRS.map(function (a) { return a[1] + " " + sinal(atrTotal(j, a[0])); }).join(", ")]);
   campos.forEach(function (c) { if (c[1]) h += '<p><b>' + c[0] + ":</b> " + esc(c[1]) + "</p>"; });
   if (PUB.vilaBonus) h += "<p><b>Bônus de origem:</b> " + esc(PUB.vilaBonus) + "</p>";
   return h + "</div></div>" + atalhosJogador();
@@ -509,6 +510,45 @@ function viewMeuGrimorio() {
 /* ============================ PERFIL ============================ */
 
 var perfilPend = {}, perfilMsg = "";
+var ATRS = [["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]];
+var VIDA_NIVEL = [20, 24, 28, 32, 36], MANA_NIVEL = [10, 10, 12, 12, 14], LIM_NIVEL = [3, 3, 4, 4, 5];
+var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
+function nivelJog(j) { return Math.max(1, Math.min(5, parseInt(j.nivel, 10) || 1)); }
+function atrBase(j, k) { return parseInt(j.atr && j.atr[k], 10) || 0; }
+function atrBonus(j, k) { return parseInt(j.bonus && j.bonus[k], 10) || 0; }
+function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k); }
+function sinal(n) { return (n >= 0 ? "+" : "") + n; }
+
+function statCaixa(rot, v) { return '<div class="stat"><b>' + v + "</b>" + rot + "</div>"; }
+
+/* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder,
+   deslocamento 6 + 1 a cada 2 de Destreza, Vida e Mana pelo nível). */
+function statusHTML(j) {
+  var n = nivelJog(j), dex = atrTotal(j, "destreza"), h = '<h2>Status</h2><section class="panel ficha">' +
+    '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", MANA_NIVEL[n - 1]) +
+    statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", atrTotal(j, "poder")) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
+  if (!j.atrTravado) {
+    var usado = atrRasc.poder + atrRasc.destreza + atrRasc.inteligencia, resta = 5 - usado;
+    h += "<h3>Distribua os seus 5 pontos</h3>" +
+      '<p class="mdica">Você tem <b>5 pontos</b> para dividir entre os três atributos, no máximo <b>+3</b> em cada. Isso representa o seu treino antes de receber o grimório. <b>Depois de salvar, não dá para mudar.</b></p>' +
+      '<div class="atr-lista">' + ATRS.map(function (a) {
+        return '<div class="atr-linha"><span class="atr-nome">' + a[1] + '</span><button type="button" data-atr-step="' + a[0] + '" data-d="-1" aria-label="Menos ' + a[1] + '"' + (atrRasc[a[0]] <= 0 ? " disabled" : "") + '>−</button>' +
+          '<b class="atr-valor">' + sinal(atrRasc[a[0]]) + '</b><button type="button" data-atr-step="' + a[0] + '" data-d="1" aria-label="Mais ' + a[1] + '"' + (atrRasc[a[0]] >= 3 || resta <= 0 ? " disabled" : "") + ">+</button></div>";
+      }).join("") + "</div>" +
+      '<p role="status">Pontos restantes: <b>' + resta + "</b></p>" +
+      '<p><button type="button" class="primary" id="perfilSalvarAtr"' + (resta === 0 ? "" : " disabled") + ">Salvar atributos</button></p></section>";
+    return h;
+  }
+  var lim = LIM_NIVEL[n - 1];
+  h += "<h3>Atributos</h3>" + '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Base</th><th>Bônus</th><th>Total</th></tr></thead><tbody>' +
+    ATRS.map(function (a) {
+      var tot = atrTotal(j, a[0]);
+      return "<tr><td><b>" + a[1] + "</b></td><td>" + sinal(atrBase(j, a[0])) + '</td><td><input class="sorteio-in num" type="number" min="-5" max="10" data-pbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '" aria-label="Bônus de ' + a[1] + '"></td>' +
+        "<td><b>" + sinal(tot) + "</b>" + (tot > lim ? ' <small class="tok-desl excede">acima do limite +' + lim + " do seu nível</small>" : "") + "</td></tr>";
+    }).join("") + "</tbody></table></div>" +
+    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. O <b>bônus</b> é onde você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere.</p></section>";
+  return h;
+}
 var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altura", 20], ["descricao", "Descrição", 2000], ["sonho", "Sonho ou objetivo", 2000], ["medo", "Medo ou fraqueza", 2000]];
 
 function viewPerfil() {
@@ -518,7 +558,7 @@ function viewPerfil() {
   }
   var url = j.img ? imgUrl(j.img) : "";
   var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. As mudanças são salvas sozinhas e o mestre vê tudo.</p>' +
-    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>";
+    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + statusHTML(j) + "<h2>Personagem</h2>";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="perfilImg"><label class="btn" for="perfilImg">' + (url ? "Trocar retrato" : "Escolher retrato") + "</label>" +
@@ -632,7 +672,7 @@ function desenharTabuleiro(cfg) {
   var r = menor * 0.38;
   (cfg.tokens || []).forEach(function (t) {
     var x = Math.max(0, Math.min(cols - 1, t.x | 0)), y = Math.max(0, Math.min(rows - 1, t.y | 0));
-    var cls = "token" + (t.oculto ? " oculto" : "") + (cfg.meu && t.jog === cfg.meu ? " meu" : "") + (cfg.sel === t.id ? " sel" : "");
+    var cls = "token" + (t.oculto ? " oculto" : "") + (t.morto ? " morto" : "") + (cfg.atual === t.id ? " atual" : "") + (cfg.meu && t.id === cfg.meu ? " meu" : "") + (cfg.sel === t.id ? " sel" : "");
     var forma = t.tipo === "armadilha"
       ? '<polygon points="0,' + (-r * 1.15).toFixed(1) + " " + (r * 1.15).toFixed(1) + ",0 0," + (r * 1.15).toFixed(1) + " " + (-r * 1.15).toFixed(1) + ',0" fill="' + corToken(t) + '"/>'
       : '<circle r="' + r.toFixed(1) + '" fill="' + corToken(t) + '"/>';
@@ -652,51 +692,187 @@ function desenharTabuleiro(cfg) {
   return tabGeo;
 }
 
+/* Casa do grid sob o ponteiro (mouse ou dedo). */
+function celulaTab(svg, ev) {
+  var m = svg.getScreenCTM();
+  if (!m || !tabGeo) return null;
+  var pt = svg.createSVGPoint();
+  pt.x = ev.clientX;
+  pt.y = ev.clientY;
+  var p = pt.matrixTransform(m.inverse());
+  return { x: Math.max(0, Math.min(tabGeo.cols - 1, Math.floor(p.x / tabGeo.cw))), y: Math.max(0, Math.min(tabGeo.rows - 1, Math.floor(p.y / tabGeo.ch))) };
+}
+
 function listaTokensHTML(tokens, meu) {
   if (!tokens.length) return "";
   return '<ul class="tok-lista">' + tokens.map(function (t) {
-    var mov = meu && t.jog === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
-    return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span>' + esc(t.nome || "Sem nome") + (t.tipo === "armadilha" ? " (armadilha)" : "") + " <small>" + coordNome(t.x | 0, t.y | 0) + (meu && t.jog === meu ? ", você" : "") + mov + "</small></li>";
+    var mov = meu && t.id === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
+    return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span>' + esc(t.nome || "Sem nome") + (t.tipo === "armadilha" ? " (armadilha)" : "") + " <small>" + coordNome(t.x | 0, t.y | 0) + (meu && t.id === meu ? ", você" : "") + mov + "</small></li>";
   }).join("") + "</ul>";
 }
 
 /* ============================ AÇÃO (JOGADOR) ============================ */
 
-var acaoPub = null, acaoJson = "", acaoTimer = null, acaoGer = 0, acaoRodando = false;
+var acaoPub = null, acaoJson = "", acaoTimer = null, acaoGer = 0, acaoRodando = false, acaoMsg = "", arrastandoJog = false, selJog = false;
+
+function meuTok() {
+  var r = null;
+  if (acaoPub && acaoPub.eu) (acaoPub.tokens || []).forEach(function (t) { if (t.id === acaoPub.eu) r = t; });
+  return r;
+}
+
+/* O que o jogador pode fazer agora. O servidor confere de novo: isto só evita cliques inúteis. */
+function podeMover() {
+  var a = acaoPub, t = meuTok();
+  if (!a || !a.ativo || !t || t.morto) return false;
+  var cb = a.combate;
+  if (cb && cb.fase === "ini") return false;
+  if (cb && cb.fase === "turnos") return !!cb.minhaVez && (t.desl || 6) - (t.gasto || 0) > 0;
+  return a.livre !== false;
+}
+
+function acaoCombateHTML() {
+  var a = acaoPub, cb = a.combate;
+  if (!cb) return '<p class="mdica">' + (a.livre === false ? "O mestre travou o movimento por enquanto." : (a.eu ? "Arraste o seu token para se mover." : "Seu personagem ainda não está no mapa.")) + "</p>";
+  var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
+  if (cb.fase === "ini") {
+    h += "<p>Hora de rolar a <b>iniciativa</b> (d20 + Destreza).</p>";
+    if (cb.euPreciso) {
+      h += '<div class="controls"><button type="button" class="primary" id="iniRolar">Rolar d20 + Destreza</button></div>' +
+        '<div class="controls"><label class="tok-num">Rolou o dado físico? Valor total <input class="sorteio-in num" type="number" min="-20" max="80" id="iniValor"></label><button type="button" id="iniDigitar">Usar este valor</button></div>';
+    } else if (cb.euIni != null) {
+      h += "<p>Sua iniciativa: <b>" + cb.euIni + "</b>.</p>";
+    }
+    h += "<p class=\"mdica\">" + (cb.pendentes.length ? "Aguardando: " + cb.pendentes.map(esc).join(", ") + "." : "Todos os jogadores já rolaram. O mestre vai começar os turnos.") + "</p></section>";
+    return h;
+  }
+  h += "<p><b>Rodada " + cb.rodada + "</b></p>";
+  h += '<ol class="cmb-ordem">' + cb.ordem.map(function (o) {
+    return '<li class="' + (o.id === cb.atual ? "atual" : "") + (o.morto ? " morto" : "") + (o.id === a.eu ? " eu" : "") + '">' + esc(o.nome) + (o.v != null ? " <small>" + o.v + "</small>" : "") + (o.id === cb.atual ? " ◀" : "") + "</li>";
+  }).join("") + "</ol>";
+  var t = meuTok();
+  if (cb.minhaVez) {
+    h += '<p class="vez"><b>É a sua vez!</b>' + (t ? " Você ainda pode andar " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + " casas (de " + (t.desl || 6) + ")." : "") + "</p>" +
+      '<div class="controls"><button type="button" class="primary" id="fimTurno">Encerrar turno</button></div>';
+  } else {
+    h += '<p class="mdica">' + (cb.atual ? "Turno de " + esc((cb.ordem.filter(function (o) { return o.id === cb.atual; })[0] || {}).nome || "alguém") + "." : (cb.atualOculto ? "Algo se move nas sombras…" : "")) + "</p>";
+  }
+  return h + "</section>";
+}
+
+function acaoLogHTML() {
+  var ev = (acaoPub && acaoPub.eventos) || [];
+  return ev.length ? '<ul class="tok-log">' + ev.slice().reverse().map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>" : "";
+}
 
 function viewAcaoJogador() {
   var a = acaoPub;
   if (!a) return "<h1>Ação</h1><p class=\"mdica\">Carregando…</p>";
   if (!a.ativo) return '<div class="lock"><h1>Ação</h1><p>Nenhum mapa ativo agora. Quando o mestre abrir uma cena, ela aparece aqui e se atualiza sozinha.</p></div>';
-  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + '<p class="mdica">Cada casa tem 1,5 m. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
-    tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + listaTokensHTML(a.tokens || [], PUB.jogador && PUB.jogador.id);
+  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
+    '<p id="acaoMsg" role="status" class="mdica tok-aviso">' + esc(acaoMsg) + "</p>" +
+    '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
+    listaTokensHTML(a.tokens || [], a.eu) + '<div id="acaoLog">' + acaoLogHTML() + "</div>";
 }
 
 function desenharAcaoJogador() {
-  if (acaoPub && acaoPub.ativo) desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: PUB.jogador && PUB.jogador.id });
+  if (!acaoPub || !acaoPub.ativo) return;
+  var cb = acaoPub.combate;
+  desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: acaoPub.eu, atual: cb ? cb.atual : null, depois: ligarArrasteJog });
+  ligarArrasteJog();
 }
 
-/* Enquanto o jogador está na aba Ação, busca a cena a cada 4 segundos.
-   Só redesenha quando algo mudou, e troca a página inteira só quando muda a imagem. */
+/* O jogador arrasta só o próprio token, e só quando o servidor deixaria. */
+function ligarArrasteJog() {
+  var svg = document.getElementById("tabSvg");
+  if (!svg || !tabGeo) return;
+  var t0 = meuTok(), arr = null;
+  if (!podeMover() || !t0) { svg.classList.remove("editavel"); svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = null; return; }
+  svg.classList.add("editavel");
+  function avisar(c) {
+    var casas = Math.max(Math.abs(c.x - t0.x), Math.abs(c.y - t0.y)), cb = acaoPub.combate, m = document.getElementById("acaoMsg");
+    var txt = coordNome(t0.x, t0.y) + " → " + coordNome(c.x, c.y) + ", " + casas + (casas === 1 ? " casa." : " casas.");
+    if (cb && cb.fase === "turnos") { var resta = (t0.desl || 6) - (t0.gasto || 0); txt += casas > resta ? " Falta deslocamento (restam " + Math.max(0, resta) + ")." : " Restam " + (resta - casas) + "."; }
+    if (m) m.textContent = txt;
+  }
+  function soltar(c) {
+    if (!c || (c.x === t0.x && c.y === t0.y)) { desenharAcaoJogador(); return; }
+    var m = document.getElementById("acaoMsg");
+    if (m) m.textContent = "Movendo…";
+    api("campo_op", { op: "mover", x: c.x, y: c.y }).then(function () {
+      acaoMsg = "";
+      return buscarAcaoAgora(true);
+    }, function (e) {
+      acaoMsg = e.message;
+      return buscarAcaoAgora(true);
+    });
+  }
+  svg.onpointerdown = function (ev) {
+    var g = ev.target.closest ? ev.target.closest(".token") : null;
+    if (!g || g.dataset.tok !== acaoPub.eu) {
+      if (selJog) { var c = celulaTab(svg, ev); selJog = false; if (c) soltar(c); }
+      return;
+    }
+    ev.preventDefault();
+    arr = { g: g, c: null };
+    arrastandoJog = true;
+    selJog = true;
+    try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
+  };
+  svg.onpointermove = function (ev) {
+    if (!arr) return;
+    var c = celulaTab(svg, ev);
+    if (!c) return;
+    arr.c = c;
+    arr.g.setAttribute("transform", "translate(" + ((c.x + 0.5) * tabGeo.cw).toFixed(1) + "," + ((c.y + 0.5) * tabGeo.ch).toFixed(1) + ")");
+    avisar(c);
+  };
+  svg.onpointerup = svg.onpointercancel = function () {
+    if (!arr) return;
+    var c = arr.c;
+    arr = null;
+    arrastandoJog = false;
+    if (c) { selJog = false; soltar(c); }
+  };
+}
+
+function acaoAtualizarUI(trocouTela) {
+  if (trocouTela) { renderizar(); return; }
+  var c = document.getElementById("acaoCombate");
+  var f = document.activeElement;
+  if (c && !(f && c.contains(f) && /^(INPUT|TEXTAREA)$/.test(f.tagName))) c.innerHTML = acaoCombateHTML();
+  var l = document.querySelector(".tok-lista"), lista = listaTokensHTML(acaoPub.tokens || [], acaoPub.eu);
+  if (l) l.outerHTML = lista || '<ul class="tok-lista"></ul>';
+  var g = document.getElementById("acaoLog");
+  if (g) g.innerHTML = acaoLogHTML();
+  var m = document.getElementById("acaoMsg");
+  if (m && !arrastandoJog) m.textContent = acaoMsg;
+  desenharAcaoJogador();
+}
+
 function pararAcao() { clearTimeout(acaoTimer); acaoTimer = null; acaoRodando = false; acaoGer++; }
 function iniciarAcao() { if (!acaoRodando) { acaoRodando = true; buscarAcao(++acaoGer); } }
-function buscarAcao(ger) {
-  if (ger !== acaoGer || MESTRE || !USUARIO || rotaAtual() !== "acao") return;
-  var depois = function () { if (ger === acaoGer) acaoTimer = setTimeout(function () { buscarAcao(ger); }, 4000); };
-  if (document.hidden) { depois(); return; }
-  api("acao").then(function (a) {
+
+/* Busca a cena. Em combate, a cada 2 s; fora dele, a cada 4 s. Só redesenha quando algo mudou. */
+function buscarAcaoAgora(forcar) {
+  return api("acao").then(function (a) {
     var j = JSON.stringify(a);
-    if (ger !== acaoGer || j === acaoJson) return;
-    var trocouImg = !acaoPub || acaoPub.ativo !== a.ativo || acaoPub.img !== a.img || acaoPub.titulo !== a.titulo;
+    if (j === acaoJson) { if (forcar) acaoAtualizarUI(false); return; }
+    var troc = !acaoPub || acaoPub.ativo !== a.ativo || acaoPub.img !== a.img || acaoPub.titulo !== a.titulo;
     acaoJson = j;
     acaoPub = a;
-    if (trocouImg) { renderizar(); return; }
-    desenharAcaoJogador();
-    var l = document.querySelector(".tok-lista"), box = document.querySelector(".tab-box");
-    var lista = listaTokensHTML(a.tokens || [], PUB.jogador && PUB.jogador.id);
-    if (l) l.outerHTML = lista || '<ul class="tok-lista"></ul>';
-    else if (box) box.insertAdjacentHTML("afterend", lista || '<ul class="tok-lista"></ul>');
-  }, function () { /* sem conexão: tenta de novo no próximo ciclo */ }).then(depois);
+    acaoAtualizarUI(troc);
+  }, function () { /* sem conexão: tenta de novo no próximo ciclo */ });
+}
+function buscarAcao(ger) {
+  if (ger !== acaoGer || MESTRE || !USUARIO || rotaAtual() !== "acao") return;
+  var depois = function () { if (ger === acaoGer) acaoTimer = setTimeout(function () { buscarAcao(ger); }, acaoPub && acaoPub.combate ? 2000 : 4000); };
+  if (document.hidden || arrastandoJog) { depois(); return; }
+  buscarAcaoAgora().then(depois);
+}
+
+function acaoOpJogador(op, dados) {
+  return api("campo_op", extras({ op: op }, dados || {})).then(function () { acaoMsg = ""; return buscarAcaoAgora(true); }, function (e) { acaoMsg = e.message; return buscarAcaoAgora(true); });
 }
 
 /* ============================ CONTA ============================ */
@@ -883,6 +1059,13 @@ app.addEventListener("change", function (e) {
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
   else if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
+  else if (e.target.dataset && e.target.dataset.pbonus && PUB.jogador) {
+    var j = PUB.jogador;
+    j.bonus = j.bonus || {};
+    j.bonus[e.target.dataset.pbonus] = Math.max(-5, Math.min(10, parseInt(e.target.value, 10) || 0));
+    gravar("perfil_bonus", { bonus: j.bonus });
+    renderizar();
+  }
 });
 
 app.addEventListener("input", function (e) {
@@ -901,6 +1084,33 @@ app.addEventListener("click", function (e) {
   if (!b) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
+  if (b.id === "iniRolar") { b.disabled = true; acaoOpJogador("ini", { rolar: true }); return; }
+  if (b.id === "iniDigitar") {
+    var vi = parseInt((document.getElementById("iniValor") || {}).value, 10);
+    if (isNaN(vi)) { acaoMsg = "Digite o valor total da sua iniciativa (d20 + Destreza)."; acaoAtualizarUI(false); return; }
+    b.disabled = true;
+    acaoOpJogador("ini", { valor: vi });
+    return;
+  }
+  if (b.id === "fimTurno") { b.disabled = true; acaoOpJogador("fim_turno"); return; }
+  if (b.dataset.atrStep && PUB.jogador && !PUB.jogador.atrTravado) {
+    var k = b.dataset.atrStep, d = parseInt(b.dataset.d, 10), soma = atrRasc.poder + atrRasc.destreza + atrRasc.inteligencia;
+    var novo = atrRasc[k] + d;
+    if (novo >= 0 && novo <= 3 && soma + d <= 5) atrRasc[k] = novo;
+    renderizar();
+    return;
+  }
+  if (b.id === "perfilSalvarAtr" && PUB.jogador && !PUB.jogador.atrTravado) {
+    var copia = { poder: atrRasc.poder, destreza: atrRasc.destreza, inteligencia: atrRasc.inteligencia };
+    if (copia.poder + copia.destreza + copia.inteligencia !== 5) return;
+    b.disabled = true;
+    gravar("perfil_atributos", { atr: copia }).then(function (r) {
+      if (r) { PUB.jogador.atr = copia; PUB.jogador.atrTravado = true; perfilMsg = "Atributos salvos. A base agora está travada."; }
+      else perfilMsg = "Não foi possível salvar os atributos. Veja o aviso no topo da página.";
+      renderizar();
+    });
+    return;
+  }
   if (b.id === "perfilImgDel" && PUB.jogador) {
     gravar("perfil_img_remover", {}).then(function (r) { if (r) { PUB.jogador.img = null; perfilMsg = "Retrato removido."; renderizar(); } });
     return;

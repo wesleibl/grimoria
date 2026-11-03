@@ -23,6 +23,8 @@ try {
         'GET img' => acaoImg(),
         'GET acao' => acaoAcao(),
         'GET cenas' => acaoCenas(),
+        'GET campo' => acaoCampo(),
+        'POST campo_op' => acaoCampoOp(),
         'GET cena_img' => acaoCenaImg(),
         'POST cena_enviar' => acaoCenaEnviar(),
         'POST cena_editar' => acaoCenaEditar(),
@@ -38,6 +40,8 @@ try {
         'POST img_editar' => acaoImgEditar(),
         'POST img_excluir' => acaoImgExcluir(),
         'POST perfil_salvar' => acaoPerfilSalvar(),
+        'POST perfil_atributos' => acaoPerfilAtributos(),
+        'POST perfil_bonus' => acaoPerfilBonus(),
         'POST perfil_img' => acaoPerfilImg(),
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
         default => erro('Ação desconhecida.', 404),
@@ -118,6 +122,7 @@ function acaoInicio(): never
             'jogadores' => listarJogadores(),
             'usuarios' => db()->query('SELECT id, nome, email, papel FROM usuarios ORDER BY nome')->fetchAll(),
             'imagens' => listarImagens(),
+            'campo' => campoLer(),
         ]);
     }
     /* O jogador recebe só o que foi liberado: o próprio perfil, o próprio grimório revelado
@@ -130,7 +135,7 @@ function acaoInicio(): never
     $locaisPub = idsLocaisPub();
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img'])) : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado'])) : null,
         'grimorio' => $grim,
         'locais' => lerEstado('locais_pub') ?? [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -272,9 +277,6 @@ function acaoImgExcluir(): never
 
 /* ============================ PERFIL DO JOGADOR ============================ */
 
-/* O jogador edita só estes campos do próprio personagem. Observações, moralidade,
-   grimório e vilarejo continuam nas mãos do mestre. */
-const CAMPOS_PERFIL = ['personagem' => 60, 'altura' => 20, 'descricao' => 2000, 'sonho' => 2000, 'medo' => 2000];
 
 function jogadorDaConta(): array
 {
@@ -293,6 +295,37 @@ function acaoPerfilSalvar(): never
         $campos[$k] = mb_substr((string)$v, 0, CAMPOS_PERFIL[$k]);
     }
     if ($campos) salvarCamposJogador($jog['id'], $campos, false);
+    responder(['ok' => true]);
+}
+
+/* Criação: 5 pontos entre os 3 atributos, no máximo 3 em cada. Depois de salvar, a base fica travada
+   (só o mestre destrava). */
+function acaoPerfilAtributos(): never
+{
+    $jog = jogadorDaConta();
+    if (!empty($jog['atrTravado'])) erro('Seus atributos já foram salvos e não podem mais ser alterados. Peça ao mestre se precisar corrigir.', 409);
+    $in = (array)(corpo()['atr'] ?? []);
+    $atr = [];
+    $soma = 0;
+    foreach (ATRIBUTOS as $k) {
+        $v = (int)($in[$k] ?? 0);
+        if ($v < 0 || $v > 3) erro('Cada atributo recebe de 0 a 3 pontos.');
+        $atr[$k] = $v;
+        $soma += $v;
+    }
+    if ($soma !== 5) erro('Distribua exatamente 5 pontos.');
+    salvarCamposJogador($jog['id'], ['atr' => $atr, 'atrTravado' => true], false);
+    responder(['ok' => true]);
+}
+
+/* Bônus de evolução (pontos ganhos ao subir de nível): o jogador anota e corrige à vontade, como numa ficha. */
+function acaoPerfilBonus(): never
+{
+    $jog = jogadorDaConta();
+    $in = (array)(corpo()['bonus'] ?? []);
+    $bonus = [];
+    foreach (ATRIBUTOS as $k) $bonus[$k] = max(-5, min(10, (int)($in[$k] ?? 0)));
+    salvarCamposJogador($jog['id'], ['bonus' => $bonus], false);
     responder(['ok' => true]);
 }
 
@@ -322,7 +355,22 @@ function acaoAcao(): never
 {
     $u = exigirLogin();
     if ($u['papel'] === 'mestre') responder(['acao' => lerEstado('acao'), 'grids' => lerEstado('grids')]);
-    responder(acaoPublica());
+    responder(acaoPublica(jogadorDoUsuario($u['id'])['id'] ?? null));
+}
+
+function acaoCampo(): never
+{
+    exigirMestre();
+    responder(['campo' => campoLer()]);
+}
+
+function acaoCampoOp(): never
+{
+    $u = exigirLogin();
+    $c = corpo();
+    $op = (string)($c['op'] ?? '');
+    if ($u['papel'] === 'mestre') responder(['campo' => campoOpMestre($op, $c)]);
+    campoOpJogador($u, $op, $c);
 }
 
 function acaoCenas(): never

@@ -109,9 +109,42 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 ---
 
+## 4.1 Preparo e cena ao vivo
+
+- **Preparo:** com "Cena ao vivo" desmarcado, só o mestre vê o mapa. É a hora de escolher o cenário, ajustar o grid e posicionar jogadores, inimigos e armadilhas.
+- **Ao vivo:** o mestre marca "Cena ao vivo" e os jogadores online passam a ver o mapa e a mover o próprio token.
+- **Tokens por cenário:** cada cenário guarda os próprios tokens e posições. Trocar de cena e voltar não perde nada. Trocar de cena encerra o combate.
+- **Fora de combate**, o jogador se move livremente (sem limite de casas) enquanto a opção "Jogadores podem se mover fora de combate" estiver marcada. O mestre pode desmarcar para travar.
+- O jogador **nunca** arrasta token que não seja o dele. Não pode parar numa casa ocupada por outro token visível. Quem pisa numa armadilha escondida a revela para todos.
+
+## 4.2 Combate por turnos
+
+1. **Iniciar combate** (mestre): os jogadores veem o painel de iniciativa.
+2. **Iniciativa = d20 + Destreza.** O jogador tem duas opções: **Rolar** (o servidor rola e soma a Destreza da ficha, que o jogador não vê) ou **digitar o valor total** do dado físico. Depois de definida, o jogador não troca. O mestre pode mudar qualquer uma. "Rolar inimigos e aliados" faz uma rolagem por tipo de inimigo (3 bandidos agem juntos).
+3. **Começar os turnos** (mestre): a ordem é do maior para o menor. Empate: maior Destreza, depois jogador antes de aliado antes de inimigo. Quem ficou sem iniciativa age por último.
+4. **Cada turno:** 1 movimento e 1 ação. O jogador só move o token na própria vez, até o deslocamento que resta. O servidor confere cada movimento. A ação (ataque, magia) é combinada na mesa, com os dados físicos.
+5. **Encerrar turno:** o jogador da vez ou o mestre. O contador de movimento do próximo a agir zera. Quando todos agiram, começa a rodada seguinte.
+6. **Recalcular ordem:** inclui quem entrou depois (reforços) e tira os derrotados, sem perder o turno atual.
+7. **Derrotado:** o token fica cinza e sai dos turnos. Zerar a vida pelos botões −5 −1 +1 +5 marca como derrotado.
+8. Inimigos ocultos agem normalmente, mas para os jogadores aparece "algo se move nas sombras".
+9. O jogador vê a ordem, de quem é o turno e um registro dos acontecimentos públicos. A tela dele se atualiza a cada 2 s em combate (4 s fora dele).
+
+**Painel do token (mestre):** clicar num token, no mapa ou na lista, abre o painel com nome, cor, tipo, Destreza, ajuste, gasto, vida (atual e máxima), derrotado, oculto, duplicar e remover.
+
+## 4.3 Perfil do jogador: status e atributos
+
+- **Status mostrados:** Nível, Vida máx., Mana, Defesa (10 + Destreza), Redução de dano (= Poder) e Deslocamento (6 + 1 a cada 2 de Destreza). Vida e Mana vêm da tabela de níveis (Vida 20, 24, 28, 32, 36; Mana 10, 10, 12, 12, 14).
+- **Criação:** o jogador distribui **+5 pontos** entre Poder, Destreza e Inteligência, no máximo **+3** em cada. Depois de **Salvar atributos**, a base fica **travada**.
+- **Bônus:** um campo por atributo, sempre editável, para anotar os pontos ganhos ao subir de nível (+1 por nível). O total é base + bônus. Se passar do limite do nível (+3, +3, +4, +4, +5), aparece um aviso, e o mestre confere.
+- **Mestre:** na aba Jogadores, "Ficha (atributos)" permite mudar o nível, a base e o bônus de qualquer jogador. Desmarcar "Atributos travados" apaga a base e devolve os 5 pontos para o jogador distribuir de novo (pede confirmação).
+- A Destreza da ficha (base + bônus) é a que vale no deslocamento e na iniciativa.
+
+---
+
 ## 5. Pendências
 
 - Enviar os cenários pelo site (ou, se preferir pasta, reorganizar `misterio/` na estrutura do item 1 e subir a pasta para a hospedagem).
 - Testar na hospedagem (o PHP da aba Ação ainda não foi executado).
-- Preencher a **Destreza** de cada jogador na aba Jogadores (sem isso, o deslocamento de todos é 6).
+- Cada jogador distribuir os 5 pontos no Perfil (sem isso, a Destreza é 0 e o deslocamento é 6).
+- Vida atual dos jogadores (hoje só aparece a Vida máx.): ainda não é controlada pelo site.
 - Possíveis evoluções: condições nos tokens (lento, preso...), área de efeito das armadilhas, áreas de feitiço, névoa de guerra (já previstas em `campanha.md`, seção 7).
