@@ -389,7 +389,8 @@ function desenharDetalhe() {
     h += '<p class="mdica">Ainda não há nada para ver aqui.</p>';
   }
   if (souMestre() && !modoMesa) {
-    if (!l.secreto) h += '<label class="rev-label"><input type="checkbox" class="rev" data-id="' + l.id + '"' + (rev[l.id] ? " checked" : "") + "> Revelado aos jogadores</label>";
+    if (!l.secreto) h += '<label class="rev-label"><input type="checkbox" class="rev" data-id="' + l.id + '"' + (rev[l.id] ? " checked" : "") + "> 1. Local visível no mapa dos jogadores</label>" +
+      '<p class="mdica rev-dica">Mostra o ponto “' + esc(l.nome) + '” no mapa. Sem isso, o jogador nem sabe que o lugar existe.</p>';
     h += MESTRE.localExtra(l);
     if (l.ganchos.length) h += "<h4>Ganchos</h4><ul>" + l.ganchos.map(function (g) { return "<li>" + g + "</li>"; }).join("") + "</ul>";
     if (l.inimigos.length) h += "<h4>Inimigos (veja o Bestiário)</h4><p>" + l.inimigos.join(", ") + ".</p>";
@@ -456,7 +457,7 @@ function viewMapa() {
       (modoMesa ? "" : '<button type="button" class="chip" id="btnMestre" aria-pressed="' + mestreAberto + '">' + ic("cadeado") + (mestreAberto ? "Ocultar a camada do mestre" : "Mostrar a camada do mestre") + "</button>") + "</div>";
     h += '<p class="mdica">' + (modoMesa
       ? "Modo mesa ligado: aparece só o que você marcou como revelado, sem ganchos nem segredos. Pode mostrar a tela aos jogadores."
-      : "Marque “Revelado aos jogadores” em cada local conforme eles descobrirem. Os jogadores veem no site só os locais revelados. Os locais esmaecidos ainda não foram revelados.") + "</p>";
+      : "Marque “Local visível no mapa dos jogadores” em cada local conforme eles descobrirem. Os jogadores veem no site só os locais revelados. Os locais esmaecidos ainda não foram revelados.") + "</p>";
   }
   h += legendaMapa();
   h += '<div class="mapa-grid"><div class="mapa-box"><svg id="mapaSvg" viewBox="0 0 1000 680" role="img" aria-label="Mapa de Grimoria com o reino, os vilarejos e os mistérios"></svg></div>' +
@@ -642,16 +643,22 @@ function agendarQuadro(fn) {
    (andar 3 para a direita e 2 para cima custa 5). A diagonal não serve para andar. */
 function distMov(x1, y1, x2, y2) { return Math.abs(x1 - x2) + Math.abs(y1 - y2); }
 
-/* Casas que o token alcança: distância até o que resta de movimento (só em linha reta, sem diagonal), sem as casas
-   ocupadas. Armadilhas e tokens derrotados não bloqueiam. */
+/* Casas que o token alcança, andando só na horizontal e na vertical, até o que resta de movimento. Todo token (inclusive
+   o derrotado), menos armadilha, bloqueia: um não passa pelo outro. O custo é o tamanho do caminho livre mais curto. */
 function celulasAlcance(tokens, t, resta, cols, rows) {
-  var out = [], ocup = {};
-  tokens.forEach(function (o) { if (o.id !== t.id && o.tipo !== "armadilha" && !o.morto) ocup[(o.x | 0) + "," + (o.y | 0)] = true; });
-  for (var y = Math.max(0, t.y - resta); y <= Math.min(rows - 1, t.y + resta); y++) {
-    for (var x = Math.max(0, t.x - resta); x <= Math.min(cols - 1, t.x + resta); x++) {
-      if ((x === t.x && y === t.y) || ocup[x + "," + y]) continue;
-      var d = distMov(x, y, t.x, t.y);
-      if (d <= resta) out.push({ x: x, y: y, d: d });
+  /* Todo token, menos armadilha, bloqueia o caminho: o alcance contorna os tokens em vez de passar por eles. */
+  var bloq = {}, vistos = {}, fila = [[t.x | 0, t.y | 0, 0]], out = [], passos = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  tokens.forEach(function (o) { if (o.id !== t.id && o.tipo !== "armadilha") bloq[(o.x | 0) + "," + (o.y | 0)] = true; });
+  vistos[(t.x | 0) + "," + (t.y | 0)] = true;
+  for (var i = 0; i < fila.length; i++) {
+    var c = fila[i];
+    if (c[2] >= resta) continue;
+    for (var k = 0; k < passos.length; k++) {
+      var nx = c[0] + passos[k][0], ny = c[1] + passos[k][1], ch = nx + "," + ny;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || vistos[ch] || bloq[ch]) continue;
+      vistos[ch] = true;
+      fila.push([nx, ny, c[2] + 1]);
+      out.push({ x: nx, y: ny, d: c[2] + 1 });
     }
   }
   return out;
@@ -673,12 +680,12 @@ function iniciais(nome) {
 function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (COR_TOKEN[t.tipo] || COR_TOKEN.inimigo); }
 
 function tabuleiroHTML(src, alt) {
-  return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div></div>';
+  return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div>' +
+    '<div class="zoom-ctl"><button type="button" data-zoom="mais" aria-label="Aproximar o mapa">+</button><button type="button" data-zoom="menos" aria-label="Afastar o mapa">−</button>' +
+    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<div class="tab-hud" id="tabHud" aria-live="polite"></div><div class="gire-dica">Gire o aparelho para o modo paisagem</div></div>';
 }
 
-/* Desenha o grid e os tokens sobre a imagem. As medidas usam os pixels da própria imagem,
-   então o grid acompanha a imagem em qualquer tamanho de tela.
-   cfg: { cols, rows, tokens, meu (id do jogador), sel (token selecionado), mestre } */
 function desenharTabuleiro(cfg) {
   var img = document.getElementById("tabImg"), svg = document.getElementById("tabSvg");
   if (!img || !svg) return null;
@@ -706,12 +713,12 @@ function desenharTabuleiro(cfg) {
   /* Casas azuis: onde o token selecionado pode ir. */
   var alc = typeof cfg.alcance === "function" ? cfg.alcance(cols, rows) : (cfg.alcance || []);
   alc.forEach(function (c) {
-    h += '<rect class="alc" data-ax="' + c.x + '" data-ay="' + c.y + '" x="' + (c.x * cw).toFixed(1) + '" y="' + (c.y * ch).toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + ch.toFixed(1) + '" rx="' + (menor * 0.08).toFixed(1) + '"><title>' +
+    h += '<rect class="alc" data-ax="' + c.x + '" data-ay="' + c.y + '" data-ad="' + c.d + '" x="' + (c.x * cw).toFixed(1) + '" y="' + (c.y * ch).toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + ch.toFixed(1) + '" rx="' + (menor * 0.08).toFixed(1) + '"><title>' +
       coordNome(c.x, c.y) + ", " + c.d + (c.d === 1 ? " casa" : " casas") + "</title></rect>";
   });
   var r = menor * 0.38;
-  var chaveCena = img.src || "", novosPos = {}, deslizar = [], durMax = 0;
-  if (posTokChave !== chaveCena) { posTokAnt = {}; posTokChave = chaveCena; }
+  var chaveCena = img.src || "", novosPos = {}, deslizar = [], durMax = 0, idxTok = 0;
+  if (posTokChave !== chaveCena) { posTokAnt = {}; posTokChave = chaveCena; zoomTab = { z: 1, tx: 0, ty: 0 }; }
   (cfg.tokens || []).forEach(function (t) {
     var x = Math.max(0, Math.min(cols - 1, t.x | 0)), y = Math.max(0, Math.min(rows - 1, t.y | 0));
     var cls = "token" + (t.oculto ? " oculto" : "") + (t.morto ? " morto" : "") + (cfg.atual === t.id ? " atual" : "") + (cfg.meu && t.id === cfg.meu ? " meu" : "") + (cfg.sel === t.id ? " sel" : "");
@@ -735,9 +742,19 @@ function desenharTabuleiro(cfg) {
     } else {
       estilo = "transform:" + alvo + ";transition-duration:0s";
     }
+    /* Foto do personagem no lugar das iniciais (as iniciais ficam por baixo, para o caso de a imagem não carregar). */
+    var fotoSvg = "";
+    if (t.foto && t.tipo !== "armadilha") {
+      var cid = "cp" + (idxTok++);
+      fotoSvg = '<clipPath id="' + cid + '"><circle r="' + r.toFixed(1) + '"/></clipPath>' +
+        '<image href="' + API + "?a=img&amp;id=" + encodeURIComponent(t.foto) + '" x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
+        '<circle class="anel" r="' + r.toFixed(1) + '"/>';
+    }
+    /* O token selecionado ganha um halo que pulsa para fora: é a pista de que ele aguarda o destino. */
+    var halo = cfg.sel === t.id ? '<circle class="halo" r="' + (r * 1.1).toFixed(1) + '"/>' : "";
     h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" data-alvo="' + alvo + '" style="' + estilo + '">' +
-      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + forma +
-      '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + barra + "</g>";
+      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + halo + forma +
+      '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + fotoSvg + barra + "</g>";
   });
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
   svg.innerHTML = h;
@@ -752,6 +769,8 @@ function desenharTabuleiro(cfg) {
     });
   }
   tabGeo = { W: W, H: H, cols: cols, rows: rows, cw: cw, ch: ch };
+  var caixa = caixaTab();
+  if (caixa) { if (caixa.style && caixa.style.setProperty) caixa.style.setProperty("--ar", (W / H).toFixed(4)); ligarZoom(caixa); aplicarZoom(false); }
   /* Roda a cada desenho, não só no primeiro: com a imagem já no cache o desenho é imediato, e é aqui que os
      controles (arrastar, clicar nas casas) são religados. */
   if (cfg.depois) cfg.depois();
@@ -760,13 +779,187 @@ function desenharTabuleiro(cfg) {
 
 /* Casa do grid sob o ponteiro (mouse ou dedo). */
 function celulaTab(svg, ev) {
-  var m = svg.getScreenCTM();
-  if (!m || !tabGeo) return null;
-  var pt = svg.createSVGPoint();
-  pt.x = ev.clientX;
-  pt.y = ev.clientY;
-  var p = pt.matrixTransform(m.inverse());
-  return { x: Math.max(0, Math.min(tabGeo.cols - 1, Math.floor(p.x / tabGeo.cw))), y: Math.max(0, Math.min(tabGeo.rows - 1, Math.floor(p.y / tabGeo.ch))) };
+  if (!tabGeo) return null;
+  var rc = svg.getBoundingClientRect();
+  if (!rc || !rc.width || !rc.height) return null;
+  /* O retângulo já reflete o zoom e o deslocamento aplicados por CSS, então a conta vale com o mapa ampliado. */
+  var x = (ev.clientX - rc.left) / rc.width * tabGeo.W, y = (ev.clientY - rc.top) / rc.height * tabGeo.H;
+  return { x: Math.max(0, Math.min(tabGeo.cols - 1, Math.floor(x / tabGeo.cw))), y: Math.max(0, Math.min(tabGeo.rows - 1, Math.floor(y / tabGeo.ch))) };
+}
+
+/* ============================ ZOOM E TELA CHEIA ============================ */
+
+/* Pinça com dois dedos para aproximar, e um dedo para mover o mapa ampliado. No computador: Ctrl + roda do mouse, arrastar
+   e os botões + − Ajustar. O zoom é só visual (transform em CSS): o grid, os tokens e os cliques seguem a mesma conta. */
+var zoomTab = { z: 1, tx: 0, ty: 0 };
+var zoomGesto = false, zoomSuprimir = false;
+var ZOOM_MAX = 6;
+
+function caixaTab() { return document.querySelector ? document.querySelector(".tab-box") : null; }
+function limiteZoom(z) { return Math.max(1, Math.min(ZOOM_MAX, z)); }
+function origemTab(box) {
+  var tab = box.querySelector(".tab"), r = box.getBoundingClientRect();
+  return { x: r.left + (tab ? tab.offsetLeft : 0), y: r.top + (tab ? tab.offsetTop : 0) };
+}
+
+function aplicarZoom(suave) {
+  var box = caixaTab(), tab = box && box.querySelector ? box.querySelector(".tab") : null;
+  if (!box || !tab) return;
+  var z = zoomTab.z, w = tab.offsetWidth || box.clientWidth, h = tab.offsetHeight || box.clientHeight;
+  zoomTab.tx = Math.min(0, Math.max(w * (1 - z), zoomTab.tx));
+  zoomTab.ty = Math.min(0, Math.max(h * (1 - z), zoomTab.ty));
+  tab.classList.toggle("suave", !!suave);
+  tab.style.transform = z === 1 ? "" : "translate(" + zoomTab.tx.toFixed(1) + "px," + zoomTab.ty.toFixed(1) + "px) scale(" + z.toFixed(3) + ")";
+  box.classList.toggle("zoom", z > 1);
+  var bt = box.querySelector('[data-zoom="reset"]');
+  if (bt) bt.textContent = z === 1 ? "Ajustar" : String(z.toFixed(1)).replace(".", ",") + "×";
+}
+
+/* Muda o zoom mantendo fixo o ponto do mapa que está sob (cx, cy), em coordenadas da tela. */
+function zoomPara(novo, cx, cy, suave) {
+  var box = caixaTab();
+  if (!box) return;
+  var o = origemTab(box), z0 = zoomTab.z;
+  novo = limiteZoom(novo);
+  var px = (cx - o.x - zoomTab.tx) / z0, py = (cy - o.y - zoomTab.ty) / z0;
+  zoomTab.z = novo;
+  zoomTab.tx = (cx - o.x) - px * novo;
+  zoomTab.ty = (cy - o.y) - py * novo;
+  aplicarZoom(suave);
+}
+
+function zoomBotao(k) {
+  var box = caixaTab();
+  if (!box) return;
+  var r = box.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  if (k === "mais") zoomPara(zoomTab.z * 1.5, cx, cy, true);
+  else if (k === "menos") zoomPara(zoomTab.z / 1.5, cx, cy, true);
+  else if (k === "reset") { zoomTab.z = 1; zoomTab.tx = 0; zoomTab.ty = 0; aplicarZoom(true); }
+  else if (k === "cheia") { if (emTelaCheia(box)) sairTelaCheia(); else entrarTelaCheia(); }
+}
+
+function ligarZoom(box) {
+  if (box.dataset && box.dataset.zoomLigado) return;
+  if (box.dataset) box.dataset.zoomLigado = "1";
+  var ptrs = {}, modo = null, ini = null, soltarTudo = false;
+  function lista() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
+  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud")); }
+  box.addEventListener("pointerdown", function (ev) {
+    if (ignorar(ev) || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+    zoomSuprimir = false;
+    if (soltarTudo) return;
+    ptrs[ev.pointerId] = { x: ev.clientX, y: ev.clientY, token: !!(ev.target.closest && ev.target.closest(".token")) };
+    var ps = lista();
+    if (ps.length === 2) {
+      var dx = ps[0].x - ps[1].x, dy = ps[0].y - ps[1].y;
+      ini = { d: Math.max(1, Math.sqrt(dx * dx + dy * dy)), z: zoomTab.z, tx: zoomTab.tx, ty: zoomTab.ty, mx: (ps[0].x + ps[1].x) / 2, my: (ps[0].y + ps[1].y) / 2 };
+      modo = "pinca"; zoomGesto = true; zoomSuprimir = true;
+    } else if (ps.length === 1 && zoomTab.z > 1 && !ps[0].token) {
+      modo = "toque"; ini = { x: ev.clientX, y: ev.clientY, tx: zoomTab.tx, ty: zoomTab.ty };
+    }
+  });
+  box.addEventListener("pointermove", function (ev) {
+    var p = ptrs[ev.pointerId];
+    if (!p) return;
+    p.x = ev.clientX; p.y = ev.clientY;
+    if (modo === "pinca") {
+      var ps = lista();
+      if (ps.length < 2) return;
+      var dx = ps[0].x - ps[1].x, dy = ps[0].y - ps[1].y, d = Math.sqrt(dx * dx + dy * dy);
+      var mx = (ps[0].x + ps[1].x) / 2, my = (ps[0].y + ps[1].y) / 2, o = origemTab(box), z = limiteZoom(ini.z * d / ini.d);
+      var px = (ini.mx - o.x - ini.tx) / ini.z, py = (ini.my - o.y - ini.ty) / ini.z;
+      zoomTab.z = z; zoomTab.tx = (mx - o.x) - px * z; zoomTab.ty = (my - o.y) - py * z;
+      aplicarZoom(false);
+    } else if (modo === "toque" || modo === "arrasta") {
+      var ddx = ev.clientX - ini.x, ddy = ev.clientY - ini.y;
+      if (modo === "toque") {
+        if (Math.sqrt(ddx * ddx + ddy * ddy) < 6) return; /* ainda é um toque: não é arrasto */
+        modo = "arrasta"; zoomGesto = true; zoomSuprimir = true;
+        try { box.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
+      }
+      zoomTab.tx = ini.tx + ddx; zoomTab.ty = ini.ty + ddy;
+      aplicarZoom(false);
+    }
+  });
+  function fim(ev) {
+    delete ptrs[ev.pointerId];
+    var n = Object.keys(ptrs).length;
+    if (modo === "pinca" && n < 2) { modo = null; soltarTudo = true; } /* o dedo que sobrou não vira arrasto */
+    if (n === 0) { modo = null; soltarTudo = false; setTimeout(function () { zoomGesto = false; }, 60); setTimeout(function () { zoomSuprimir = false; }, 400); }
+  }
+  box.addEventListener("pointerup", fim);
+  box.addEventListener("pointercancel", fim);
+  /* Depois de pinçar ou arrastar o mapa, o "clique" que o navegador gera não deve mover nem selecionar nada. */
+  box.addEventListener("click", function (ev) {
+    if (zoomSuprimir && !ignorar(ev)) { ev.stopPropagation(); ev.preventDefault(); zoomSuprimir = false; }
+  }, true);
+  box.addEventListener("wheel", function (ev) {
+    if (!ev.ctrlKey) return; /* só Ctrl + roda (ou pinça do touchpad); a roda sozinha continua rolando a página */
+    ev.preventDefault();
+    zoomPara(zoomTab.z * Math.exp(-ev.deltaY * 0.01), ev.clientX, ev.clientY, false);
+  }, { passive: false });
+}
+
+/* Tela cheia: usa a API do navegador; onde ela não existe (iPhone), cobre a janela inteira com CSS.
+   Tenta travar em paisagem (só Android permite); nos demais aparece a dica para girar o aparelho. */
+function emTelaCheia(box) { return !!(box && (document.fullscreenElement === box || box.classList.contains("cheia"))); }
+function travarPaisagem() {
+  try {
+    var p = window.screen && screen.orientation && screen.orientation.lock ? screen.orientation.lock("landscape") : null;
+    if (p && p.catch) p.catch(function () { /* o aparelho não deixa travar: fica a dica de girar */ });
+  } catch (e) { /* sem suporte: ignora */ }
+}
+function pseudoCheia(box) {
+  box.classList.add("cheia", "tc");
+  document.body.classList.add("sem-rolagem");
+  travarPaisagem();
+  zoomTab = { z: 1, tx: 0, ty: 0 };
+  aplicarZoom(false);
+  atualizarHud();
+}
+function entrarTelaCheia() {
+  var box = caixaTab();
+  if (!box) return;
+  var req = box.requestFullscreen || box.webkitRequestFullscreen, r = null;
+  if (req) { try { r = req.call(box); } catch (e) { r = null; } }
+  if (r && r.then) {
+    r.then(function () { box.classList.add("tc"); travarPaisagem(); zoomTab = { z: 1, tx: 0, ty: 0 }; aplicarZoom(false); atualizarHud(); }, function () { pseudoCheia(box); });
+  } else pseudoCheia(box);
+}
+function sairTelaCheia() {
+  var box = caixaTab();
+  if (!box) return;
+  if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) { /* ignora */ } }
+  box.classList.remove("cheia", "tc");
+  document.body.classList.remove("sem-rolagem");
+  try { if (window.screen && screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* ignora */ }
+  zoomTab = { z: 1, tx: 0, ty: 0 };
+  aplicarZoom(false);
+}
+document.addEventListener("fullscreenchange", function () {
+  var box = caixaTab();
+  if (box && !document.fullscreenElement && !box.classList.contains("cheia")) { box.classList.remove("tc"); zoomTab = { z: 1, tx: 0, ty: 0 }; }
+  aplicarZoom(false);
+});
+window.addEventListener("resize", function () { aplicarZoom(false); });
+
+/* Barra dentro da tela cheia (o card de combate fica fora do mapa e não aparece): turno atual e o botão principal. */
+function atualizarHud() {
+  var h = document.getElementById("tabHud");
+  if (!h) return;
+  h.innerHTML = MESTRE ? MESTRE.hudHTML() : hudJogador();
+}
+function hudJogador() {
+  var a = acaoPub, cb = a && a.combate, h = "";
+  if (cb && cb.fase === "turnos") {
+    var t = meuTok(), atual = (cb.ordem.filter(function (o) { return o.id === cb.atual; })[0] || {}).nome;
+    h += "<span>Rodada " + cb.rodada + " · " + (cb.minhaVez ? "<b>sua vez!</b>" + (t ? " restam " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + " casas" : "") : (atual ? "turno de " + esc(atual) : "…")) + "</span>";
+    if (cb.minhaVez) h += '<button type="button" class="primary" id="fimTurno">Encerrar turno</button>';
+  } else if (cb && cb.fase === "ini") {
+    h += "<span>Iniciativa: " + (cb.euPreciso ? "role no painel (saia da tela cheia)" : "aguardando os outros") + "</span>";
+  }
+  if (acaoMsg) h += '<span class="' + (acaoMsgErro ? "erro" : "") + '">' + esc(acaoMsg) + "</span>";
+  return h;
 }
 
 function listaTokensHTML(tokens, meu) {
@@ -851,6 +1044,7 @@ function mostrarAcaoMsg(txt, erro) {
   acaoMsg = txt; acaoMsgErro = !!erro;
   var m = document.getElementById("acaoMsg");
   if (m) { m.textContent = txt; m.classList.toggle("tok-aviso", !!erro); }
+  atualizarHud();
 }
 
 /* Casas azuis do próprio token: o que resta de deslocamento no turno; fora de combate, o deslocamento por movimento. */
@@ -872,12 +1066,11 @@ function desenharAcaoJogador() {
 function ligarCliqueJog() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
-  if (!meuTok() || !podeMover()) { selJog = false; svg.classList.remove("editavel"); svg.onclick = null; return; }
-  svg.classList.add("editavel");
+  if (!meuTok() || !podeMover()) { selJog = false; svg.onclick = null; return; }
   svg.onclick = function (ev) {
     if (movendoJog) return;
     var alvo = ev.target.closest ? ev.target.closest(".alc") : null;
-    if (alvo) { moverJogadorPara(parseInt(alvo.getAttribute("data-ax"), 10), parseInt(alvo.getAttribute("data-ay"), 10)); return; }
+    if (alvo) { moverJogadorPara(parseInt(alvo.getAttribute("data-ax"), 10), parseInt(alvo.getAttribute("data-ay"), 10), parseInt(alvo.getAttribute("data-ad"), 10)); return; }
     var g = ev.target.closest ? ev.target.closest(".token") : null;
     var t = meuTok();
     selJog = !!(g && t && g.dataset.tok === acaoPub.eu && !selJog);
@@ -890,10 +1083,11 @@ function ligarCliqueJog() {
 }
 
 /* O token já desliza na hora (otimista). Se o servidor recusar, ele volta e o motivo aparece. */
-function moverJogadorPara(x, y) {
+function moverJogadorPara(x, y, custo) {
   var t = meuTok();
   if (!t) return;
-  var casas = distMov(x, y, t.x, t.y), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
+  /* O custo vem da casa azul clicada (caminho livre mais curto, contornando tokens); sem ele, usa a distância reta. */
+  var casas = custo > 0 ? custo : distMov(x, y, t.x, t.y), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
   var antes = { x: t.x, y: t.y, gasto: t.gasto };
   t.x = x; t.y = y;
   if (turnos) t.gasto = (t.gasto || 0) + casas;
@@ -921,6 +1115,7 @@ function acaoAtualizarUI(trocouTela) {
   var m = document.getElementById("acaoMsg");
   if (m && !movendoJog) { m.textContent = acaoMsg; m.classList.toggle("tok-aviso", acaoMsgErro); }
   desenharAcaoJogador();
+  atualizarHud();
 }
 
 function pararAcao() { clearTimeout(acaoTimer); acaoTimer = null; acaoRodando = false; acaoGer++; }
@@ -1190,6 +1385,7 @@ app.addEventListener("click", function (e) {
   if (!b) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
+  if (b.dataset.zoom) { zoomBotao(b.dataset.zoom); return; }
   if (b.id === "iniRolar") { b.disabled = true; acaoOpJogador("ini", { rolar: true }); return; }
   if (b.id === "iniDigitar") {
     var vi = parseInt((document.getElementById("iniValor") || {}).value, 10);

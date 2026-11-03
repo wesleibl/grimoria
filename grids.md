@@ -118,7 +118,7 @@ O sistema desenha a grade por cima da imagem, na hora da ação. Motivos:
 - Tokens: adiciona todos os jogadores de uma vez, inimigos e aliados; muda nome, tipo e cor; marca como **oculto** (só o mestre vê).
 - Move os tokens arrastando, ou tocando no token e depois na casa de destino. Mostra a distância em casas e metros. Nos turnos do combate, o token selecionado mostra em azul-claro até onde ainda pode ir.
 - **Inimigos:** escolhe um inimigo do Bestiário e adiciona no grid (já vem com vida e defesa; nomes repetidos viram "Lobo de Mana 2"). Também há "Inimigo avulso". A barra de vida aparece só para o mestre.
-- **Armadilhas ocultas:** token em losango laranja com "!", criado **escondido**. O mestre escreve o efeito (ex.: "2d6 de dano, Destreza contra 13"). Só aparece para os jogadores quando o mestre desmarca "Escondida". Quando um token pisa numa armadilha, o mestre recebe o aviso com o efeito, mesmo se ela estiver escondida.
+- **Armadilhas ocultas:** token em losango laranja com "!", criado **escondido**. O mestre escreve o efeito (ex.: "2d6 de dano, Destreza contra 13"). Só aparece para os jogadores quando o mestre desmarca "Escondida". **Quando um jogador passa por uma armadilha (em qualquer casa do caminho, inclusive a final), só o mestre é avisado**: aparece uma faixa vermelha "⚠ ARMADILHA: *Nome* passou por *armadilha* (D4): *efeito*", o celular vibra, o aviso fica no registro e o painel da armadilha mostra "já acionada". O jogador **não** recebe nenhum aviso e a armadilha **continua escondida** para todos os jogadores (o mestre decide se e quando revelá-la).
 - **Tokens ocultos:** qualquer token pode ficar oculto (esmaecido para o mestre, invisível para os jogadores).
 
 ### Deslocamento
@@ -150,7 +150,8 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 - **Ao vivo:** o mestre marca "Cena ao vivo" e os jogadores online passam a ver o mapa e a mover o próprio token.
 - **Tokens por cenário:** cada cenário guarda os próprios tokens e posições. Trocar de cena e voltar não perde nada. Trocar de cena encerra o combate.
 - **Fora de combate**, o jogador se move livremente (sem limite de casas) enquanto a opção "Jogadores podem se mover fora de combate" estiver marcada. O mestre pode desmarcar para travar.
-- O jogador **nunca** move token que não seja o dele. Não pode parar numa casa ocupada por outro token visível. Quem pisa numa armadilha escondida a revela para todos.
+- O jogador **nunca** move token que não seja o dele. **Todo token, menos a armadilha, bloqueia:** um não passa pelo outro (nem para onde parar, nem no caminho). O servidor confere o caminho livre mais curto e recusa se não houver ("Não há caminho livre até lá") ou se a casa estiver ocupada.
+- Os tokens **ocultos** do mestre não bloqueiam os jogadores (eles ainda não sabem que estão ali, e uma recusa os denunciaria). O **mestre** move qualquer token livremente, sem as travas.
 
 ### Como o jogador se move
 
@@ -159,7 +160,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 3. O token **desliza** até a casa, com uma animação curta (mais longa quanto maior a distância, no máximo 0,9 s). Os outros jogadores veem o mesmo deslize quando a tela deles atualiza. Quem prefere menos movimento no sistema (configuração do aparelho) vê o token pular direto.
 4. A mensagem acima do mapa mostra a origem, o destino e quanto resta. Se o servidor recusar (casa ocupada, não é a vez, falta deslocamento), o token **volta** para onde estava e o motivo aparece em vermelho.
 
-**O que é "alcançável":** a distância em linha reta (horizontal + vertical, sem diagonal) até o que resta de deslocamento, o que forma um **losango** de casas azuis em volta do token, sem as casas ocupadas por outros tokens visíveis. Armadilhas e tokens derrotados não bloqueiam. Em **combate**, o alcance é o que resta no turno e diminui a cada movimento. **Fora de combate**, o alcance é o deslocamento do personagem a cada movimento, e dá para se mover quantas vezes quiser.
+**O que é "alcançável":** as casas que dá para chegar andando só na horizontal e na vertical, **contornando os tokens**, até o que resta de deslocamento. Sem obstáculos o alcance é um losango; com tokens no caminho ele se deforma (a casa logo atrás de um inimigo custa mais, e quem está cercado não tem para onde ir). O **custo é o tamanho do caminho livre mais curto**, não a distância reta, e é esse custo que desconta do deslocamento. Todo token bloqueia, **inclusive o derrotado**, menos a armadilha. Em **combate**, o alcance é o que resta no turno e diminui a cada movimento. **Fora de combate**, o alcance é o deslocamento do personagem **por movimento**, e dá para se mover quantas vezes quiser; o servidor também confere esse limite.
 
 ## 4.2 Combate por turnos
 
@@ -172,6 +173,23 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 7. **Derrotado:** o token fica cinza e sai dos turnos. Zerar a vida pelos botões −5 −1 +1 +5 marca como derrotado.
 8. Inimigos ocultos agem normalmente, mas para os jogadores aparece "algo se move nas sombras".
 9. O jogador vê a ordem, de quem é o turno e um registro dos acontecimentos públicos. A tela dele se atualiza a cada 2 s em combate (4 s fora dele).
+
+**Token selecionado (mestre):** é fácil ver que um token está aguardando o destino:
+
+- o token ganha um **halo que pulsa para fora**, e o cursor no mapa vira uma **mira**;
+- uma **faixa em destaque** acima do mapa diz "*Nome* selecionado em C3. Aguardando o destino: clique numa casa do mapa, ou arraste o token. Esc cancela.";
+- ao passar o mouse numa casa, ela é **destacada** e a faixa mostra a distância ("C3 → G3, 4 casas (6 m)");
+- **clicar de novo no token, ou apertar Esc**, cancela a seleção;
+- nos turnos do combate, as casas alcançáveis aparecem em azul-claro.
+
+**Foto no token:** se o personagem tem **foto salva** no perfil, o token mostra a foto (recortada em círculo) no lugar das iniciais. Quem não tem foto (inimigos, aliados, personagens sem foto) continua com as iniciais. Os outros jogadores veem a foto dos personagens que estão no mapa; fora disso, o retrato continua só do dono e do mestre.
+
+**Zoom e tela cheia (celular):**
+
+- **Pinça com dois dedos** no mapa para aproximar e afastar (até 6×). Com o mapa ampliado, **um dedo arrasta** o mapa. Tocar em tokens e casas continua funcionando com o zoom, e o toque que termina um arrasto não move nada.
+- Sem zoom, **a página rola normalmente** quando o dedo está sobre o mapa.
+- No canto do mapa há os botões **+**, **−**, **Ajustar** (volta ao tamanho original) e **⛶ Tela cheia**. No computador também vale **Ctrl + roda do mouse** (ou a pinça do touchpad) e arrastar com o mouse.
+- **Tela cheia:** o mapa ocupa a tela toda e o aparelho é travado em **paisagem** quando o sistema permite (Android). No iPhone o sistema não deixa travar: aparece o aviso "Gire o aparelho para o modo paisagem". Uma **barra embaixo do mapa** mostra o essencial, já que o card de combate fica fora do mapa: para o jogador, o turno e o botão **Encerrar turno** (e as mensagens); para o mestre, o aviso atual e o botão **Próximo turno**. Sair: botão ⛶ de novo, ou o gesto do sistema.
 
 **Resetar ação (mestre):** o botão **Resetar ação** (vermelho, na aba Ação) recomeça a ação do mapa atual, depois de um **popup de confirmação** que lista o que acontece:
 

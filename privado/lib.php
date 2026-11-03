@@ -198,9 +198,37 @@ function listarImagens(?callable $filtro = null): array
 function jogadorPodeVer(array $img, ?array $jog, array $locaisPub): bool
 {
     if ($img['tipo'] === 'mapa') return (bool)$img['liberado'];
-    if ($img['tipo'] === 'avatar') return $jog && $img['ref'] === $jog['id'];
+    /* O retrato é do dono, e também dos personagens que aparecem como token na cena que está no ar (o jogador vê os
+       outros pelo token). Fora disso, só o dono. */
+    if ($img['tipo'] === 'avatar') return ($jog && $img['ref'] === $jog['id']) || avatarEmCena((string)$img['ref']);
     if ($img['tipo'] === 'local') return in_array($img['ref'], $locaisPub, true);
     return false;
+}
+
+function avatarEmCena(string $jogId): bool
+{
+    $a = lerEstado('acao') ?? [];
+    if (empty($a['ativo']) || ($a['modo'] ?? 'grid') === 'foto') return false;
+    $campo = campoLer();
+    foreach (($a['tokens'] ?? []) as $t) {
+        if (is_array($t) && ($t['jog'] ?? null) === $jogId && ($t['tipo'] ?? '') === 'jogador' && isset($t['id'], $campo['pos'][(string)$t['id']]) && tokenVisivel($t, $campo)) return true;
+    }
+    return false;
+}
+
+/* id da imagem de retrato de cada personagem (jogadores.dados.img), para mostrar no token no lugar das iniciais. */
+function fotosJogadores(array $ids): array
+{
+    $ids = array_values(array_unique(array_filter($ids, 'is_string')));
+    if (!$ids) return [];
+    $st = db()->prepare('SELECT id, dados FROM jogadores WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+    $st->execute($ids);
+    $out = [];
+    foreach ($st->fetchAll() as $r) {
+        $img = (int)((json_decode((string)$r['dados'], true) ?: [])['img'] ?? 0);
+        if ($img > 0) $out[$r['id']] = $img;
+    }
+    return $out;
 }
 
 function idsLocaisPub(): array
@@ -293,10 +321,11 @@ const ATRIBUTOS = ['poder', 'destreza', 'inteligencia'];
 /* As posições dos tokens e o combate ficam numa chave só ('campo'), que SÓ o servidor altera, dentro de uma
    transação com bloqueio. Assim o mestre e vários jogadores podem agir ao mesmo tempo sem se sobrescrever.
    Estrutura: pos {id: {x, y, gasto}}, combate {fase: ini|turnos, rodada, turno, ini {id: {v, modo}}, ordem [id]},
-   revelados {id: true} (armadilhas acionadas), eventos [{t, txt, pub}], v (versão). */
+   revelados {id: true} (armadilhas reveladas pelo mestre aos jogadores), acionadas {id: true} (armadilhas por onde um
+   jogador passou; só o mestre sabe), eventos [{t, txt, pub, alerta}], v (versão). */
 function campoPadrao(array $c): array
 {
-    return $c + ['pos' => [], 'combate' => null, 'revelados' => [], 'eventos' => [], 'v' => 0];
+    return $c + ['pos' => [], 'combate' => null, 'revelados' => [], 'acionadas' => [], 'eventos' => [], 'v' => 0];
 }
 
 function campoLer(): array
@@ -322,9 +351,10 @@ function campoAtualizar(callable $fn): array
     return $c;
 }
 
-function campoEvento(array &$c, string $txt, ?string $pub = null): void
+/* pub = texto que os jogadores veem (null = só o mestre). alerta = o mestre recebe um aviso em destaque. */
+function campoEvento(array &$c, string $txt, ?string $pub = null, bool $alerta = false): void
 {
-    $c['eventos'][] = ['t' => time(), 'txt' => $txt, 'pub' => $pub];
+    $c['eventos'][] = ['t' => time(), 'txt' => $txt, 'pub' => $pub, 'alerta' => $alerta];
     $c['eventos'] = array_slice($c['eventos'], -30);
 }
 
@@ -388,6 +418,36 @@ function ordemIniciativa(array $tokens, array $ini): array
     return array_column($lista, 'id');
 }
 
+/* Caminho mais curto andando só na horizontal e na vertical, sem passar por casas bloqueadas (todo token, menos armadilhas).
+   Devolve as casas do caminho (sem a de partida), ou null se não houver caminho. A busca tenta primeiro andar na horizontal
+   em direção ao destino, então o caminho escolhido é determinístico (é nele que se confere se passou por armadilhas). */
+function rotaMinima(int $x0, int $y0, int $x1, int $y1, int $cols, int $rows, array $bloq): ?array
+{
+    if ($x0 === $x1 && $y0 === $y1) return [];
+    $pais = ["$x0,$y0" => null];
+    $fila = [[$x0, $y0]];
+    for ($i = 0; $i < count($fila); $i++) {
+        [$x, $y] = $fila[$i];
+        $dx = $x1 <=> $x;
+        $dy = $y1 <=> $y;
+        foreach ([[$x + $dx, $y], [$x, $y + $dy], [$x - $dx, $y], [$x, $y - $dy]] as [$nx, $ny]) {
+            $k = "$nx,$ny";
+            if ($nx < 0 || $ny < 0 || $nx >= $cols || $ny >= $rows || array_key_exists($k, $pais) || isset($bloq[$k])) continue;
+            $pais[$k] = "$x,$y";
+            if ($nx === $x1 && $ny === $y1) {
+                $rota = [];
+                for ($c = $k; $c !== "$x0,$y0"; $c = $pais[$c]) {
+                    [$cx, $cy] = array_map('intval', explode(',', $c));
+                    array_unshift($rota, [$cx, $cy]);
+                }
+                return $rota;
+            }
+            $fila[] = [$nx, $ny];
+        }
+    }
+    return null;
+}
+
 function avancarTurno(array &$campo, array $tokens): void
 {
     $ordem = $campo['combate']['ordem'] ?? [];
@@ -425,7 +485,7 @@ function campoOpMestre(string $op, array $c): array
                         'gasto' => max(0, (int)($p['gasto'] ?? ($campo['pos'][$id]['gasto'] ?? 0))),
                     ];
                 }
-                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id]);
+                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id]);
                 if (!empty($c['zerar'])) foreach ($campo['pos'] as $id => $_) $campo['pos'][$id]['gasto'] = 0;
                 break;
             case 'revelar':
@@ -487,7 +547,7 @@ function campoOpMestre(string $op, array $c): array
             case 'resetar':
                 /* Zera a ação do mapa atual: tira os tokens informados (e as armadilhas acionadas deles), encerra o combate
                    e apaga o registro. Os tokens de outros mapas não são tocados. */
-                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id]);
+                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id]);
                 $campo['combate'] = null;
                 $campo['eventos'] = [];
                 break;
@@ -534,31 +594,48 @@ function campoOpJogador(array $u, string $op, array $c): never
                 if (!$pos) erro('Posição desconhecida. Avise o mestre.', 409);
                 $x = (int)($c['x'] ?? -1);
                 $y = (int)($c['y'] ?? -1);
-                if ($x < 0 || $y < 0 || $x >= (int)($a['cols'] ?? 200) || $y >= (int)($a['rows'] ?? 200)) erro('Esse lugar fica fora do mapa.');
-                /* Só horizontal e vertical: o custo é a soma das diferenças. A diagonal não serve para andar. */
-                $casas = abs($x - $pos['x']) + abs($y - $pos['y']);
-                if ($casas === 0) return;
+                $cols = (int)($a['cols'] ?? 200);
+                $rows = (int)($a['rows'] ?? 200);
+                if ($x < 0 || $y < 0 || $x >= $cols || $y >= $rows) erro('Esse lugar fica fora do mapa.');
+                if ($x === (int)$pos['x'] && $y === (int)$pos['y']) return;
                 if ($fase === 'turnos') {
                     if ($atual !== $meu) erro('Não é a sua vez.', 409);
-                    $resta = (int)($eu['desl'] ?? 6) - (int)($pos['gasto'] ?? 0);
-                    if ($casas > $resta) erro('Deslocamento insuficiente: restam ' . max(0, $resta) . ' casas.', 409);
                 } elseif (!($a['livre'] ?? true)) {
                     erro('O mestre travou o movimento por enquanto.', 409);
                 }
+                /* Todo token, menos armadilha, bloqueia: um não passa pelo outro. Tokens ocultos não bloqueiam (o jogador ainda
+                   não sabe que estão ali, e uma recusa o denunciaria). */
+                $bloq = [];
                 foreach ($tokens as $id => $t) {
-                    if ((string)$id === $meu || ($t['tipo'] ?? '') === 'armadilha' || !tokenVisivel($t, $campo) || !empty($t['morto'])) continue;
+                    if ((string)$id === $meu || ($t['tipo'] ?? '') === 'armadilha' || !tokenVisivel($t, $campo)) continue;
                     $p = $campo['pos'][(string)$id] ?? null;
-                    if ($p && $p['x'] === $x && $p['y'] === $y) erro('Essa casa está ocupada.', 409);
+                    if ($p) $bloq[(int)$p['x'] . ',' . (int)$p['y']] = true;
+                }
+                if (isset($bloq["$x,$y"])) erro('Essa casa está ocupada.', 409);
+                /* Só horizontal e vertical, contornando os tokens: o custo é o tamanho do caminho livre mais curto. */
+                $rota = rotaMinima((int)$pos['x'], (int)$pos['y'], $x, $y, $cols, $rows, $bloq);
+                if ($rota === null) erro('Não há caminho livre até lá: há tokens no meio do caminho.', 409);
+                $casas = count($rota);
+                $resta = (int)($eu['desl'] ?? 6) - ($fase === 'turnos' ? (int)($pos['gasto'] ?? 0) : 0);
+                if ($casas > $resta) {
+                    erro(($fase === 'turnos' ? 'Deslocamento insuficiente: restam ' . max(0, $resta) . ' casas' : 'Longe demais: você anda até ' . max(0, $resta) . ' casas por movimento') .
+                        ' (o caminho livre até lá tem ' . $casas . ').', 409);
                 }
                 $campo['pos'][$meu]['x'] = $x;
                 $campo['pos'][$meu]['y'] = $y;
                 if ($fase === 'turnos') $campo['pos'][$meu]['gasto'] = (int)($pos['gasto'] ?? 0) + $casas;
-                foreach ($tokens as $id => $t) {
-                    $p = $campo['pos'][(string)$id] ?? null;
-                    if (($t['tipo'] ?? '') !== 'armadilha' || !$p || $p['x'] !== $x || $p['y'] !== $y) continue;
-                    $campo['revelados'][(string)$id] = true;
-                    $casa = nomeColuna($x) . ($y + 1);
-                    campoEvento($campo, ($eu['nome'] ?? 'Jogador') . ' pisou em ' . ($t['nome'] ?? 'armadilha') . " ($casa)" . (!empty($t['efeito']) ? ': ' . $t['efeito'] : '') . '.', ($eu['nome'] ?? 'Jogador') . ' acionou uma armadilha!');
+                /* Armadilha em qualquer casa do caminho (inclusive a final): SÓ o mestre é avisado. Para os jogadores nada
+                   muda: a armadilha continua escondida e não aparece mensagem. */
+                $avisadas = [];
+                foreach ($rota as [$rx, $ry]) {
+                    foreach ($tokens as $id => $t) {
+                        $p = $campo['pos'][(string)$id] ?? null;
+                        if (($t['tipo'] ?? '') !== 'armadilha' || !$p || (int)$p['x'] !== $rx || (int)$p['y'] !== $ry || isset($avisadas[(string)$id])) continue;
+                        $avisadas[(string)$id] = true;
+                        $campo['acionadas'][(string)$id] = true;
+                        $casa = nomeColuna($rx) . ($ry + 1);
+                        campoEvento($campo, ($eu['nome'] ?? 'Jogador') . ' passou por ' . ($t['nome'] ?? 'armadilha') . " ($casa)" . (!empty($t['efeito']) ? ': ' . $t['efeito'] : '') . '.', null, true);
+                    }
                 }
                 break;
             default:
@@ -590,6 +667,7 @@ function acaoPublica(?string $jogId = null): array
     $tokens = [];
     $vis = [];
     $euId = null;
+    $fotos = fotosJogadores(array_map(fn($t) => is_array($t) && ($t['tipo'] ?? '') === 'jogador' ? ($t['jog'] ?? null) : null, $a['tokens'] ?? []));
     foreach (($a['tokens'] ?? []) as $t) {
         if (!is_array($t) || !isset($t['id'])) continue;
         $id = (string)$t['id'];
@@ -598,6 +676,7 @@ function acaoPublica(?string $jogId = null): array
         $o = array_intersect_key($t, array_flip(['id', 'nome', 'tipo', 'cor', 'jog', 'morto']));
         $o['x'] = (int)$p['x'];
         $o['y'] = (int)$p['y'];
+        if (($t['tipo'] ?? '') === 'jogador' && isset($fotos[$t['jog'] ?? ''])) $o['foto'] = $fotos[$t['jog']];
         /* Deslocamento e movimento gasto só dos jogadores e aliados. Vida, defesa, efeito de armadilha e Destreza nunca saem. */
         if (in_array($t['tipo'] ?? '', ['jogador', 'aliado'], true)) {
             $o['desl'] = (int)($t['desl'] ?? 6);

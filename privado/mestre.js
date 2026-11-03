@@ -1733,8 +1733,8 @@ function localExtraMestre(l) {
     ENVIADAS.map(function (e) { return '<option value="' + e.id + '"' + (c && c.id === e.id ? " selected" : "") + ">" + esc(e.nome) + "</option>"; }).join("") + "</select></label>";
   if (!ENVIADAS.length) h += '<p class="mdica">Você ainda não tem cenários. Crie na aba Cenários e volte aqui para ligar.</p>';
   else if (!c) h += '<p class="mdica">Ligue um cenário para os jogadores verem a foto ao clicar neste local, depois de revelado.</p>';
-  if (c) h += '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> Cenário liberado aos jogadores</label>" +
-    (cenLiberado(c.id) ? "" : '<p class="mdica">Oculto: mesmo com o local revelado, os jogadores ainda não veem este cenário.</p>');
+  if (c) h += '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> 2. Mostrar o cenário (nome, foto e resumo) ao clicar neste local</label>" +
+    '<p class="mdica rev-dica">' + (cenLiberado(c.id) ? "Quem clicar neste local (já visível no mapa) vê o nome, a foto e o resumo do cenário." : "Desmarcado: mesmo com o local visível, quem clicar nele não vê nada do cenário. Marque quando quiser mostrar o lugar.") + "</p>";
   if (c) h += '<div class="controls"><button type="button" data-cenir="' + c.id + '">Abrir o cenário</button><button type="button" data-cenusar="' + c.id + '">Usar na Ação</button><button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto</button></div>' +
     '<p class="mdica">Os jogadores veem só a foto, e só quando o local estiver revelado. A história e o grid ficam com você.</p>';
   return h;
@@ -2074,7 +2074,7 @@ function clickCenarios(b) {
 
 var CENAS = null, ENVIADAS = [], cenasMsg = "", tokSel = null, confirmarLimpar = false, upMsg = "";
 /* Posições e combate vêm do servidor (campo), que é quem manda: o mestre e os jogadores agem ao mesmo tempo. */
-var CAMPO = { pos: {}, combate: null, revelados: {}, eventos: [], v: 0 };
+var CAMPO = { pos: {}, combate: null, revelados: {}, acionadas: {}, eventos: [], v: 0 };
 var campoTimer = null, campoGer = 0, campoRodando = false, arrastando = false;
 var TIPOS_TOKEN = [["jogador", "Jogador"], ["aliado", "Aliado"], ["inimigo", "Inimigo"]];
 
@@ -2149,6 +2149,19 @@ function enviarPos(lista, extra) {
 }
 
 function revelado(t) { return !!(CAMPO.revelados || {})[t.id]; }
+function acionada(t) { return !!(CAMPO.acionadas || {})[t.id]; }
+
+/* Quando um jogador passa por uma armadilha, só o mestre fica sabendo: o aviso aparece em destaque e fica no registro. */
+var eventosVistos = {};
+function chaveEvento(e) { return e.t + "|" + e.txt; }
+function marcarEventosVistos() { (CAMPO.eventos || []).forEach(function (e) { eventosVistos[chaveEvento(e)] = true; }); }
+function avisarArmadilhas() {
+  var novos = (CAMPO.eventos || []).filter(function (e) { return e.alerta && !eventosVistos[chaveEvento(e)]; });
+  marcarEventosVistos();
+  if (!novos.length) return;
+  infoTok("⚠ ARMADILHA: " + novos.map(function (e) { return e.txt; }).join(" | "), true, false);
+  try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* sem vibração: ignora */ }
+}
 function atualId() {
   var cb = CAMPO.combate;
   return cb && cb.fase === "turnos" ? (cb.ordem || [])[cb.turno] || null : null;
@@ -2216,6 +2229,8 @@ function selecionarNaAcao(envioId, gridId) {
 
 function selecionarTok(id) {
   tokSel = id;
+  var sv = document.getElementById("tabSvg");
+  if (sv && sv.classList) sv.classList.toggle("esperando", !!id);
   document.querySelectorAll("#tabSvg .token").forEach(function (n) { n.classList.toggle("sel", n.dataset.tok === id); });
   var p = document.getElementById("tokPainel");
   if (p) p.innerHTML = tokPainelHTML();
@@ -2241,7 +2256,7 @@ function tokPainelHTML() {
     '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>';
   if (trap) {
     h += '<label>Efeito<input class="sorteio-in" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="ex.: 2d6 de dano, Destreza contra 13"></label>' +
-      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (t.oculto && revelado(t) ? " (já acionada)" : "") + "</label>";
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (acionada(t) ? " (já acionada)" : "") + "</label>";
   } else {
     var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0;
     h += '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
@@ -2326,6 +2341,7 @@ function emEdicao(id) {
 
 function renderAcaoUI() {
   marcarImersivo();
+  atualizarHud();
   var c = document.getElementById("combatePainel");
   if (c && !emEdicao("combatePainel")) c.innerHTML = combatePainelHTML();
   var p = document.getElementById("tokPainel");
@@ -2350,6 +2366,7 @@ function pollCampo(ger) {
     CAMPO = r.campo;
     aplicarCampo();
     renderAcaoUI();
+    avisarArmadilhas();
   }, function () { /* sem conexão: tenta de novo no próximo ciclo */ }).then(depois);
 }
 
@@ -2376,7 +2393,7 @@ function viewAcaoMestre() {
     return h + '<p class="mdica">' + (!grids.length ? "Este cenário ainda não tem mapa de grid, então só dá para mostrar a foto. Para combater, adicione uma imagem de grid na aba Cenários." : (!g ? "Escolha um mapa de grid acima para usar o grid e os tokens." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.")) + "</p>" +
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
-  h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m. O movimento é só na horizontal e na vertical: o custo é a soma das casas andadas, sem diagonal.</p>';
+  h += '<p class="mdica" id="tokInfo" role="status">' + esc(INFO_PADRAO) + "</p>";
   h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   h += '<div class="controls">' +
     '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
@@ -2400,7 +2417,12 @@ function viewAcaoMestre() {
 
 function desenharAcaoMestre() {
   var a = acaoEst(), g = gridDe(a);
-  var tokens = a.tokens.map(function (t) { var c = extras({}, t); c.oculto = !!t.oculto && !revelado(t); return c; });
+  var tokens = a.tokens.map(function (t) {
+    var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
+    c.oculto = !!t.oculto && !revelado(t);
+    if (j && j.img) c.foto = j.img; /* foto do personagem no lugar das iniciais */
+    return c;
+  });
   /* Nos turnos, o token selecionado mostra em azul até onde ainda pode ir. */
   var alcance = function (cols, rows) {
     var t = tokSel ? acharTok(tokSel) : null;
@@ -2410,14 +2432,61 @@ function desenharAcaoMestre() {
   desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: tokens, sel: tokSel, atual: atualId(), alcance: alcance, mestre: true, depois: ligarArraste });
 }
 
-function infoTok(txt, aviso) {
+var INFO_PADRAO = "Clique num token para selecioná-lo; depois clique na casa de destino (ou arraste o token). Cada casa tem 1,5 m. O movimento é só na horizontal e na vertical: o custo é a soma das casas andadas, sem diagonal.";
+var ultimaInfo = "";
+function infoTok(txt, aviso, espera) {
+  ultimaInfo = txt;
+  atualizarHud();
   var p = document.getElementById("tokInfo");
   if (!p) return;
   p.textContent = txt;
   p.classList.toggle("tok-aviso", !!aviso);
+  p.classList.toggle("aguardando", !!espera);
 }
 
-/* O deslocamento só conta durante os turnos do combate. Fora dele (preparo, conversa, fase de iniciativa) o token anda livre. */
+/* Barra da tela cheia (mestre): o aviso atual e o botão do turno. */
+function hudMestre() {
+  var h = ultimaInfo ? "<span>" + esc(ultimaInfo) + "</span>" : "";
+  if (emTurnos()) {
+    var t = acharTok(atualId() || "");
+    h += "<span>Rodada " + CAMPO.combate.rodada + (t ? " · turno de " + esc(t.nome) : "") + '</span><button type="button" class="primary" id="cmbProximo">Próximo turno</button>';
+  }
+  return h;
+}
+
+/* Faixa de destaque: o token está selecionado e o mapa aguarda o destino. */
+function avisarSelecao(t) {
+  infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) +
+    (movel(t) && emTurnos() ? " (deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + ")" : "") +
+    ". Aguardando o destino: clique numa casa do mapa, ou arraste o token. Esc cancela.", false, true);
+}
+
+function limparSelecao() {
+  tokSel = null;
+  renderAcaoUI();
+  infoTok(INFO_PADRAO);
+}
+
+/* Prévia da casa sob o mouse enquanto um token está selecionado, com a distância. */
+function mostrarHover(svg, c) {
+  if (!svg.querySelector || !document.createElementNS || !tabGeo) return;
+  var hv = svg.querySelector(".hoverCell");
+  if (!hv) {
+    hv = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    hv.setAttribute("class", "hoverCell");
+    svg.appendChild(hv);
+  }
+  hv.setAttribute("x", (c.x * tabGeo.cw).toFixed(1));
+  hv.setAttribute("y", (c.y * tabGeo.ch).toFixed(1));
+  hv.setAttribute("width", tabGeo.cw.toFixed(1));
+  hv.setAttribute("height", tabGeo.ch.toFixed(1));
+  hv.style.display = "";
+}
+function esconderHover(svg) {
+  var hv = svg.querySelector ? svg.querySelector(".hoverCell") : null;
+  if (hv) hv.style.display = "none";
+}
+
 function emTurnos() { return !!(CAMPO.combate && CAMPO.combate.fase === "turnos"); }
 
 function textoDistancia(t, ox, oy, c) {
@@ -2459,26 +2528,39 @@ function ligarArraste() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
   svg.classList.add("editavel");
-  var arr = null;
+  svg.classList.toggle("esperando", !!tokSel);
+  var arr = null, toque = null;
   svg.onpointerdown = function (ev) {
     var g = ev.target.closest ? ev.target.closest(".token") : null;
     if (!g) {
-      var sel = tokSel ? acharTok(tokSel) : null, c = celulaTab(svg, ev);
-      if (sel && c && (c.x !== sel.x || c.y !== sel.y)) moverTok(sel, c, sel.x, sel.y);
+      /* Toque numa casa vazia: só vira movimento ao soltar, sem arrasto (assim dá para arrastar o mapa ampliado). */
+      toque = tokSel ? { x: ev.clientX, y: ev.clientY } : null;
       return;
     }
+    toque = null;
     var t = acharTok(g.dataset.tok);
     if (!t) return;
     ev.preventDefault();
+    var jaSel = tokSel === t.id;
     selecionarTok(t.id);
-    arr = { t: t, g: g, ox: t.x, oy: t.y, c: null };
+    arr = { t: t, g: g, ox: t.x, oy: t.y, c: null, jaSel: jaSel };
     arrastando = true;
     svg.classList.add("drag");
     try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
-    infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) + (movel(t) && emTurnos() ? ". Deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + "." : ".") + " Arraste, ou toque na casa de destino.");
+    avisarSelecao(t);
   };
   svg.onpointermove = function (ev) {
-    if (!arr) return;
+    if (!arr) {
+      /* Sem arrastar: se há token selecionado, destaca a casa sob o mouse e mostra a distância. */
+      var sel = tokSel ? acharTok(tokSel) : null;
+      if (!sel) return;
+      var hc = celulaTab(svg, ev);
+      if (!hc) return;
+      mostrarHover(svg, hc);
+      var rh = textoDistancia(sel, sel.x, sel.y, hc);
+      infoTok(rh[0], rh[1], true);
+      return;
+    }
     var c = celulaTab(svg, ev);
     if (!c) return;
     arr.c = c;
@@ -2486,14 +2568,25 @@ function ligarArraste() {
     var r = textoDistancia(arr.t, arr.ox, arr.oy, c);
     infoTok(r[0], r[1]);
   };
-  svg.onpointerup = svg.onpointercancel = function () {
-    if (!arr) return;
+  svg.onpointerup = svg.onpointercancel = function (ev) {
+    if (!arr) {
+      var tq = toque;
+      toque = null;
+      if (tq && ev && ev.type === "pointerup" && !zoomGesto && Math.abs(ev.clientX - tq.x) < 8 && Math.abs(ev.clientY - tq.y) < 8) {
+        var sel = tokSel ? acharTok(tokSel) : null, c = celulaTab(svg, ev);
+        if (sel && c && (c.x !== sel.x || c.y !== sel.y)) { esconderHover(svg); moverTok(sel, c, sel.x, sel.y); }
+      }
+      return;
+    }
     var a2 = arr;
     arr = null;
     arrastando = false;
     svg.classList.remove("drag");
-    if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) moverTok(a2.t, a2.c, a2.ox, a2.oy, true);
+    if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) { moverTok(a2.t, a2.c, a2.ox, a2.oy, true); return; }
+    /* Clicar de novo no token já selecionado (sem arrastar) cancela a seleção. */
+    if (!a2.c && a2.jaSel) limparSelecao();
   };
+  svg.onpointerleave = function () { esconderHover(svg); };
 }
 
 function redesenharTokens() {
@@ -2594,7 +2687,13 @@ function clickAcao(b) {
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
   if (b.id === "imersao") { a.ativo = !a.ativo; salvarAcao(); renderizar(); return true; }
   if (b.id === "acaoReset") { resetarAcao(); return true; }
-  if (b.dataset.tsel) { selecionarTok(b.dataset.tsel); desenharAcaoMestre(); return true; }
+  if (b.dataset.tsel) {
+    selecionarTok(b.dataset.tsel);
+    desenharAcaoMestre();
+    var ts = acharTok(b.dataset.tsel);
+    if (ts) avisarSelecao(ts);
+    return true;
+  }
   if (b.dataset.cenir) { cenSel = parseInt(b.dataset.cenir, 10); location.hash = "#cenarios"; return true; }
   /* --- tokens --- */
   if (b.id === "tokJogadores") {
@@ -2732,6 +2831,7 @@ MESTRE = {
   nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
+  hudHTML: hudMestre,
   regrasExtra: regrasExtraMestre,
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,
@@ -2744,6 +2844,7 @@ MESTRE = {
     jogs = d.jogadores || [];
     sorteio = null;
     if (d.campo) CAMPO = d.campo;
+    marcarEventosVistos(); /* o histórico que já existe ao entrar não dispara aviso */
     /* Os cenários precisam estar carregados antes de sincronizar o mapa dos jogadores, ou os vínculos se perderiam. */
     ENVIADAS = d.enviadas || [];
     aplicarCampo();
@@ -2870,3 +2971,8 @@ MESTRE = {
     return false;
   }
 };
+
+/* Esc cancela a seleção do token na aba Ação. */
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && tokSel && rotaAtual() === "acao" && MESTRE) limparSelecao();
+});
