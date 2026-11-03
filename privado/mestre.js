@@ -79,6 +79,14 @@ var GRIMORIOS = [
       sp("Fúria Titânica", 4, "ultimate", "Por 3 turnos, +2 em todas as rolagens de Poder e +2 de dano.")
     ], futuras: [], nota: "" },
 
+  { nome: "Grimório de Lâminas", attr: "destreza", papel: "Dano", sub: "dano corpo a corpo e precisão", tier: "",
+    spells: [
+      sp("Corte Veloz", 1, "ataque simples", "d20 + Destreza, dano 1d6."),
+      sp("Lâmina Conjurada", 1, "básico", "Cria uma lâmina de mana na mão. Até o fim do combate, seus ataques corpo a corpo causam +1 de dano. Recriar a lâmina não gasta mana de novo."),
+      sp("Chuva de Lâminas", 2, "médio", "Lança lâminas em até 3 inimigos próximos: d20 + Destreza contra cada um, dano 1d4 em quem for atingido."),
+      sp("Dança das Mil Lâminas", 4, "ultimate", "d20 + Destreza contra todos os inimigos próximos, dano 2d6 em quem for atingido. Se acertar 3 ou mais, você ganha +2 de Defesa até o fim da próxima rodada.")
+    ], futuras: [], nota: "Um grimório de dano direto, sem controle nem proteção. Frágil de perto: depende de acertar primeiro." },
+
   { nome: "Grimório de Água", attr: "inteligencia", papel: "Suporte", sub: "controle e suporte", tier: "",
     spells: [
       sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d4 e empurra o alvo 1 casa."),
@@ -235,7 +243,7 @@ var ELEM_EXISTENTES = {
   "Grimório de Sombras": "Sombra", "Grimório de Vento": "Vento", "Grimório de Correntes": "Metal", "Grimório de Reforço": "Corpo",
   "Grimório de Água": "Água", "Grimório de Raios": "Raio", "Grimório de Terra": "Terra", "Grimório de Ilusão": "Mente",
   "Grimório Antimagia": "Antimagia", "Grimório de Veneno": "Veneno", "Grimório de Gravidade": "Cosmos", "Grimório do Tempo": "Cosmos",
-  "Grimório de Espíritos": "Espírito", "Grimório de Sangue": "Sangue"
+  "Grimório de Espíritos": "Espírito", "Grimório de Sangue": "Sangue", "Grimório de Lâminas": "Lâmina"
 };
 var EXTRAS_EXISTENTES = {
   "Dardo Tóxico": { aplica: ["Envenenado"], dot: dotRes("Poder", 12) },
@@ -268,6 +276,7 @@ var NIVEL3 = {
   "Grimório de Gravidade": fu(2, "Leveza Forçada", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, o inimigo flutua por 1 turno, com deslocamento 0 e -3 de Defesa."),
   "Grimório do Tempo": fu(2, "Eco do Tempo", 2, "médio", "Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana."),
   "Grimório de Espíritos": fu(2, "Possessão Benigna", 3, "médio", "Um espírito entra em um aliado por 2 turnos: ele ganha +2 em todas as rolagens e +2 de dano. Você não pode invocar outro espírito nesse período."),
+  "Grimório de Lâminas": fu(2, "Corte Perfurante", 2, "médio", "d20 + Destreza, dano 1d8. O golpe ignora a redução de dano do alvo."),
   "Grimório de Sangue": fu(2, "Lâmina de Sangue", 2, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
   "Grimório do Gelo": fu(2, "Lança Gélida", 3, "médio", "d20 + Destreza, dano 2d6. Se o alvo estiver lento ou molhado, ele fica congelado por 1 turno.", { aplica: ["Congelado"] }),
   "Grimório da Luz Vingativa": fu(2, "Escudo Penitente", 2, "médio", "Um aliado ganha +2 de Defesa até o fim da próxima rodada. Quem o atacar sofre 1d4 de dano radiante."),

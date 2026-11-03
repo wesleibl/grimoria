@@ -168,7 +168,7 @@ Cada grimório tem 3 feitiços: **básico (1 mana)**, **médio (2 mana)** e **ul
 ### Por atributo
 
 - **Poder:** Chamas, Reforço, Terra, Antimagia, Sangue
-- **Destreza:** Sombras, Vento, Raios, Veneno
+- **Destreza:** Sombras, Vento, Raios, Veneno, Lâminas
 - **Inteligência:** Luz Curativa, Correntes, Água, Ilusão, Gravidade, Tempo, Espíritos
 
 ---
@@ -197,6 +197,13 @@ Cada grimório tem 3 feitiços: **básico (1 mana)**, **médio (2 mana)** e **ul
 - **Laço (1):** teste de Inteligência contra a Defesa do inimigo. Se acertar, o alvo perde 3 de deslocamento.
 - **Prisão de Aço (2):** prende um inimigo por 1 turno (ele não age). Teste de Inteligência contra a Defesa dele.
 - **Jaula Total (4):** prende até 3 inimigos por 1 turno.
+
+### Grimório de Lâminas (dano corpo a corpo e precisão, usa Destreza)
+- **Corte Veloz (1):** d20 + Destreza, dano 1d6.
+- **Lâmina Conjurada (1):** cria uma lâmina de mana. Até o fim do combate, os ataques corpo a corpo causam +1 de dano.
+- **Chuva de Lâminas (2):** até 3 inimigos próximos: d20 + Destreza contra cada um, dano 1d4 em quem for atingido.
+- **Dança das Mil Lâminas (4):** d20 + Destreza contra todos os inimigos próximos, dano 2d6. Se acertar 3 ou mais, +2 de Defesa até o fim da próxima rodada.
+- **Nível 3, Corte Perfurante (2):** d20 + Destreza, dano 1d8, ignora a redução de dano do alvo.
 
 ### Grimório de Reforço (fortalecimento, usa Poder)
 - **Punho Pesado (1):** o próximo ataque físico causa +1d6 de dano.
