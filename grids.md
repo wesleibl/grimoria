@@ -203,8 +203,16 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 ## 4.3 Perfil do jogador: status e atributos
 
+> **Nada no Perfil é salvo sozinho.** São **dois botões de salvar separados**: **Salvar atributos** (a distribuição dos 5 pontos na criação e, depois, o bônus) e **Salvar informações** (nome do personagem, altura, descrição, sonho e medo). Só a **foto** é salva na hora, porque escolher o arquivo já é a confirmação.
+>
+> - O que o jogador digita ou toca fica num **rascunho** que sobrevive a trocar de aba. O botão só **habilita** quando há alteração, e ao lado dele aparece **"Alterações não salvas"** (ou "Tudo salvo", "Informações salvas.", "Atributos salvos.").
+> - Enquanto envia, o botão vira **"Salvando…"** e fica desabilitado: vários cliques seguidos geram **um envio só**.
+> - **Descartar** (informações) e **Desfazer** (atributos) voltam ao que está salvo.
+> - Se o servidor recusar, o rascunho **não se perde**, o botão volta e aparece o aviso.
+> - Com alteração não salva, o menu marca o **Perfil com ●** e o navegador pede confirmação antes de fechar ou recarregar a página.
+
 - **Status mostrados:** Nível, Vida máx., Mana, Defesa (10 + Destreza), Redução de dano (= Poder) e Deslocamento (6 + 1 a cada 2 de Destreza). A tabela de níveis completa fica só para o mestre. A **Vida** vem do nível (20, 24, 28, 32, 36). A **Mana** é 10 + 1 a cada 2 pontos de Inteligência.
-- **No celular:** a tela de atributos foi pensada para o toque. Cada atributo é um **cartão** com o que ele faz, botões **− e +** grandes (60 px), o valor em tamanho de destaque e marcadores dos pontos. Os status (Defesa, mana, deslocamento...) mostram a **prévia ao vivo** do que o jogador escolhe. A barra **"Restam N de 5" com o botão Salvar fica fixa** no fim da tela, sem precisar rolar. Ao salvar, um **popup de confirmação** mostra os valores e avisa que a base trava. Depois de salvo, o bônus também é por botões (−5 a +10), salvo sozinho um instante depois do último toque. O Perfil inteiro empilha em uma coluna.
+- **No celular:** a tela de atributos foi pensada para o toque. Cada atributo é um **cartão** com o que ele faz, botões **− e +** grandes (60 px), o valor em tamanho de destaque e marcadores dos pontos. Os status (Defesa, mana, deslocamento...) mostram a **prévia ao vivo** do que o jogador escolhe. A barra **"Restam N de 5" com o botão Salvar fica fixa** no fim da tela, sem precisar rolar. Ao salvar, um **popup de confirmação** mostra os valores e avisa que a base trava. Depois de salvo, o bônus também é por botões (−5 a +10) e **só vale ao apertar "Salvar atributos"**. O Perfil inteiro empilha em uma coluna.
 - **Criação:** o jogador distribui **+5 pontos** entre Poder, Destreza e Inteligência, no máximo **+3** em cada. Depois de **Salvar atributos**, a base fica **travada**.
 - **Bônus:** um campo por atributo, sempre editável, para anotar os pontos ganhos ao subir de nível (+1 por nível). O total é base + bônus. Se passar do limite do nível (+3, +3, +4, +4, +5), aparece um aviso, e o mestre confere.
 - **Mestre:** na aba Jogadores, "Ficha (atributos)" permite mudar o nível, a base e o bônus de qualquer jogador. Desmarcar "Atributos travados" apaga a base e devolve os 5 pontos para o jogador distribuir de novo (pede confirmação).

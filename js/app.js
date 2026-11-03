@@ -509,7 +509,9 @@ function viewMeuGrimorio() {
 
 /* ============================ PERFIL ============================ */
 
-var perfilPend = {}, perfilMsg = "";
+/* O Perfil só salva quando o jogador aperta um botão: um para as informações do personagem e outro para os atributos.
+   Enquanto isso, o que ele digita ou toca fica num RASCUNHO (perfilRasc, bonusRasc), que sobrevive a trocar de aba. */
+var perfilMsg = "", perfilRasc = null, bonusRasc = null, salvandoInfo = false, salvandoBonus = false, infoMsg = "", bonusMsg = "";
 var ATRS = [["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]];
 var VIDA_NIVEL = [20, 24, 28, 32, 36], LIM_NIVEL = [3, 3, 4, 4, 5];
 var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
@@ -566,20 +568,24 @@ function statusHTML(j) {
       '<div class="atr-barra" role="status"><span class="atr-resta">' + (resta === 0 ? "Tudo distribuído" : "Restam <b>" + resta + "</b> de 5") + "</span>" +
       '<button type="button" class="primary" id="perfilSalvarAtr"' + (resta === 0 ? "" : " disabled") + ">Salvar atributos</button></div></section>";
   }
-  var lim = LIM_NIVEL[n - 1];
-  return '<h2>Status</h2><section class="panel ficha">' + statsHTML(j) + "<h3>Atributos</h3>" +
+  var lim = LIM_NIVEL[n - 1], jr = extras({}, j), sujo = bonusSujo();
+  jr.bonus = bonusRasc || j.bonus;
+  return '<h2>Status</h2><section class="panel ficha">' + statsHTML(jr) + (sujo ? '<p class="mdica">Os números acima mostram a <b>prévia</b> do bônus, que ainda não foi salvo.</p>' : "") + "<h3>Atributos</h3>" +
     '<div class="atr-cards">' + ATRS.map(function (a) {
-      var tot = atrTotal(j, a[0]), bonus = atrBonus(j, a[0]);
+      var tot = atrTotal(jr, a[0]), bonus = atrBonus(jr, a[0]);
       return '<section class="atr-card" style="--cor:var(--' + a[0] + ')">' + atrCabeca(a) +
         '<div class="atr-total"><span class="mdica">Total</span><div class="atr-grande">' + sinal(tot) + "</div></div>" +
         '<div class="atr-linhas"><div class="atr-base"><span class="mdica">Base (fixa)</span><b>' + sinal(atrBase(j, a[0])) + "</b></div>" +
         '<div class="atr-bonus"><span class="mdica">Bônus</span><div class="atr-passo pequeno">' +
-        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de bônus de ' + a[1] + '"' + (bonus <= -5 ? " disabled" : "") + ">−</button>" +
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de bônus de ' + a[1] + '"' + (bonus <= -5 || salvandoBonus ? " disabled" : "") + ">−</button>" +
         '<b class="atr-valor" aria-live="polite">' + sinal(bonus) + "</b>" +
-        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 ? " disabled" : "") + ">+</button></div></div></div>" +
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 || salvandoBonus ? " disabled" : "") + ">+</button></div></div></div>" +
         (tot > lim ? '<p class="atr-aviso">Acima do limite de +' + lim + " do seu nível. O mestre confere.</p>" : "") + "</section>";
     }).join("") + "</div>" +
-    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. No <b>bônus</b> você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere. As mudanças são salvas sozinhas.</p></section>";
+    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. No <b>bônus</b> você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere. <b>Aperte Salvar atributos</b> para valer.</p>" +
+    '<div class="atr-barra"><span class="atr-estado' + (sujo ? " sujo" : "") + '" role="status">' + esc(salvandoBonus ? "Salvando…" : (sujo ? "Alterações não salvas" : (bonusMsg || "Tudo salvo"))) + "</span>" +
+    '<button type="button" id="perfilDescartarBonus"' + (sujo && !salvandoBonus ? "" : " hidden") + ">Desfazer</button>" +
+    '<button type="button" class="primary" id="perfilSalvarBonus"' + (sujo && !salvandoBonus ? "" : " disabled") + ">" + (salvandoBonus ? "Salvando…" : "Salvar atributos") + "</button></div></section>";
 }
 
 var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altura", 20], ["descricao", "Descrição", 2000], ["sonho", "Sonho ou objetivo", 2000], ["medo", "Medo ou fraqueza", 2000]];
@@ -589,8 +595,9 @@ function viewPerfil() {
   if (!j) {
     return '<div class="lock"><h1>Perfil</h1><p>Sua conta ainda não está ligada a um personagem. Avise o mestre: depois que ele ligar, você edita o seu perfil aqui.</p></div>';
   }
+  rascunhos();
   var url = j.img ? imgUrl(j.img) : "";
-  var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. As mudanças são salvas sozinhas e o mestre vê tudo.</p>' +
+  var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. O que você muda só vale depois de apertar o botão <b>Salvar</b> de cada parte (atributos e informações), e o mestre vê tudo.</p>' +
     '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + statusHTML(j) + "<h2>Personagem</h2>";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
@@ -600,23 +607,94 @@ function viewPerfil() {
   if (j.nome) h += "<p><b>Jogador:</b> " + esc(j.nome) + "</p>";
   if (j.vila) h += "<p><b>Vilarejo:</b> " + esc(j.vila) + "</p>";
   CAMPOS_PERFIL.forEach(function (c) {
-    var v = esc(j[c[0]] || "");
+    var v = esc(perfilRasc[c[0]] || "");
     h += "<label>" + c[1] + (c[2] > 100
       ? '<textarea class="sorteio-in" rows="' + (c[0] === "descricao" ? 4 : 3) + '" maxlength="' + c[2] + '" data-pf="' + c[0] + '">' + v + "</textarea>"
       : '<input class="sorteio-in" type="text" maxlength="' + c[2] + '" data-pf="' + c[0] + '" value="' + v + '"' + (c[0] === "altura" ? ' placeholder="ex.: 1,72 m"' : "") + ">") + "</label>";
   });
-  return h + '<p class="mdica">O nome do jogador, o vilarejo e o grimório são definidos pelo mestre.</p></div></div>';
+  var suja = infoSuja();
+  return h + '<p class="mdica">O nome do jogador, o vilarejo e o grimório são definidos pelo mestre. A foto é salva assim que você a escolhe.</p>' +
+    '<div class="atr-barra info-barra"><span id="infoEstado" class="atr-estado' + (suja ? " sujo" : "") + '" role="status">' + esc(suja ? "Alterações não salvas" : (infoMsg || "Tudo salvo")) + "</span>" +
+    '<button type="button" id="perfilDescartarInfo"' + (suja ? "" : " hidden") + ">Descartar</button>" +
+    '<button type="button" class="primary" id="perfilSalvarInfo"' + (suja ? "" : " disabled") + ">Salvar informações</button></div></div></div>";
 }
 
-function salvarPerfil(el) {
-  var k = el.dataset.pf;
-  PUB.jogador[k] = el.value;
-  perfilPend[k] = el.value;
-  adiar("perfil", function () {
-    var c = perfilPend;
-    perfilPend = {};
-    gravar("perfil_salvar", { campos: c });
+function rascunhos() {
+  var j = PUB.jogador;
+  if (!j) return;
+  if (perfilRasc === null) { perfilRasc = {}; CAMPOS_PERFIL.forEach(function (c) { perfilRasc[c[0]] = j[c[0]] || ""; }); }
+  if (bonusRasc === null) bonusRasc = { poder: atrBonus(j, "poder"), destreza: atrBonus(j, "destreza"), inteligencia: atrBonus(j, "inteligencia") };
+}
+function infoSuja() {
+  var j = PUB.jogador;
+  return !!(j && perfilRasc && CAMPOS_PERFIL.some(function (c) { return (perfilRasc[c[0]] || "") !== (j[c[0]] || ""); }));
+}
+function bonusSujo() {
+  var j = PUB.jogador;
+  return !!(j && bonusRasc && ATRS.some(function (a) { return bonusRasc[a[0]] !== atrBonus(j, a[0]); }));
+}
+function perfilSujo() { return infoSuja() || bonusSujo(); }
+
+/* Estado do botão "Salvar informações" e do aviso ao lado dele, sem refazer a tela (para não tirar o foco de quem digita). */
+function atualizarBarraInfo() {
+  var bt = document.getElementById("perfilSalvarInfo"), ds = document.getElementById("perfilDescartarInfo"), es = document.getElementById("infoEstado");
+  var suja = infoSuja();
+  if (bt) { bt.disabled = !suja || salvandoInfo; bt.textContent = salvandoInfo ? "Salvando…" : "Salvar informações"; }
+  if (ds) ds.hidden = !suja || salvandoInfo;
+  if (es) { es.textContent = salvandoInfo ? "Salvando…" : (suja ? "Alterações não salvas" : (infoMsg || "Tudo salvo")); es.classList.toggle("sujo", suja); }
+}
+
+function editarPerfil(el) {
+  if (!perfilRasc) return;
+  perfilRasc[el.dataset.pf] = el.value;
+  infoMsg = "";
+  atualizarBarraInfo();
+}
+
+function salvarInfo() {
+  var j = PUB.jogador;
+  if (!j || !perfilRasc || salvandoInfo || !infoSuja()) return;
+  var copia = {};
+  CAMPOS_PERFIL.forEach(function (c) { copia[c[0]] = perfilRasc[c[0]] || ""; });
+  salvandoInfo = true;
+  atualizarBarraInfo();
+  gravar("perfil_salvar", { campos: copia }).then(function (r) {
+    salvandoInfo = false;
+    if (r) { CAMPOS_PERFIL.forEach(function (c) { j[c[0]] = copia[c[0]]; }); infoMsg = "Informações salvas."; }
+    else infoMsg = "Não foi possível salvar. Veja o aviso no topo e tente de novo.";
+    atualizarBarraInfo();
   });
+}
+
+function descartarInfo() {
+  var j = PUB.jogador;
+  if (!j || !perfilRasc) return;
+  CAMPOS_PERFIL.forEach(function (c) { perfilRasc[c[0]] = j[c[0]] || ""; });
+  infoMsg = "";
+  renderizar();
+}
+
+function salvarBonus() {
+  var j = PUB.jogador;
+  if (!j || !bonusRasc || salvandoBonus || !bonusSujo()) return;
+  var copia = { poder: bonusRasc.poder, destreza: bonusRasc.destreza, inteligencia: bonusRasc.inteligencia };
+  salvandoBonus = true;
+  bonusMsg = "";
+  renderizar();
+  gravar("perfil_bonus", { bonus: copia }).then(function (r) {
+    salvandoBonus = false;
+    if (r) { j.bonus = copia; bonusMsg = "Atributos salvos."; }
+    else bonusMsg = "Não foi possível salvar. Veja o aviso no topo e tente de novo.";
+    renderizar();
+  });
+}
+
+function descartarBonus() {
+  var j = PUB.jogador;
+  if (!j) return;
+  bonusRasc = { poder: atrBonus(j, "poder"), destreza: atrBonus(j, "destreza"), inteligencia: atrBonus(j, "inteligencia") };
+  bonusMsg = "";
+  renderizar();
 }
 
 function enviarRetrato(input) {
@@ -1235,7 +1313,7 @@ function adiar(chave, fn, ms) {
   timers[chave] = setTimeout(function () { delete timers[chave]; fn(); }, ms || 700);
 }
 window.addEventListener("beforeunload", function (e) {
-  if (pendentes || Object.keys(timers).length) { e.preventDefault(); e.returnValue = ""; }
+  if (pendentes || Object.keys(timers).length || perfilSujo()) { e.preventDefault(); e.returnValue = ""; }
 });
 
 function viewConta() {
@@ -1303,6 +1381,7 @@ function carregar(aposLogin) {
       });
     }
     PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [], vilaBonus: d.vilaBonus || "" };
+    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = "";
     renderizar();
   }).catch(function (e) {
     app.innerHTML = '<div class="lock"><h1>Sem conexão</h1><p>' + esc(e.message) + '</p><p><button type="button" class="primary" id="tentarDeNovo">Tentar de novo</button></p></div>';
@@ -1331,7 +1410,8 @@ function navAtual() { return MESTRE ? MESTRE.nav : NAV_JOGADOR; }
 function viewInfo(id) { var r = null; listaViews().forEach(function (v) { if (v[0] === id) r = v; }); return r; }
 function linkNav(id, atual) {
   var v = viewInfo(id);
-  return v ? '<a href="#' + id + '"' + (id === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + "</a>" : "";
+  var aviso = id === "perfil" && !MESTRE && perfilSujo() ? ' <span class="pt" title="Alterações não salvas no Perfil" aria-label="Alterações não salvas">●</span>' : "";
+  return v ? '<a href="#' + id + '"' + (id === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + aviso + "</a>" : "";
 }
 
 function fecharMenus(tudo) {
@@ -1390,13 +1470,13 @@ window.addEventListener("hashchange", function () { renderizar(); window.scrollT
 app.addEventListener("change", function (e) {
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
-  else if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
+  else if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
 
 });
 
 app.addEventListener("input", function (e) {
   if (MESTRE) { MESTRE.input(e.target); return; }
-  if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
+  if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
 });
 
 app.addEventListener("submit", function (e) {
@@ -1427,15 +1507,18 @@ app.addEventListener("click", function (e) {
     renderizar();
     return;
   }
-  if (b.dataset.bonusStep && PUB.jogador && PUB.jogador.atrTravado) {
-    var kb = b.dataset.bonusStep, jb = PUB.jogador;
-    jb.bonus = jb.bonus || {};
-    jb.bonus[kb] = Math.max(-5, Math.min(10, atrBonus(jb, kb) + parseInt(b.dataset.d, 10)));
-    /* Cada toque atualiza a tela na hora; o envio ao servidor espera um instante e leva o valor final. */
-    adiar("perfil-bonus", function () { gravar("perfil_bonus", { bonus: PUB.jogador.bonus }); }, 600);
+  if (b.dataset.bonusStep && PUB.jogador && PUB.jogador.atrTravado && !salvandoBonus) {
+    /* O toque muda só o rascunho (a tela atualiza na hora). Nada é enviado até apertar "Salvar atributos". */
+    rascunhos();
+    bonusRasc[b.dataset.bonusStep] = Math.max(-5, Math.min(10, bonusRasc[b.dataset.bonusStep] + parseInt(b.dataset.d, 10)));
+    bonusMsg = "";
     renderizar();
     return;
   }
+  if (b.id === "perfilSalvarBonus") { salvarBonus(); return; }
+  if (b.id === "perfilDescartarBonus") { descartarBonus(); return; }
+  if (b.id === "perfilSalvarInfo") { salvarInfo(); return; }
+  if (b.id === "perfilDescartarInfo") { descartarInfo(); return; }
   if (b.id === "perfilSalvarAtr" && PUB.jogador && !PUB.jogador.atrTravado) {
     var copia = { poder: atrRasc.poder, destreza: atrRasc.destreza, inteligencia: atrRasc.inteligencia };
     if (copia.poder + copia.destreza + copia.inteligencia !== 5) return;
