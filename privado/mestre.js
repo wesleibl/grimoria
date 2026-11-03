@@ -2265,6 +2265,11 @@ function atualizarDesl(t) {
   var s = document.getElementById("tokDesl");
   if (!s || tokSel !== t.id) return;
   var d = deslTok(t), gasto = parseInt(t.gasto, 10) || 0;
+  if (!emTurnos()) {
+    s.className = "tok-desl";
+    s.innerHTML = "Deslocamento <b>" + d + "</b> casas por turno (6 + 1 a cada 2 de Destreza). Só conta durante os turnos do combate.";
+    return;
+  }
   s.className = "tok-desl" + (gasto > d ? " excede" : "");
   s.innerHTML = "Deslocamento <b>" + d + "</b> (6 + 1 a cada 2 de Destreza), restam <b>" + Math.max(0, d - gasto) + "</b>.";
 }
@@ -2403,11 +2408,14 @@ function infoTok(txt, aviso) {
   p.classList.toggle("tok-aviso", !!aviso);
 }
 
+/* O deslocamento só conta durante os turnos do combate. Fora dele (preparo, conversa, fase de iniciativa) o token anda livre. */
+function emTurnos() { return !!(CAMPO.combate && CAMPO.combate.fase === "turnos"); }
+
 function textoDistancia(t, ox, oy, c) {
   var casas = Math.max(Math.abs(c.x - ox), Math.abs(c.y - oy));
   var s = (t.nome || "Token") + ": " + coordNome(ox, oy) + " → " + coordNome(c.x, c.y) + ", " + casas + (casas === 1 ? " casa" : " casas") + " (" + String(casas * 1.5).replace(".", ",") + " m).";
   var aviso = false;
-  if (movel(t)) {
+  if (movel(t) && emTurnos()) {
     var d = deslTok(t), total = (parseInt(t.gasto, 10) || 0) + casas;
     if (total > d) { s += " Excede o deslocamento de " + d + " em " + (total - d) + "."; aviso = true; }
     else s += " Restam " + (d - total) + " de " + d + ".";
@@ -2421,7 +2429,7 @@ function armadilhasEm(c, exceto) {
 
 function moverTok(t, c, ox, oy) {
   var r = textoDistancia(t, ox, oy, c), txt = r[0], aviso = r[1];
-  if (movel(t)) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
+  if (movel(t) && emTurnos()) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
   t.x = c.x;
   t.y = c.y;
   enviarPos([t]);
@@ -2455,7 +2463,7 @@ function ligarArraste() {
     arr = { t: t, g: g, ox: t.x, oy: t.y, c: null };
     arrastando = true;
     try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
-    infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) + (movel(t) ? ". Deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + "." : ".") + " Arraste, ou toque na casa de destino.");
+    infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) + (movel(t) && emTurnos() ? ". Deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + "." : ".") + " Arraste, ou toque na casa de destino.");
   };
   svg.onpointermove = function (ev) {
     if (!arr) return;

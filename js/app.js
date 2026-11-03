@@ -707,7 +707,8 @@ function celulaTab(svg, ev) {
 function listaTokensHTML(tokens, meu) {
   if (!tokens.length) return "";
   return '<ul class="tok-lista">' + tokens.map(function (t) {
-    var mov = meu && t.id === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
+    var turnos = acaoPub && acaoPub.combate && acaoPub.combate.fase === "turnos";
+    var mov = turnos && meu && t.id === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
     return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span>' + esc(t.nome || "Sem nome") + (t.tipo === "armadilha" ? " (armadilha)" : "") + " <small>" + coordNome(t.x | 0, t.y | 0) + (meu && t.id === meu ? ", você" : "") + mov + "</small></li>";
   }).join("") + "</ul>";
 }
