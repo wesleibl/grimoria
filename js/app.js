@@ -469,12 +469,27 @@ function viewMapa() {
 
 /* ============================ JOGADOR ============================ */
 
+function criarPersonagemHTML() {
+  return '<div class="note"><p><b>Você ainda não tem um personagem.</b> Dê um nome a ele para começar; depois você distribui os atributos e conta a sua história no Perfil.</p>' +
+    '<p><label>Nome do personagem <input class="sorteio-in" type="text" id="novoPersonagem" maxlength="60" autocomplete="off"></label></p>' +
+    '<p><button type="button" class="primary" id="criarPersonagem">Criar personagem</button> <span id="criarMsg" role="status" class="mdica"></span></p></div>';
+}
+
+function criarPersonagem() {
+  var i = document.getElementById("novoPersonagem"), b = document.getElementById("criarPersonagem"), m = document.getElementById("criarMsg");
+  var nome = i ? i.value.trim() : "";
+  if (!nome) { if (m) m.textContent = "Dê um nome ao personagem."; return; }
+  if (b.disabled) return;
+  b.disabled = true;
+  api("perfil_criar", { personagem: nome }).then(function () { carregar(); }, function (e) { b.disabled = false; if (m) m.textContent = e.message; });
+}
+
 function viewInicioJogador() {
   var j = PUB.jogador;
   var h = "<h1>Olá, " + esc(USUARIO.nome) + "</h1>" +
     '<p class="lead">Bem-vindo à campanha. Aqui ficam as regras, o seu grimório e o mapa do que o grupo já descobriu. O mestre vai liberando o resto aos poucos.</p>';
   if (!j) {
-    return h + '<div class="note"><p><b>Sua conta ainda não está ligada a um personagem.</b> Avise o mestre: ele liga a sua conta ao seu personagem na aba Jogadores.</p></div>' + atalhosJogador();
+    return h + criarPersonagemHTML() + atalhosJogador();
   }
   var url = j.img ? imgUrl(j.img) : "";
   h += '<div class="pj-form"><div class="pj-lado">' +
@@ -593,7 +608,7 @@ var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altur
 function viewPerfil() {
   var j = PUB.jogador;
   if (!j) {
-    return '<div class="lock"><h1>Perfil</h1><p>Sua conta ainda não está ligada a um personagem. Avise o mestre: depois que ele ligar, você edita o seu perfil aqui.</p></div>';
+    return "<h1>Perfil</h1>" + criarPersonagemHTML();
   }
   rascunhos();
   var url = j.img ? imgUrl(j.img) : "";
@@ -1515,6 +1530,7 @@ app.addEventListener("click", function (e) {
     renderizar();
     return;
   }
+  if (b.id === "criarPersonagem") { criarPersonagem(); return; }
   if (b.id === "perfilSalvarBonus") { salvarBonus(); return; }
   if (b.id === "perfilDescartarBonus") { descartarBonus(); return; }
   if (b.id === "perfilSalvarInfo") { salvarInfo(); return; }

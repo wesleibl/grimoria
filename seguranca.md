@@ -9,7 +9,7 @@
 - **Todo o conteúdo secreto** (grimórios completos, bestiário, segredos, sorteio, anotações, ganchos, tokens ocultos) está em `privado/mestre.js`. O `api.php` só entrega esse arquivo a uma conta com papel de **mestre**. O `index.html` e o `js/app.js`, que qualquer um baixa, foram varridos: não têm nenhum desses textos.
 - **Toda rota que muda algo** (`estado`, `jogador_*`, `img_*`, `cena_*`, `grid_*`, `cenas`, `campo`) exige conta de mestre. As rotas de jogador só mexem no **próprio** personagem.
 - **O que o jogador recebe** é refiltrado **no servidor**, campo a campo (mapa, grimório, perfil, tokens), sem confiar na cópia montada pelo navegador do mestre. O cenário de um local só vai se estiver liberado.
-- **Conta sem personagem ligado** (alguém de fora que só criou conta) não recebe mapa, cena nem imagens. Só vê o conteúdo geral das Regras. O mestre liga a conta a um personagem na aba Jogadores.
+- **Conta sem personagem ligado** (alguém de fora que só criou conta) não recebe mapa, cena nem imagens. Só vê o conteúdo geral das Regras. A própria conta pode criar o seu personagem (um por conta, nível 1, só com nome); ou o mestre liga a conta a um personagem na aba Jogadores. Só depois de ter personagem a conta recebe o que o mestre libera.
 - **Papel de mestre** só se troca direto no banco (`UPDATE usuarios SET papel='mestre' ...`). Ninguém vira mestre pelo site.
 - **Senhas** são guardadas com hash (`password_hash`). O login tem limite de tentativas **por sessão, por IP e por e-mail** (no banco, então descartar o cookie não escapa). O cadastro tem limite por IP.
 - **Escrita** só com o cabeçalho `X-Grimoria` (bloqueia formulários de outros sites). O cookie de sessão é `HttpOnly` e `SameSite=Lax`.

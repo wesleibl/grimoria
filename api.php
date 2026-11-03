@@ -46,6 +46,7 @@ try {
         'POST img_enviar' => acaoImgEnviar(),
         'POST img_editar' => acaoImgEditar(),
         'POST img_excluir' => acaoImgExcluir(),
+        'POST perfil_criar' => acaoPerfilCriar(),
         'POST perfil_salvar' => acaoPerfilSalvar(),
         'POST perfil_atributos' => acaoPerfilAtributos(),
         'POST perfil_bonus' => acaoPerfilBonus(),
@@ -302,6 +303,24 @@ function jogadorDaConta(): array
     $jog = jogadorDoUsuario($u['id']);
     if (!$jog) erro('Sua conta ainda não está ligada a um personagem.', 409);
     return $jog;
+}
+
+/* Conta nova cria o próprio personagem (nível 1, atributos ainda por distribuir). Uma conta, um personagem. */
+function acaoPerfilCriar(): never
+{
+    $u = exigirLogin();
+    if ($u['papel'] === 'mestre') erro('A conta de mestre não cria personagem aqui.', 403);
+    if (jogadorDoUsuario($u['id'])) erro('Você já tem um personagem.', 409);
+    $nome = trim(mb_substr((string)(corpo()['personagem'] ?? ''), 0, CAMPOS_PERFIL['personagem']));
+    if ($nome === '') erro('Dê um nome ao seu personagem.');
+    $id = 'p' . bin2hex(random_bytes(8));
+    $json = json_encode(['nome' => $u['nome'], 'personagem' => $nome, 'nivel' => 1], JSON_UNESCAPED_UNICODE);
+    try {
+        db()->prepare('INSERT INTO jogadores (id, dados, usuario_id) VALUES (?, ?, ?)')->execute([$id, $json, $u['id']]);
+    } catch (PDOException $e) {
+        erro('Você já tem um personagem.', 409); /* chave única de usuario_id: dois cliques ao mesmo tempo */
+    }
+    responder(['ok' => true]);
 }
 
 function acaoPerfilSalvar(): never
