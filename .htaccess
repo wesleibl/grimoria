@@ -1,0 +1,17 @@
+# Bloqueia arquivos sensíveis: credenciais, anotações do mestre e o código privado.
+<FilesMatch "^(\.env|\.git.*|.*\.md|.*\.sql)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(\.git|privado)(/|$) - [F,L]
+</IfModule>
+
+Options -Indexes
