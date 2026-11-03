@@ -23,6 +23,14 @@ Dali o mestre escolhe o que fazer com o cenário:
 
 A aba **Ação** apenas **chama** um cenário já pronto. Ela tem o seletor de cenário, "Como mostrar" (Grid e tokens, ou Só a foto), "Ao vivo", o título para os jogadores e os tokens. O grid mostrado ali é o do cenário, e há o botão "Editar o cenário".
 
+### 0.0 Liberar aos jogadores
+
+**Todo cenário nasce oculto.** Marque "Liberado aos jogadores" (no detalhe do cenário, ou no detalhe do local no mapa) para o jogador poder ver o **nome**, a **foto** e o **resumo** dele. Nada é liberado sozinho: criar, ligar a um local ou revelar o local não libera o cenário.
+
+- **No mapa**, o jogador só vê o cenário de um local se o local estiver **revelado** e o cenário **liberado**. As duas coisas são necessárias, e o servidor confere as duas ao entregar a foto.
+- **Ao vivo** é uma decisão à parte: enquanto você mostra um cenário na aba Ação (grid ou só a foto), os jogadores o veem mesmo que ele esteja oculto. Isso não o libera para o mapa.
+- A lista de cenários mostra "Oculto" ou "Liberado" em cada cartão.
+
 ### 0.1 Vínculos entre o mapa e os cenários
 
 Nada fica solto: cada local do mapa pode ter **um cenário**, e cada cenário fica em **um local**.

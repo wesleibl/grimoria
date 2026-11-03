@@ -643,10 +643,12 @@ function acaoPublica(?string $jogId = null): array
     ];
 }
 
-/* O jogador só vê a foto de um cenário se ele estiver ligado a um local já revelado no mapa, ou se for a cena ativa. */
+/* O jogador só vê a foto de um cenário se ele foi liberado E está ligado a um local já revelado no mapa,
+   ou se for a cena que o mestre colocou ao vivo. Todo cenário nasce oculto. */
 function cenaLiberadaJogador(int $id): bool
 {
-    foreach ((lerEstado('locais_pub') ?? []) as $l) {
+    $liberado = !empty((lerEstado('cenarios_info') ?? [])[$id]['liberado']);
+    foreach ($liberado ? (lerEstado('locais_pub') ?? []) : [] as $l) {
         if (is_array($l) && (int)($l['cenario'] ?? 0) === $id) return true;
     }
     $a = lerEstado('acao') ?? [];

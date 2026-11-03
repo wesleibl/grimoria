@@ -534,7 +534,7 @@ function locaisPub() {
   var rev = getRev(), lig = EST.locais_cen || {};
   return LOCAIS.filter(function (l) { return !l.secreto && rev[l.id]; }).map(function (l) {
     var o = { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab, pub: l.pub }, c = lig[l.id] ? acharEnvio(lig[l.id]) : null;
-    if (c) {
+    if (c && cenLiberado(c.id)) {
       o.cenario = c.id; o.cv = c.v; o.cenNome = c.nome;
       var rs = String(infoCen(c.id).resumo || "").trim();
       if (rs) o.cenResumo = rs;
@@ -1733,6 +1733,8 @@ function localExtraMestre(l) {
     ENVIADAS.map(function (e) { return '<option value="' + e.id + '"' + (c && c.id === e.id ? " selected" : "") + ">" + esc(e.nome) + "</option>"; }).join("") + "</select></label>";
   if (!ENVIADAS.length) h += '<p class="mdica">Você ainda não tem cenários. Crie na aba Cenários e volte aqui para ligar.</p>';
   else if (!c) h += '<p class="mdica">Ligue um cenário para os jogadores verem a foto ao clicar neste local, depois de revelado.</p>';
+  if (c) h += '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> Cenário liberado aos jogadores</label>" +
+    (cenLiberado(c.id) ? "" : '<p class="mdica">Oculto: mesmo com o local revelado, os jogadores ainda não veem este cenário.</p>');
   if (c) h += '<div class="controls"><button type="button" data-cenir="' + c.id + '">Abrir o cenário</button><button type="button" data-cenusar="' + c.id + '">Usar na Ação</button><button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto</button></div>' +
     '<p class="mdica">Os jogadores veem só a foto, e só quando o local estiver revelado. A história e o grid ficam com você.</p>';
   return h;
@@ -1743,6 +1745,15 @@ function localExtraMestre(l) {
 var cenSel = 0, cenMsg = "", confirmarDelCen = false;
 
 function infoCen(id) { var i = EST.cenarios_info || {}; return i[id] || {}; }
+
+/* Todo cenário nasce oculto. Só depois de liberado o jogador pode ver a foto, o nome e o resumo (no mapa). */
+function cenLiberado(id) { return !!infoCen(id).liberado; }
+function setCenLiberado(id, v) {
+  var info = (EST.cenarios_info = EST.cenarios_info || {})[id] || (EST.cenarios_info[id] = {});
+  info.liberado = !!v;
+  salvarEstado("cenarios_info");
+  sincronizarPub();
+}
 function statusCen(c) {
   var a = acaoEst();
   if (!a.ativo || a.envio !== c.id) return "";
@@ -1767,7 +1778,7 @@ function cenCardsHTML() {
     var st = statusCen(c);
     return '<button type="button" class="cen-card' + (cenSel === c.id ? " sel" : "") + '" data-cenabrir="' + c.id + '">' +
       '<img src="' + cenaImgUrl({ envio: c.id }) + '" alt="" loading="lazy">' +
-      "<b>" + esc(c.nome) + "</b><small>" + (temGrid(c) ? "Grid " + gridTexto(c) : "Só imagem") + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
+      "<b>" + esc(c.nome) + "</b><small>" + (temGrid(c) ? "Grid " + gridTexto(c) : "Só imagem") + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + '<span class="tag role">' + (cenLiberado(c.id) ? "Liberado" : "Oculto") + "</span>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
   }).join("") + "</div>";
 }
 
@@ -1776,6 +1787,8 @@ function cenDetalheHTML() {
   if (!c) return "";
   var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c);
   return '<section class="panel cen-det"><h3>' + esc(c.nome) + (st ? ' <span class="tag leg">' + st + "</span>" : "") + "</h3>" +
+    '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> Liberado aos jogadores</label>" +
+    '<p class="mdica">' + (cenLiberado(c.id) ? "Os jogadores veem o nome, a foto e o resumo deste cenário ao clicar no local dele no mapa (se o local estiver revelado)." : "Oculto: os jogadores só o veem enquanto você o mostra ao vivo. No mapa, ele só aparece depois de liberado.") + "</p>" +
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + c.id + '" value="' + esc(c.nome) + '"></label>' +
     '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="cols" value="' + (c.cols || "") + '" placeholder="sem grid"></label>' +
     '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="rows" value="' + (c.rows || "") + '" placeholder="auto"' + (temGrid(c) ? "" : " disabled") + '></label>' +
@@ -2636,6 +2649,7 @@ MESTRE = {
       if (j) { j.grimRev = el.checked; salvarJog(j, true, ["grimRev"]); }
     }
     else if (d.cengrid) { renderizar(); }
+    else if (d.cenlib) { setCenLiberado(parseInt(d.cenlib, 10), el.checked); renderizar(); }
     else if (d.loccen) { vincularLocal(d.loccen, el.value ? parseInt(el.value, 10) : 0); renderizar(); }
     else if (d.cenloc) {
       var cid = parseInt(d.cenloc, 10), antigo = localDoCenario(cid);
