@@ -378,7 +378,7 @@ function desenharDetalhe() {
   listaLocais().forEach(function (x) { if (x.id === localSel) l = x; });
   var rev = getRev();
   if (!l || (l.secreto && !camadaMestre()) || (modoMesa && !rev[l.id])) { box.innerHTML = introMapa(); return; }
-  var h = "<h3>" + l.nome + '</h3><div class="meta"><span class="tag role">' + TIPO_NOME[l.tipo] + "</span>" + (souMestre() ? '<span class="tag role">' + l.arco + "</span>" : "") + "</div>";
+  var h = "<h3>" + l.nome + '</h3><div class="meta"><span class="tag role">' + TIPO_NOME[l.tipo] + "</span>" + (camadaMestre() ? '<span class="tag role">' + l.arco + "</span>" : "") + "</div>";
   h += "<p>" + l.pub + "</p>";
   var cen = cenarioDoLocal(l);
   if (cen) {
@@ -461,7 +461,7 @@ function viewMapa() {
   h += '<div class="mapa-grid"><div class="mapa-box"><svg id="mapaSvg" viewBox="0 0 1000 680" role="img" aria-label="Mapa de Grimoria com o reino, os vilarejos e os mistérios"></svg></div>' +
     '<aside class="panel mapa-detalhe" id="mapaDetalhe" aria-live="polite"></aside></div>';
   h += galeriaMapas();
-  if (m && !modoMesa) h += "<h2>Roteiro por arco</h2>" + tabelaArcos();
+  if (camadaMestre()) h += "<h2>Roteiro por arco</h2>" + tabelaArcos();
   return h;
 }
 
