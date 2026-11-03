@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 ini_set('display_errors', '0');
-require __DIR__ . '/privado/lib.php';
+/* A pasta privada pode ficar FORA da raiz pública do site (grimoria_privado, ao lado da pasta pública). Se existir, é usada; do
+   contrário vale a pasta "privado" ao lado deste arquivo. Fora da raiz pública, ninguém a alcança pela internet. */
+define('PRIVADO', is_dir(dirname(__DIR__) . '/grimoria_privado') ? dirname(__DIR__) . '/grimoria_privado' : __DIR__ . '/privado');
+require PRIVADO . '/lib.php';
 
 iniciarSessao();
 
@@ -53,7 +56,7 @@ try {
 } catch (Throwable $e) {
     error_log('grimoria: ' . $e->getMessage());
     /* Com debug=1 no .env, o erro real aparece na tela. Desligue depois de resolver. */
-    $debug = (lerEnv(__DIR__ . '/.env')['debug'] ?? '') === '1';
+    $debug = (lerEnv(caminhoEnv())['debug'] ?? '') === '1';
     erro($debug ? get_class($e) . ': ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')' : 'Erro no servidor. Tente de novo em instantes.', 500);
 }
 
@@ -68,6 +71,7 @@ function acaoRegistrar(): never
     if ($nome === '' || mb_strlen($nome) > 80) erro('Informe um nome de até 80 letras.');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) erro('Informe um e-mail válido.');
     if (strlen($senha) < 8) erro('A senha precisa ter pelo menos 8 caracteres.');
+    if (bloqueado('cadastro-ip', ipCliente(), 10, 3600)) erro('Muitos cadastros deste endereço. Tente de novo mais tarde.', 429);
     try {
         /* Toda conta nasce como jogador. O papel de mestre é trocado direto no banco. */
         db()->prepare('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)')
@@ -76,6 +80,7 @@ function acaoRegistrar(): never
         if ($e->getCode() === '23000') erro('Já existe uma conta com esse e-mail.', 409);
         throw $e;
     }
+    anotarTentativa('cadastro-ip', ipCliente(), 3600);
     session_regenerate_id(true);
     $_SESSION['uid'] = (int)db()->lastInsertId();
     responder(['ok' => true]);
@@ -88,19 +93,23 @@ function acaoEntrar(): never
     $senha = (string)($c['senha'] ?? '');
     $falhas = $_SESSION['falhas'] ?? [];
     $falhas = array_filter($falhas, fn($t) => $t > time() - 600);
-    if (count($falhas) >= 5) erro('Muitas tentativas. Espere alguns minutos e tente de novo.', 429);
+    /* Além do limite da sessão, há um no banco por IP e por e-mail: quem descarta o cookie não escapa dele. */
+    if (count($falhas) >= 5 || bloqueado('login-ip', ipCliente(), 30, 900) || bloqueado('login-email', $email, 8, 900)) erro('Muitas tentativas. Espere alguns minutos e tente de novo.', 429);
     $st = db()->prepare('SELECT id, senha_hash FROM usuarios WHERE email = ?');
     $st->execute([$email]);
     $u = $st->fetch();
     if (!$u || !password_verify($senha, $u['senha_hash'])) {
         $falhas[] = time();
         $_SESSION['falhas'] = $falhas;
+        anotarTentativa('login-ip', ipCliente(), 900);
+        anotarTentativa('login-email', $email, 900);
         usleep(400000);
         erro('E-mail ou senha incorretos.', 401);
     }
     if (password_needs_rehash($u['senha_hash'], PASSWORD_DEFAULT)) {
         db()->prepare('UPDATE usuarios SET senha_hash = ? WHERE id = ?')->execute([password_hash($senha, PASSWORD_DEFAULT), $u['id']]);
     }
+    limparTentativas('login-email', $email);
     session_regenerate_id(true);
     $_SESSION = ['uid' => (int)$u['id']];
     responder(['ok' => true]);
@@ -138,14 +147,17 @@ function acaoInicio(): never
         $grim = (lerEstado('grim_pub') ?? [])[$jog['grim']] ?? null;
     }
     $locaisPub = idsLocaisPub();
+    /* Conta que ainda não foi ligada a um personagem pelo mestre (alguém de fora que só criou conta) não recebe mapa, cena
+       nem imagens: só o conteúdo geral das Regras. */
+    $ligado = $jog !== null;
     responder([
         'usuario' => $u,
         'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado'])) : null,
-        'grimorio' => $grim,
-        'locais' => lerEstado('locais_pub') ?? [],
+        'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
+        'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
         'vilaBonus' => $jog ? ((lerEstado('vilas_pub') ?? [])[$jog['vila'] ?? ''] ?? '') : '',
-        'imagens' => listarImagens(fn($i) => jogadorPodeVer($i, $jog, $locaisPub)),
+        'imagens' => $ligado ? listarImagens(fn($i) => jogadorPodeVer($i, $jog, $locaisPub)) : [],
     ]);
 }
 
@@ -161,7 +173,7 @@ function acaoMestreJs(): never
     }
     header('Content-Type: application/javascript; charset=utf-8');
     header('Cache-Control: private, no-store');
-    readfile(__DIR__ . '/privado/mestre.js');
+    readfile(PRIVADO . '/mestre.js');
     exit;
 }
 
@@ -238,7 +250,8 @@ function acaoImg(): never
     $st->execute([$id]);
     $img = $st->fetch();
     if (!$img) erro('Imagem não encontrada.', 404);
-    if ($u['papel'] !== 'mestre' && !jogadorPodeVer($img, jogadorDoUsuario($u['id']), idsLocaisPub())) erro('Imagem não liberada.', 403);
+    $jogImg = $u['papel'] === 'mestre' ? null : jogadorDoUsuario($u['id']);
+    if ($u['papel'] !== 'mestre' && (!$jogImg || !jogadorPodeVer($img, $jogImg, idsLocaisPub()))) erro('Imagem não liberada.', 403);
     header('Content-Type: ' . $img['mime']);
     header('Cache-Control: private, max-age=600');
     header('X-Content-Type-Options: nosniff');
@@ -360,7 +373,9 @@ function acaoAcao(): never
 {
     $u = exigirLogin();
     if ($u['papel'] === 'mestre') responder(['acao' => lerEstado('acao'), 'grids' => lerEstado('grids')]);
-    responder(acaoPublica(jogadorDoUsuario($u['id'])['id'] ?? null));
+    $jog = jogadorDoUsuario($u['id']);
+    if (!$jog) responder(['ativo' => false]); /* conta sem personagem ligado não vê a cena */
+    responder(acaoPublica($jog['id']));
 }
 
 function acaoCampo(): never
@@ -401,6 +416,7 @@ function acaoCenaImg(): never
     $foto = (int)($_GET['id'] ?? 0);
     $grid = (int)($_GET['grid'] ?? 0);
     if ($u['papel'] !== 'mestre') {
+        if (!jogadorDoUsuario($u['id'])) erro('Nenhuma imagem disponível.', 404); /* conta sem personagem ligado */
         $a = lerEstado('acao') ?? [];
         $vivo = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
         if ($foto && !cenaLiberadaJogador($foto)) $foto = 0;

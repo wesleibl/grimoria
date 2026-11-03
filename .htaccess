@@ -15,3 +15,15 @@
 </IfModule>
 
 Options -Indexes
+
+# Cabeçalhos de segurança (só valem se o servidor tiver mod_headers).
+# O CSP só deixa carregar scripts do próprio site: mesmo que algum texto digitado por um jogador escapasse da proteção
+# do código, ele não conseguiria executar script. Se algo sumir do site, abra o console do navegador (F12) e procure por
+# "Content Security Policy"; é só ajustar a linha abaixo.
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "same-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+</IfModule>

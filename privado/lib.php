@@ -9,7 +9,9 @@ function lerEnv(string $arquivo): array
     if (!is_readable($arquivo)) return $out;
     foreach (file($arquivo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $linha) {
         $linha = trim($linha);
-        if ($linha === '' || $linha[0] === '#') continue;
+        /* Aceita também o formato .env.php, cuja primeira linha é "<?php exit; ?>": se o servidor ignorar o .htaccess e alguém
+           abrir o arquivo pela internet, o PHP executa, sai e não mostra nada. */
+        if ($linha === '' || $linha[0] === '#' || str_starts_with($linha, '<?') || str_starts_with($linha, '?>')) continue;
         $p = strpos($linha, '=');
         if ($p === false) continue;
         $v = trim(substr($linha, $p + 1));
@@ -19,11 +21,22 @@ function lerEnv(string $arquivo): array
     return $out;
 }
 
+/* Onde fica o arquivo de credenciais: ao lado da pasta "privado" (ou "grimoria_privado"). Se a pasta privada estiver FORA da
+   raiz pública do site, o arquivo também fica fora, e nada disso é alcançável pela internet. */
+function caminhoEnv(): string
+{
+    $raiz = dirname(__DIR__);
+    foreach (['/.env.php', '/.env'] as $nome) {
+        if (is_file($raiz . $nome)) return $raiz . $nome;
+    }
+    return $raiz . '/.env';
+}
+
 function db(): PDO
 {
     static $pdo = null;
     if ($pdo) return $pdo;
-    $env = lerEnv(dirname(__DIR__) . '/.env');
+    $env = lerEnv(caminhoEnv());
     $dsn = 'mysql:host=' . ($env['db_host'] ?? 'localhost') . ';dbname=' . ($env['db_base'] ?? '') . ';charset=utf8mb4';
     $pdo = new PDO($dsn, $env['db_user'] ?? '', $env['db_pass'] ?? '', [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -33,6 +46,42 @@ function db(): PDO
     garantirSchema($pdo);
     return $pdo;
 }
+
+/* ============================ LIMITE DE TENTATIVAS ============================ */
+
+/* Conta as tentativas por IP e por e-mail no banco (não na sessão: quem descarta o cookie escaparia do limite).
+   Fica na tabela estado, com chaves "lim:…" que a API nunca expõe a ninguém. */
+function chaveLimite(string $tipo, string $id): string { return 'lim:' . substr(md5($tipo . '|' . $id), 0, 28); }
+
+function tentativasRecentes(string $chave, int $janela): array
+{
+    $st = db()->prepare('SELECT valor FROM estado WHERE chave = ?');
+    $st->execute([$chave]);
+    $lista = json_decode((string)$st->fetchColumn(), true);
+    return is_array($lista) ? array_values(array_filter($lista, fn($t) => is_int($t) && $t > time() - $janela)) : [];
+}
+
+function bloqueado(string $tipo, string $id, int $max, int $janela): bool
+{
+    return count(tentativasRecentes(chaveLimite($tipo, $id), $janela)) >= $max;
+}
+
+function anotarTentativa(string $tipo, string $id, int $janela): void
+{
+    $chave = chaveLimite($tipo, $id);
+    $lista = tentativasRecentes($chave, $janela);
+    $lista[] = time();
+    db()->prepare('INSERT INTO estado (chave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)')->execute([$chave, json_encode($lista)]);
+    /* De vez em quando, apaga contadores antigos para a tabela não crescer. */
+    if (random_int(1, 25) === 1) db()->exec("DELETE FROM estado WHERE chave LIKE 'lim:%' AND atualizado_em < (NOW() - INTERVAL 1 DAY)");
+}
+
+function limparTentativas(string $tipo, string $id): void
+{
+    db()->prepare('DELETE FROM estado WHERE chave = ?')->execute([chaveLimite($tipo, $id)]);
+}
+
+function ipCliente(): string { return (string)($_SERVER['REMOTE_ADDR'] ?? '?'); }
 
 /* Cria as tabelas na primeira vez. O arquivo marcador evita repetir isso a cada requisição. */
 function garantirSchema(PDO $pdo): void
@@ -168,6 +217,38 @@ function salvarCamposJogador(string $id, array $campos, bool $criar): bool
     return true;
 }
 
+/* ============================ FILTROS PARA O JOGADOR ============================ */
+
+/* As cópias "_pub" são montadas pelo navegador do mestre. Aqui o servidor confere de novo, campo a campo, antes de entregar:
+   assim uma cópia antiga, ou com algo a mais por engano, nunca vaza. */
+function locaisParaJogador(array $lista): array
+{
+    $ok = array_flip(['id', 'nome', 'tipo', 'x', 'y', 'lab', 'cenario', 'cv', 'cenNome', 'cenResumo']);
+    $info = lerEstado('cenarios_info') ?? [];
+    $out = [];
+    foreach ($lista as $l) {
+        if (!is_array($l)) continue;
+        $l = array_intersect_key($l, $ok);
+        /* O cenário de um local só vai se estiver liberado (a caixa "Mostrar o cenário ao clicar"). */
+        if (!empty($l['cenario']) && empty($info[(int)$l['cenario']]['liberado'])) {
+            unset($l['cenario'], $l['cv'], $l['cenNome'], $l['cenResumo']);
+        }
+        $out[] = $l;
+    }
+    return $out;
+}
+
+function grimParaJogador(array $g, string $nome): array
+{
+    $lib = (lerEstado('magias_lib') ?? [])[$nome] ?? [];
+    $campos = array_flip(['nome', 'custo', 'tipo', 'texto', 'aplica', 'dot', 'limite', 'marco']);
+    $spells = [];
+    foreach (($g['spells'] ?? []) as $s) {
+        if (is_array($s) && in_array($s['nome'] ?? '', $lib, true)) $spells[] = array_intersect_key($s, $campos);
+    }
+    return ['nome' => $nome, 'attr' => $g['attr'] ?? '', 'papel' => $g['papel'] ?? '', 'elem' => $g['elem'] ?? '', 'sub' => $g['sub'] ?? '', 'tier' => $g['tier'] ?? '', 'spells' => $spells];
+}
+
 /* ============================ IMAGENS ============================ */
 
 /* Lê uma imagem enviada como data URL e devolve [mime, bytes]. */
@@ -242,7 +323,11 @@ function idsLocaisPub(): array
    no .htaccess: elas só saem pelo api.php, e o jogador só recebe a cena ativa. */
 const EXT_CENA = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp', 'gif' => 'image/gif'];
 
-function dirCenas(): string { return dirname(__DIR__) . '/misterio'; }
+function dirCenas(): string
+{
+    $junto = dirname(__DIR__) . '/misterio';
+    return is_dir($junto) ? $junto : dirname($_SERVER['SCRIPT_FILENAME'] ?? __FILE__) . '/misterio';
+}
 
 function nomeSeguro(mixed $n): bool
 {

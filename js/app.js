@@ -525,32 +525,63 @@ function statCaixa(rot, v) { return '<div class="stat"><b>' + v + "</b>" + rot +
 
 /* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder,
    deslocamento 6 + 1 a cada 2 de Destreza, mana 10 + 1 a cada 2 de Inteligência, Vida pelo nível). */
+/* O que cada atributo faz (resumo das Regras, que são públicas). */
+var ATR_DESC = {
+  poder: "Força e dano. Reduz o dano que você recebe.",
+  destreza: "Mira, esquiva e mobilidade. Sobe a Defesa e o deslocamento.",
+  inteligencia: "Cura, controle e percepção. Sobe a mana."
+};
+function atrIcone(k) { return ic(ATTR_ICON[k]); }
+
+/* Caixas com os números derivados (Defesa, mana...). Enquanto o jogador distribui os pontos, mostram a PRÉVIA do que ele escolheu. */
+function statsHTML(ref) {
+  var n = nivelJog(ref), dex = atrTotal(ref, "destreza");
+  return '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(ref)) +
+    statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", atrTotal(ref, "poder")) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
+}
+
+function atrCabeca(a) {
+  return '<div class="atr-topo"><span class="atr-ic" aria-hidden="true">' + atrIcone(a[0]) + "</span><div><h4>" + a[1] + '</h4><p class="mdica">' + ATR_DESC[a[0]] + "</p></div></div>";
+}
+
+/* Status do personagem. Os números seguem as regras (Defesa 10 + Destreza, redução de dano = Poder, deslocamento 6 + 1 a cada 2 de
+   Destreza, mana 10 + 1 a cada 2 de Inteligência, Vida pelo nível). Feito para o celular: cartões grandes, botões de toque
+   confortáveis e a barra de salvar sempre à vista. */
 function statusHTML(j) {
-  var n = nivelJog(j), dex = atrTotal(j, "destreza"), h = '<h2>Status</h2><section class="panel ficha">' +
-    '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(j)) +
-    statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", atrTotal(j, "poder")) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
+  var n = nivelJog(j);
   if (!j.atrTravado) {
     var usado = atrRasc.poder + atrRasc.destreza + atrRasc.inteligencia, resta = 5 - usado;
-    h += "<h3>Distribua os seus 5 pontos</h3>" +
-      '<p class="mdica">Você tem <b>5 pontos</b> para dividir entre os três atributos, no máximo <b>+3</b> em cada. Isso representa o seu treino antes de receber o grimório. <b>Depois de salvar, não dá para mudar.</b></p>' +
-      '<div class="atr-lista">' + ATRS.map(function (a) {
-        return '<div class="atr-linha"><span class="atr-nome">' + a[1] + '</span><button type="button" data-atr-step="' + a[0] + '" data-d="-1" aria-label="Menos ' + a[1] + '"' + (atrRasc[a[0]] <= 0 ? " disabled" : "") + '>−</button>' +
-          '<b class="atr-valor">' + sinal(atrRasc[a[0]]) + '</b><button type="button" data-atr-step="' + a[0] + '" data-d="1" aria-label="Mais ' + a[1] + '"' + (atrRasc[a[0]] >= 3 || resta <= 0 ? " disabled" : "") + ">+</button></div>";
+    return '<h2>Status</h2><section class="panel ficha">' + statsHTML({ nivel: j.nivel, atr: atrRasc, bonus: {} }) +
+      '<p class="mdica">Os números acima são a <b>prévia</b> do que você escolher abaixo.</p>' +
+      "<h3>Distribua os seus 5 pontos</h3>" +
+      '<p class="mdica">Divida <b>5 pontos</b> entre os três atributos, no máximo <b>+3</b> em cada. Isso é o seu treino antes de receber o grimório. <b>Depois de salvar, não dá para mudar.</b></p>' +
+      '<div class="atr-cards">' + ATRS.map(function (a) {
+        var v = atrRasc[a[0]];
+        return '<section class="atr-card" style="--cor:var(--' + a[0] + ')">' + atrCabeca(a) +
+          '<div class="atr-passo"><button type="button" class="step-btn" data-atr-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de ' + a[1] + '"' + (v <= 0 ? " disabled" : "") + ">−</button>" +
+          '<div class="atr-grande" aria-live="polite">' + sinal(v) + "</div>" +
+          '<button type="button" class="step-btn" data-atr-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto em ' + a[1] + '"' + (v >= 3 || resta <= 0 ? " disabled" : "") + ">+</button></div>" +
+          '<div class="atr-pips" aria-hidden="true">' + [1, 2, 3].map(function (i) { return '<span class="' + (i <= v ? "on" : "") + '"></span>'; }).join("") + "</div></section>";
       }).join("") + "</div>" +
-      '<p role="status">Pontos restantes: <b>' + resta + "</b></p>" +
-      '<p><button type="button" class="primary" id="perfilSalvarAtr"' + (resta === 0 ? "" : " disabled") + ">Salvar atributos</button></p></section>";
-    return h;
+      '<div class="atr-barra" role="status"><span class="atr-resta">' + (resta === 0 ? "Tudo distribuído" : "Restam <b>" + resta + "</b> de 5") + "</span>" +
+      '<button type="button" class="primary" id="perfilSalvarAtr"' + (resta === 0 ? "" : " disabled") + ">Salvar atributos</button></div></section>";
   }
   var lim = LIM_NIVEL[n - 1];
-  h += "<h3>Atributos</h3>" + '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Base</th><th>Bônus</th><th>Total</th></tr></thead><tbody>' +
-    ATRS.map(function (a) {
-      var tot = atrTotal(j, a[0]);
-      return "<tr><td><b>" + a[1] + "</b></td><td>" + sinal(atrBase(j, a[0])) + '</td><td><input class="sorteio-in num" type="number" min="-5" max="10" data-pbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '" aria-label="Bônus de ' + a[1] + '"></td>' +
-        "<td><b>" + sinal(tot) + "</b>" + (tot > lim ? ' <small class="tok-desl excede">acima do limite +' + lim + " do seu nível</small>" : "") + "</td></tr>";
-    }).join("") + "</tbody></table></div>" +
-    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. O <b>bônus</b> é onde você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere.</p></section>";
-  return h;
+  return '<h2>Status</h2><section class="panel ficha">' + statsHTML(j) + "<h3>Atributos</h3>" +
+    '<div class="atr-cards">' + ATRS.map(function (a) {
+      var tot = atrTotal(j, a[0]), bonus = atrBonus(j, a[0]);
+      return '<section class="atr-card" style="--cor:var(--' + a[0] + ')">' + atrCabeca(a) +
+        '<div class="atr-total"><span class="mdica">Total</span><div class="atr-grande">' + sinal(tot) + "</div></div>" +
+        '<div class="atr-linhas"><div class="atr-base"><span class="mdica">Base (fixa)</span><b>' + sinal(atrBase(j, a[0])) + "</b></div>" +
+        '<div class="atr-bonus"><span class="mdica">Bônus</span><div class="atr-passo pequeno">' +
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de bônus de ' + a[1] + '"' + (bonus <= -5 ? " disabled" : "") + ">−</button>" +
+        '<b class="atr-valor" aria-live="polite">' + sinal(bonus) + "</b>" +
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 ? " disabled" : "") + ">+</button></div></div></div>" +
+        (tot > lim ? '<p class="atr-aviso">Acima do limite de +' + lim + " do seu nível. O mestre confere.</p>" : "") + "</section>";
+    }).join("") + "</div>" +
+    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. No <b>bônus</b> você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere. As mudanças são salvas sozinhas.</p></section>";
 }
+
 var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altura", 20], ["descricao", "Descrição", 2000], ["sonho", "Sonho ou objetivo", 2000], ["medo", "Medo ou fraqueza", 2000]];
 
 function viewPerfil() {
@@ -1360,13 +1391,7 @@ app.addEventListener("change", function (e) {
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
   else if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
-  else if (e.target.dataset && e.target.dataset.pbonus && PUB.jogador) {
-    var j = PUB.jogador;
-    j.bonus = j.bonus || {};
-    j.bonus[e.target.dataset.pbonus] = Math.max(-5, Math.min(10, parseInt(e.target.value, 10) || 0));
-    gravar("perfil_bonus", { bonus: j.bonus });
-    renderizar();
-  }
+
 });
 
 app.addEventListener("input", function (e) {
@@ -1402,9 +1427,19 @@ app.addEventListener("click", function (e) {
     renderizar();
     return;
   }
+  if (b.dataset.bonusStep && PUB.jogador && PUB.jogador.atrTravado) {
+    var kb = b.dataset.bonusStep, jb = PUB.jogador;
+    jb.bonus = jb.bonus || {};
+    jb.bonus[kb] = Math.max(-5, Math.min(10, atrBonus(jb, kb) + parseInt(b.dataset.d, 10)));
+    /* Cada toque atualiza a tela na hora; o envio ao servidor espera um instante e leva o valor final. */
+    adiar("perfil-bonus", function () { gravar("perfil_bonus", { bonus: PUB.jogador.bonus }); }, 600);
+    renderizar();
+    return;
+  }
   if (b.id === "perfilSalvarAtr" && PUB.jogador && !PUB.jogador.atrTravado) {
     var copia = { poder: atrRasc.poder, destreza: atrRasc.destreza, inteligencia: atrRasc.inteligencia };
     if (copia.poder + copia.destreza + copia.inteligencia !== 5) return;
+    if (!window.confirm("Salvar estes atributos?\n\nPoder " + sinal(copia.poder) + ", Destreza " + sinal(copia.destreza) + ", Inteligência " + sinal(copia.inteligencia) + "\n\nDepois de salvar, a base fica travada e só o mestre pode mudar.")) return;
     b.disabled = true;
     gravar("perfil_atributos", { atr: copia }).then(function (r) {
       if (r) { PUB.jogador.atr = copia; PUB.jogador.atrTravado = true; perfilMsg = "Atributos salvos. A base agora está travada."; }
