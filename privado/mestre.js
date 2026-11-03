@@ -1747,10 +1747,10 @@ function statusCen(c) {
 
 function novoCenarioHTML() {
   return '<section class="panel"><h3>' + ic("brilho") + "Novo cenário</h3>" +
-    '<p class="mdica">Gere a imagem sem grade: o site desenha o grid por cima, com as colunas e linhas que você definir. Preencha tudo e escolha a foto por último, porque o envio começa assim que você a escolhe.</p>' +
+    '<p class="mdica">Gere a imagem sem grade: o site desenha o grid por cima, com as colunas e linhas que você definir. <b>O grid é opcional:</b> deixe as colunas em branco para um cenário que é só uma imagem, para mostrar como é o lugar. Preencha tudo e escolha a foto por último, porque o envio começa assim que você a escolhe.</p>' +
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label>' +
-    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" value="20"></label>' +
-    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label></div>' +
+    '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" placeholder="sem grid"></label>' +
+    '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label></div>' +
     '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
     '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
     '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
@@ -1762,7 +1762,7 @@ function cenCardsHTML() {
     var st = statusCen(c);
     return '<button type="button" class="cen-card' + (cenSel === c.id ? " sel" : "") + '" data-cenabrir="' + c.id + '">' +
       '<img src="' + cenaImgUrl({ envio: c.id }) + '" alt="" loading="lazy">' +
-      "<b>" + esc(c.nome) + "</b><small>Grid " + gridTexto(c) + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
+      "<b>" + esc(c.nome) + "</b><small>" + (temGrid(c) ? "Grid " + gridTexto(c) : "Só imagem") + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
   }).join("") + "</div>";
 }
 
@@ -1772,19 +1772,19 @@ function cenDetalheHTML() {
   var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c);
   return '<section class="panel cen-det"><h3>' + esc(c.nome) + (st ? ' <span class="tag leg">' + st + "</span>" : "") + "</h3>" +
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + c.id + '" value="' + esc(c.nome) + '"></label>' +
-    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="cols" value="' + c.cols + '"></label>' +
-    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="rows" value="' + (c.rows || "") + '" placeholder="auto"></label>' +
-    '<span class="tok-desl" id="cenGridInfo"></span></div>' +
+    '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="cols" value="' + (c.cols || "") + '" placeholder="sem grid"></label>' +
+    '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="rows" value="' + (c.rows || "") + '" placeholder="auto"' + (temGrid(c) ? "" : " disabled") + '></label>' +
+    '<span class="tok-desl" id="cenGridInfo">' + (temGrid(c) ? "" : "Sem grid: este cenário é só uma imagem.") + '</span></div>' +
     '<div class="acao-ctl"><label>Local no mapa<select class="sorteio-in" data-cenloc="' + c.id + '"><option value="">Nenhum</option>' +
     LOCAIS.map(function (l) { return '<option value="' + l.id + '"' + (localDoCenario(c.id) === l.id ? " selected" : "") + ">" + esc(l.nome) + "</option>"; }).join("") + "</select></label>" +
     (localDoCenario(c.id) ? '<button type="button" data-vermapa="' + localDoCenario(c.id) + '">Ver no mapa</button>' : "") + "</div>" +
     (localDoCenario(c.id) ? '<p class="mdica">Quando o local for revelado no mapa, os jogadores veem a foto deste cenário ao clicar nele.</p>' : "") +
-    '<p class="mdica">Deixe as linhas em branco para o site calcular e manter as casas quadradas. A prévia abaixo mostra o grid sobre a foto.</p>' +
-    tabuleiroHTML(cenaImgUrl({ envio: c.id }), c.nome) +
+    '<p class="mdica">Deixe as <b>colunas</b> em branco para um cenário sem grid (só a imagem). Com colunas, deixe as linhas em branco para o site calcular e manter as casas quadradas.</p>' +
+    (temGrid(c) ? tabuleiroHTML(cenaImgUrl({ envio: c.id }), c.nome) : '<figure class="foto-cena"><img src="' + cenaImgUrl({ envio: c.id }) + '" alt="' + esc(c.nome) + '"></figure>') +
     '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="5" data-cenhist="' + c.id + '" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…">' + esc(infoCen(c.id).historia || "") + "</textarea></label>" +
     '<div class="controls">' +
-    '<button type="button" class="primary" data-cenusar="' + c.id + '">Usar na Ação (grid)</button>' +
-    (noar && a.modo === "foto" ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
+    (temGrid(c) ? '<button type="button" class="primary" data-cenusar="' + c.id + '">Usar na Ação (grid)</button>' : "") +
+    (noar && (a.modo === "foto" || !temGrid(c)) ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
     '<input type="file" accept="image/*" class="vh" id="cenaTroca" data-troca="' + c.id + '"><label class="btn" for="cenaTroca">Trocar a foto</label>' +
     '<button type="button" data-cenexcluir="' + c.id + '">' + (confirmarDelCen ? "Clique de novo para excluir" : "Excluir cenário") + "</button></div></section>";
 }
@@ -1794,7 +1794,7 @@ function importarPastaHTML() {
   (CENAS || []).forEach(function (l) { l.cenas.forEach(function (c) { arqs.push([l.local, c]); }); });
   if (!arqs.length) return "";
   return "<h2>Importar da pasta do servidor</h2>" + '<details class="panel"><summary>Há ' + arqs.length + ' imagem(ns) em misterio/{local}/grid/</summary>' +
-    '<p class="mdica">Cada imagem importada vira um cenário (fica salva na sua conta). As colunas usadas são as do campo “Colunas” de Novo cenário.</p>' +
+    '<p class="mdica">Cada imagem importada vira um cenário (fica salva na sua conta). As colunas usadas são as do campo “Colunas” de Novo cenário (em branco, o cenário é importado sem grid).</p>' +
     '<ul class="cmb-lista">' + arqs.map(function (p) {
       return '<li><span class="cmb-nome">' + esc(nomeBonito(p[0])) + " › " + esc(nomeBonito(p[1])) + '</span><button type="button" data-impl="' + esc(p[0]) + '" data-impc="' + esc(p[1]) + '">Importar</button></li>';
     }).join("") + "</ul></details>";
@@ -1815,7 +1815,7 @@ function infoGridCen() {
 }
 function desenharCenPreview() {
   var c = cenSel ? acharEnvio(cenSel) : null;
-  if (!c) return;
+  if (!c || !temGrid(c)) return;
   var g = desenharTabuleiro({ cols: c.cols, rows: c.rows, tokens: [], mestre: true, depois: infoGridCen });
   if (g) infoGridCen();
 }
@@ -1824,8 +1824,8 @@ function enviarCenario(input) {
   var f = input.files && input.files[0];
   if (!f) return;
   var nome = document.getElementById("cenaNome").value.trim() || nomeBonito(f.name);
-  var cols = parseInt(document.getElementById("cenaCols").value, 10) || 20;
-  var rows = parseInt(document.getElementById("cenaRows").value, 10) || null;
+  var cols = parseInt(document.getElementById("cenaCols").value, 10) || 0;
+  var rows = cols ? parseInt(document.getElementById("cenaRows").value, 10) || null : null;
   var hist = document.getElementById("cenaHist").value;
   upMsg = "Preparando a imagem…";
   renderizar();
@@ -1835,7 +1835,7 @@ function enviarCenario(input) {
     renderizar();
     gravar("cena_enviar", { nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
       if (!r) { upMsg = "Não foi possível enviar o cenário. Tente de novo."; renderizar(); return; }
-      ENVIADAS.push({ id: r.id, nome: r.nome, cols: Math.max(1, Math.min(200, cols)), rows: rows && rows >= 1 && rows <= 200 ? rows : null, v: Math.floor(Date.now() / 1000) });
+      ENVIADAS.push({ id: r.id, nome: r.nome, cols: cols ? Math.max(1, Math.min(200, cols)) : 0, rows: rows && rows >= 1 && rows <= 200 ? rows : null, v: Math.floor(Date.now() / 1000) });
       if (hist.trim()) { (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { historia: hist }; salvarEstado("cenarios_info"); }
       cenSel = r.id;
       upMsg = "Cenário “" + r.nome + "” criado.";
@@ -1862,10 +1862,11 @@ function trocarFotoCenario(input) {
 function inputCenarios(el) {
   var d = el.dataset, c;
   if (d.cengrid && cenSel && (c = acharEnvio(cenSel))) {
-    var n = parseInt(el.value, 10), valido = n >= 1 && n <= 200;
-    if (d.cengrid === "cols") c.cols = valido ? n : 20; else c.rows = valido ? n : null;
+    var n = parseInt(el.value, 10), valido = n >= 1 && n <= 200, tinha = temGrid(c);
+    if (d.cengrid === "cols") { c.cols = valido ? n : 0; if (!c.cols) c.rows = null; } else c.rows = valido ? n : null;
     adiar("cena-" + c.id, function () { gravar("cena_editar", { id: c.id, cols: c.cols, rows: c.rows }); }, 400);
-    desenharCenPreview();
+    /* Ao ligar ou desligar o grid a tela é refeita quando o campo perde o foco (evento change). */
+    if (tinha && temGrid(c)) desenharCenPreview();
     var cards = document.getElementById("cenCards");
     if (cards) cards.innerHTML = cenCardsHTML();
     return true;
@@ -1896,8 +1897,9 @@ function clickCenarios(b) {
   if (d.vermapa) { localSel = d.vermapa; location.hash = "#mapa"; return true; }
   if (d.cenesconder) { a.ativo = false; salvarAcao(); cenMsg = "A foto foi escondida dos jogadores."; renderizar(); return true; }
   if (d.cenusar) {
+    var cu = acharEnvio(parseInt(d.cenusar, 10));
     trocarCenario("e:" + parseInt(d.cenusar, 10));
-    a.modo = "grid";
+    a.modo = temGrid(cu) ? "grid" : "foto";
     salvarAcao();
     location.hash = "#acao";
     return true;
@@ -1931,7 +1933,7 @@ function clickCenarios(b) {
     return true;
   }
   if (d.impl) {
-    var cols = parseInt((document.getElementById("cenaCols") || {}).value, 10) || 20;
+    var cols = parseInt((document.getElementById("cenaCols") || {}).value, 10) || 0;
     b.disabled = true;
     gravar("cena_importar", { local: d.impl, cena: d.impc, nome: nomeBonito(d.impc), cols: cols }).then(function (r) {
       if (!r) { b.disabled = false; return; }
@@ -1967,7 +1969,9 @@ function cenaImgUrl(a) {
   var c = a.envio ? acharEnvio(a.envio) : null;
   return API + "?a=cena_img&" + (a.envio ? "id=" + encodeURIComponent(a.envio) + (c && c.v ? "&v=" + c.v : "") : "local=" + encodeURIComponent(a.local) + "&cena=" + encodeURIComponent(a.cena));
 }
-function gridTexto(c) { return c ? c.cols + " × " + (c.rows || "auto") : ""; }
+/* Sem colunas, o cenário não tem grid: é só uma imagem. */
+function temGrid(c) { return !!(c && c.cols); }
+function gridTexto(c) { return !c ? "" : (c.cols ? c.cols + " × " + (c.rows || "auto") : "sem grid"); }
 
 function acharTok(id) { var r = null; acaoEst().tokens.forEach(function (t) { if (t.id === id) r = t; }); return r; }
 
@@ -2072,6 +2076,7 @@ function trocarCenario(v) {
   a.local = ""; a.cena = ""; a.ativo = false; a.modo = "grid"; tokSel = null;
   var c = a.envio ? acharEnvio(a.envio) : null;
   a.titulo = c ? c.nome : "";
+  if (c && !temGrid(c)) a.modo = "foto";
   a.tokens = (v && (EST.cena_tokens[v] || {}).tokens) || [];
   aplicarCampo();
   if (CAMPO.combate) campoOp("encerrar");
@@ -2223,15 +2228,15 @@ function viewAcaoMestre() {
     ENVIADAS.map(function (c) { return '<option value="e:' + c.id + '"' + (a.envio === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>"; }).join("") + "</select></label>" +
     '<button type="button" id="acaoRecarregar">Atualizar lista</button></div>';
   if (!env) return h + '<div class="empty">Escolha um cenário.</div>';
-  var foto = a.modo === "foto";
+  var semGrid = !temGrid(env), foto = a.modo === "foto" || semGrid;
   h += '<div class="acao-ctl">' +
-    '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
+    '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + (semGrid ? " disabled" : "") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
     '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Ao vivo (os jogadores veem)</label>" +
     (foto ? "" : '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>") +
     '<label>Título para os jogadores<input class="sorteio-in" type="text" maxlength="80" data-acao="titulo" value="' + esc(a.titulo || "") + '" placeholder="Cena atual"></label>' +
     '<span class="tok-desl">Grid: <b>' + gridTexto(env) + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>';
   if (foto) {
-    return h + '<p class="mdica">Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.</p>' +
+    return h + '<p class="mdica">' + (semGrid ? "Este cenário não tem grid, então só dá para mostrar a foto. Para combater aqui, defina as colunas na aba Cenários." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.") + "</p>" +
       '<figure class="foto-cena"><img src="' + cenaImgUrl(a) + '" alt="' + esc(env.nome) + '"></figure>';
   }
   h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m e a diagonal conta como 1 casa.</p>';
@@ -2355,7 +2360,7 @@ function changeAcao(el) {
   }
   if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); renderAcaoUI(); return true; }
   if (d.acao === "modo") {
-    a.modo = el.value === "foto" ? "foto" : "grid";
+    a.modo = el.value === "foto" || !temGrid(a.envio ? acharEnvio(a.envio) : null) ? "foto" : "grid";
     if (a.modo === "foto" && CAMPO.combate) campoOp("encerrar");
     salvarAcao();
     renderizar();
@@ -2622,6 +2627,7 @@ MESTRE = {
       var j = achaJog(jogSel);
       if (j) { j.grimRev = el.checked; salvarJog(j, true, ["grimRev"]); }
     }
+    else if (d.cengrid) { renderizar(); }
     else if (d.loccen) { vincularLocal(d.loccen, el.value ? parseInt(el.value, 10) : 0); renderizar(); }
     else if (d.cenloc) {
       var cid = parseInt(d.cenloc, 10), antigo = localDoCenario(cid);

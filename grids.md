@@ -9,15 +9,17 @@
 Tudo parte da aba **Cenários** (só do mestre). Cada cenário reúne, num lugar só:
 
 - a **foto** (gerada sem grade);
-- o **grid**: colunas e linhas, com a prévia do grid sobre a foto e o tamanho em metros. Linhas em branco = automático, com casas quadradas;
+- o **grid** (**opcional**): colunas e linhas, com a prévia do grid sobre a foto e o tamanho em metros. Linhas em branco = automático, com casas quadradas. **Colunas em branco = cenário sem grid**, só uma imagem para mostrar como é o lugar;
 - a **história e os detalhes**, que só o mestre vê (segredos, o que acontece, como os jogadores chegam);
 - o **local no mapa** ao qual ele pertence (ver 0.1).
 
 Dali o mestre escolhe o que fazer com o cenário:
 
-- **Usar na Ação (grid):** leva para a aba Ação com o grid já configurado.
+- **Usar na Ação (grid):** leva para a aba Ação com o grid já configurado. Só existe para cenários com grid.
 - **Mostrar só a foto aos jogadores:** os jogadores veem apenas a imagem (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
 - **Trocar a foto**, renomear, mudar o grid ou excluir.
+
+**Cenário sem grid:** tem o mesmo cartão e a mesma história, mas só pode ser mostrado como foto (o botão de grid some e, na Ação, a opção "Grid e tokens" fica desabilitada). O servidor também recusa movimentos e combate nele. Para combater num cenário assim, basta definir as colunas depois. Ligar e desligar o grid não perde a foto nem a história.
 
 A aba **Ação** apenas **chama** um cenário já pronto. Ela tem o seletor de cenário, "Como mostrar" (Grid e tokens, ou Só a foto), "Ao vivo", o título para os jogadores e os tokens. O grid mostrado ali é o do cenário, e há o botão "Editar o cenário".
 

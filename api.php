@@ -418,6 +418,13 @@ function acaoCenaImg(): never
     exit;
 }
 
+/* Sem colunas (0) o cenário não tem grid: é só uma imagem. */
+function limiteColunas(mixed $v): int
+{
+    $n = (int)$v;
+    return $n < 1 ? 0 : min(200, $n);
+}
+
 function limiteGrid(mixed $v, bool $aceitaVazio): ?int
 {
     if (($v === null || $v === '') && $aceitaVazio) return null;
@@ -433,7 +440,7 @@ function acaoCenaEnviar(): never
     [$mime, $bin] = decodificarImagem($c['dados'] ?? '');
     $pdo = db();
     $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$nome, $mime, $bin, limiteGrid($c['cols'] ?? 20, false), limiteGrid($c['rows'] ?? null, true)]);
+        ->execute([$nome, $mime, $bin, limiteColunas($c['cols'] ?? 0), limiteGrid($c['rows'] ?? null, true)]);
     responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
 }
 
@@ -448,7 +455,7 @@ function acaoCenaEditar(): never
         $pdo->prepare('UPDATE cenas SET mime = ?, dados = ?, criado_em = NOW() WHERE id = ?')->execute([$mime, $bin, $id]);
     }
     if (array_key_exists('nome', $c)) $pdo->prepare('UPDATE cenas SET nome = ? WHERE id = ?')->execute([mb_substr(trim((string)$c['nome']), 0, 120) ?: 'Cenário', $id]);
-    if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cenas SET colunas = ? WHERE id = ?')->execute([limiteGrid($c['cols'], false), $id]);
+    if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cenas SET colunas = ? WHERE id = ?')->execute([limiteColunas($c['cols']), $id]);
     if (array_key_exists('rows', $c)) $pdo->prepare('UPDATE cenas SET linhas = ? WHERE id = ?')->execute([limiteGrid($c['rows'], true), $id]);
     responder(['ok' => true]);
 }
@@ -474,6 +481,6 @@ function acaoCenaImportar(): never
     $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Cenário';
     $pdo = db();
     $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$nome, $mime, $bin, limiteGrid($c['cols'] ?? 20, false), limiteGrid($c['rows'] ?? null, true)]);
+        ->execute([$nome, $mime, $bin, limiteColunas($c['cols'] ?? 0), limiteGrid($c['rows'] ?? null, true)]);
     responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
 }

@@ -483,6 +483,10 @@ function campoOpJogador(array $u, string $op, array $c): never
     $a = lerEstado('acao') ?? [];
     if (empty($a['ativo'])) erro('Nenhuma cena ativa.', 409);
     if (($a['modo'] ?? 'grid') === 'foto') erro('Esta cena é só uma imagem.', 409);
+    if (!empty($a['envio'])) {
+        $ce = cenaEnviada((int)$a['envio']);
+        if ($ce && (int)$ce['colunas'] < 1) erro('Este cenário não tem grid.', 409);
+    }
     $tokens = tokensAcao();
     $meu = null;
     foreach ($tokens as $id => $t) {
@@ -555,14 +559,16 @@ function acaoPublica(?string $jogId = null): array
         $c = cenaEnviada((int)$a['envio']);
         if (!$c) return ['ativo' => false];
         $g = ['cols' => $c['colunas'], 'rows' => $c['linhas']];
+        $semGrid = (int)$c['colunas'] < 1;
         $imgId = substr(md5('e' . $c['id'] . '-' . $c['ts']), 0, 12);
     } else {
+        $semGrid = false;
         if (!arquivoCena($a['local'] ?? null, $a['cena'] ?? null)) return ['ativo' => false];
         $g = (lerEstado('grids') ?? [])[$a['local'] . '/' . $a['cena']] ?? [];
         $imgId = substr(md5($a['local'] . '/' . $a['cena']), 0, 12);
     }
     /* "Só a foto": o jogador vê a imagem do cenário, sem grid, tokens nem combate. */
-    if (($a['modo'] ?? 'grid') === 'foto') {
+    if (($a['modo'] ?? 'grid') === 'foto' || $semGrid) {
         return ['ativo' => true, 'modo' => 'foto', 'img' => $imgId, 'titulo' => (string)($a['titulo'] ?? '')];
     }
     $campo = campoLer();
