@@ -116,7 +116,7 @@ O sistema desenha a grade por cima da imagem, na hora da ação. Motivos:
 - Define um título, que é o único nome que o jogador vê (ele começa com o nome do cenário, e dá para trocar).
 - Marca "Ao vivo" para os jogadores verem a cena.
 - Tokens: adiciona todos os jogadores de uma vez, inimigos e aliados; muda nome, tipo e cor; marca como **oculto** (só o mestre vê).
-- Move os tokens arrastando, ou tocando no token e depois na casa de destino. Mostra a distância em casas e metros.
+- Move os tokens arrastando, ou tocando no token e depois na casa de destino. Mostra a distância em casas e metros. Nos turnos do combate, o token selecionado mostra em azul-claro até onde ainda pode ir.
 - **Inimigos:** escolhe um inimigo do Bestiário e adiciona no grid (já vem com vida e defesa; nomes repetidos viram "Lobo de Mana 2"). Também há "Inimigo avulso". A barra de vida aparece só para o mestre.
 - **Armadilhas ocultas:** token em losango laranja com "!", criado **escondido**. O mestre escreve o efeito (ex.: "2d6 de dano, Destreza contra 13"). Só aparece para os jogadores quando o mestre desmarca "Escondida". Quando um token pisa numa armadilha, o mestre recebe o aviso com o efeito, mesmo se ela estiver escondida.
 - **Tokens ocultos:** qualquer token pode ficar oculto (esmaecido para o mestre, invisível para os jogadores).
@@ -150,7 +150,16 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 - **Ao vivo:** o mestre marca "Cena ao vivo" e os jogadores online passam a ver o mapa e a mover o próprio token.
 - **Tokens por cenário:** cada cenário guarda os próprios tokens e posições. Trocar de cena e voltar não perde nada. Trocar de cena encerra o combate.
 - **Fora de combate**, o jogador se move livremente (sem limite de casas) enquanto a opção "Jogadores podem se mover fora de combate" estiver marcada. O mestre pode desmarcar para travar.
-- O jogador **nunca** arrasta token que não seja o dele. Não pode parar numa casa ocupada por outro token visível. Quem pisa numa armadilha escondida a revela para todos.
+- O jogador **nunca** move token que não seja o dele. Não pode parar numa casa ocupada por outro token visível. Quem pisa numa armadilha escondida a revela para todos.
+
+### Como o jogador se move
+
+1. **Clica no próprio token.** Ele fica destacado (pulsando) e as casas que ele alcança aparecem em **azul-claro**. Dá para passar o mouse numa casa azul e ver a coordenada e a distância. Clicar de novo no token cancela.
+2. **Clica numa casa azul.** Só nesse momento o movimento acontece e **conta** o deslocamento. Selecionar o token não gasta nada. Não precisa arrastar.
+3. O token **desliza** até a casa, com uma animação curta (mais longa quanto maior a distância, no máximo 0,9 s). Os outros jogadores veem o mesmo deslize quando a tela deles atualiza. Quem prefere menos movimento no sistema (configuração do aparelho) vê o token pular direto.
+4. A mensagem acima do mapa mostra a origem, o destino e quanto resta. Se o servidor recusar (casa ocupada, não é a vez, falta deslocamento), o token **volta** para onde estava e o motivo aparece em vermelho.
+
+**O que é "alcançável":** a distância até o que resta de deslocamento (a diagonal conta 1 casa), sem as casas ocupadas por outros tokens visíveis. Armadilhas e tokens derrotados não bloqueiam. Em **combate**, o alcance é o que resta no turno e diminui a cada movimento. **Fora de combate**, o alcance é o deslocamento do personagem a cada movimento, e dá para se mover quantas vezes quiser.
 
 ## 4.2 Combate por turnos
 

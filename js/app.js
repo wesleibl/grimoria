@@ -630,6 +630,28 @@ function reduzirImagem(f, max, limite, pronto) {
 
 /* ============================ TABULEIRO ============================ */
 
+/* Animação: guarda onde cada token estava no último desenho. No desenho seguinte ele nasce na posição antiga e desliza
+   (transição de CSS) até a nova. tabAnimFim adia redesenhos que cortariam a animação no meio. */
+var posTokAnt = {}, posTokChave = "", tabAnimFim = 0, tabAdiado = null;
+function agendarQuadro(fn) {
+  if (window.requestAnimationFrame) window.requestAnimationFrame(function () { window.requestAnimationFrame(fn); });
+  else setTimeout(fn, 20);
+}
+
+/* Casas que o token alcança: distância até o que resta de movimento (a diagonal conta como 1 casa), sem as casas
+   ocupadas. Armadilhas e tokens derrotados não bloqueiam. */
+function celulasAlcance(tokens, t, resta, cols, rows) {
+  var out = [], ocup = {};
+  tokens.forEach(function (o) { if (o.id !== t.id && o.tipo !== "armadilha" && !o.morto) ocup[(o.x | 0) + "," + (o.y | 0)] = true; });
+  for (var y = Math.max(0, t.y - resta); y <= Math.min(rows - 1, t.y + resta); y++) {
+    for (var x = Math.max(0, t.x - resta); x <= Math.min(cols - 1, t.x + resta); x++) {
+      if ((x === t.x && y === t.y) || ocup[x + "," + y]) continue;
+      out.push({ x: x, y: y, d: Math.max(Math.abs(x - t.x), Math.abs(y - t.y)) });
+    }
+  }
+  return out;
+}
+
 var COR_TOKEN = { jogador: "#2a6fc9", aliado: "#2e8b57", inimigo: "#c0392b", armadilha: "#d9700f" };
 var tabGeo = null;
 
@@ -660,6 +682,12 @@ function desenharTabuleiro(cfg) {
     img.onerror = function () { svg.outerHTML = '<p class="tab-erro">Não consegui carregar a imagem deste mapa.</p>'; };
     return null;
   }
+  /* Em plena animação, o redesenho espera ela terminar (senão o token "pularia" para o fim). */
+  if (Date.now() < tabAnimFim && tabGeo) {
+    clearTimeout(tabAdiado);
+    tabAdiado = setTimeout(function () { desenharTabuleiro(cfg); if (cfg.depois) cfg.depois(); }, tabAnimFim - Date.now() + 30);
+    return tabGeo;
+  }
   var W = img.naturalWidth, H = img.naturalHeight;
   var cols = Math.max(1, Math.min(200, cfg.cols || 20));
   var rows = Math.max(1, Math.min(200, cfg.rows || Math.round(cols * H / W)));
@@ -670,7 +698,15 @@ function desenharTabuleiro(cfg) {
   var fs = Math.max(8, menor * 0.26);
   for (i = 0; i < cols; i++) h += '<text class="tab-coord" x="' + (i * cw + fs * 0.3).toFixed(1) + '" y="' + (fs * 1.05).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + colNome(i) + "</text>";
   for (j = 1; j < rows; j++) h += '<text class="tab-coord" x="' + (fs * 0.3).toFixed(1) + '" y="' + (j * ch + fs * 1.05).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + (j + 1) + "</text>";
+  /* Casas azuis: onde o token selecionado pode ir. */
+  var alc = typeof cfg.alcance === "function" ? cfg.alcance(cols, rows) : (cfg.alcance || []);
+  alc.forEach(function (c) {
+    h += '<rect class="alc" data-ax="' + c.x + '" data-ay="' + c.y + '" x="' + (c.x * cw).toFixed(1) + '" y="' + (c.y * ch).toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + ch.toFixed(1) + '" rx="' + (menor * 0.08).toFixed(1) + '"><title>' +
+      coordNome(c.x, c.y) + ", " + c.d + (c.d === 1 ? " casa" : " casas") + "</title></rect>";
+  });
   var r = menor * 0.38;
+  var chaveCena = img.src || "", novosPos = {}, deslizar = [], durMax = 0;
+  if (posTokChave !== chaveCena) { posTokAnt = {}; posTokChave = chaveCena; }
   (cfg.tokens || []).forEach(function (t) {
     var x = Math.max(0, Math.min(cols - 1, t.x | 0)), y = Math.max(0, Math.min(rows - 1, t.y | 0));
     var cls = "token" + (t.oculto ? " oculto" : "") + (t.morto ? " morto" : "") + (cfg.atual === t.id ? " atual" : "") + (cfg.meu && t.id === cfg.meu ? " meu" : "") + (cfg.sel === t.id ? " sel" : "");
@@ -683,12 +719,33 @@ function desenharTabuleiro(cfg) {
       barra = '<rect x="' + (-bw / 2).toFixed(1) + '" y="' + (r * 1.05).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (r * 0.22).toFixed(1) + '" fill="#000" fill-opacity=".6"/>' +
         '<rect x="' + (-bw / 2).toFixed(1) + '" y="' + (r * 1.05).toFixed(1) + '" width="' + (bw * pc).toFixed(1) + '" height="' + (r * 0.22).toFixed(1) + '" fill="' + (pc > 0.5 ? "#2e8b57" : pc > 0.25 ? "#d9a21f" : "#c0392b") + '"/>';
     }
-    h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" transform="translate(' + ((x + 0.5) * cw).toFixed(1) + "," + ((y + 0.5) * ch).toFixed(1) + ')">' +
+    var px = (x + 0.5) * cw, py = (y + 0.5) * ch, ant = posTokAnt[t.id], estilo;
+    var alvo = "translate(" + px.toFixed(1) + "px," + py.toFixed(1) + "px)";
+    novosPos[t.id] = { px: px, py: py };
+    if (ant && (Math.abs(ant.px - px) > 0.5 || Math.abs(ant.py - py) > 0.5)) {
+      var dur = Math.min(0.9, 0.2 + 0.07 * Math.max(Math.abs(ant.px - px) / cw, Math.abs(ant.py - py) / ch));
+      durMax = Math.max(durMax, dur);
+      deslizar.push(t.id);
+      estilo = "transform:translate(" + ant.px.toFixed(1) + "px," + ant.py.toFixed(1) + "px);transition-duration:" + dur.toFixed(2) + "s";
+    } else {
+      estilo = "transform:" + alvo + ";transition-duration:0s";
+    }
+    h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" data-alvo="' + alvo + '" style="' + estilo + '">' +
       "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + forma +
       '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + barra + "</g>";
   });
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
   svg.innerHTML = h;
+  posTokAnt = novosPos;
+  if (deslizar.length) {
+    tabAnimFim = Date.now() + durMax * 1000;
+    agendarQuadro(function () {
+      var gs = svg.querySelectorAll ? svg.querySelectorAll(".token") : [];
+      for (var k = 0; k < gs.length; k++) {
+        if (deslizar.indexOf(gs[k].getAttribute("data-tok")) !== -1) gs[k].style.transform = gs[k].getAttribute("data-alvo");
+      }
+    });
+  }
   tabGeo = { W: W, H: H, cols: cols, rows: rows, cw: cw, ch: ch };
   return tabGeo;
 }
@@ -715,7 +772,7 @@ function listaTokensHTML(tokens, meu) {
 
 /* ============================ AÇÃO (JOGADOR) ============================ */
 
-var acaoPub = null, acaoJson = "", acaoTimer = null, acaoGer = 0, acaoRodando = false, acaoMsg = "", arrastandoJog = false, selJog = false;
+var acaoPub = null, acaoJson = "", acaoTimer = null, acaoGer = 0, acaoRodando = false, acaoMsg = "", acaoMsgErro = true, movendoJog = false, selJog = false;
 
 function meuTok() {
   var r = null;
@@ -777,70 +834,72 @@ function viewAcaoJogador() {
       (a.resumo ? '<p class="resumo lead">' + esc(a.resumo) + "</p>" : "");
   }
   return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + (a.resumo ? '<p class="resumo">' + esc(a.resumo) + "</p>" : "") + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
-    '<p id="acaoMsg" role="status" class="mdica tok-aviso">' + esc(acaoMsg) + "</p>" +
+    '<p id="acaoMsg" role="status" class="mdica' + (acaoMsgErro ? " tok-aviso" : "") + '">' + esc(acaoMsg) + "</p>" +
     '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
     listaTokensHTML(a.tokens || [], a.eu) + '<div id="acaoLog">' + acaoLogHTML() + "</div>";
+}
+
+function mostrarAcaoMsg(txt, erro) {
+  acaoMsg = txt; acaoMsgErro = !!erro;
+  var m = document.getElementById("acaoMsg");
+  if (m) { m.textContent = txt; m.classList.toggle("tok-aviso", !!erro); }
+}
+
+/* Casas azuis do próprio token: o que resta de deslocamento no turno; fora de combate, o deslocamento por movimento. */
+function alcanceJogador(cols, rows) {
+  var t = meuTok();
+  if (!selJog || !t || !podeMover()) return [];
+  var cb = acaoPub.combate, resta = cb && cb.fase === "turnos" ? Math.max(0, (t.desl || 6) - (t.gasto || 0)) : (t.desl || 6);
+  return celulasAlcance(acaoPub.tokens, t, resta, cols, rows);
 }
 
 function desenharAcaoJogador() {
   if (!acaoPub || !acaoPub.ativo || acaoPub.modo === "foto") return;
   var cb = acaoPub.combate;
-  desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: acaoPub.eu, atual: cb ? cb.atual : null, depois: ligarArrasteJog });
-  ligarArrasteJog();
+  if (selJog && !podeMover()) selJog = false;
+  desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: acaoPub.eu, atual: cb ? cb.atual : null, sel: selJog ? acaoPub.eu : null, alcance: alcanceJogador, depois: ligarCliqueJog });
+  ligarCliqueJog();
 }
 
-/* O jogador arrasta só o próprio token, e só quando o servidor deixaria. */
-function ligarArrasteJog() {
+/* Mover = clicar no próprio token (aparecem as casas azuis) e depois clicar numa casa azul. Não precisa arrastar. */
+function ligarCliqueJog() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
-  var t0 = meuTok(), arr = null;
-  if (!podeMover() || !t0) { svg.classList.remove("editavel"); svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = null; return; }
+  if (!meuTok() || !podeMover()) { selJog = false; svg.classList.remove("editavel"); svg.onclick = null; return; }
   svg.classList.add("editavel");
-  function avisar(c) {
-    var casas = Math.max(Math.abs(c.x - t0.x), Math.abs(c.y - t0.y)), cb = acaoPub.combate, m = document.getElementById("acaoMsg");
-    var txt = coordNome(t0.x, t0.y) + " → " + coordNome(c.x, c.y) + ", " + casas + (casas === 1 ? " casa." : " casas.");
-    if (cb && cb.fase === "turnos") { var resta = (t0.desl || 6) - (t0.gasto || 0); txt += casas > resta ? " Falta deslocamento (restam " + Math.max(0, resta) + ")." : " Restam " + (resta - casas) + "."; }
-    if (m) m.textContent = txt;
-  }
-  function soltar(c) {
-    if (!c || (c.x === t0.x && c.y === t0.y)) { desenharAcaoJogador(); return; }
-    var m = document.getElementById("acaoMsg");
-    if (m) m.textContent = "Movendo…";
-    api("campo_op", { op: "mover", x: c.x, y: c.y }).then(function () {
-      acaoMsg = "";
-      return buscarAcaoAgora(true);
-    }, function (e) {
-      acaoMsg = e.message;
-      return buscarAcaoAgora(true);
-    });
-  }
-  svg.onpointerdown = function (ev) {
+  svg.onclick = function (ev) {
+    if (movendoJog) return;
+    var alvo = ev.target.closest ? ev.target.closest(".alc") : null;
+    if (alvo) { moverJogadorPara(parseInt(alvo.getAttribute("data-ax"), 10), parseInt(alvo.getAttribute("data-ay"), 10)); return; }
     var g = ev.target.closest ? ev.target.closest(".token") : null;
-    if (!g || g.dataset.tok !== acaoPub.eu) {
-      if (selJog) { var c = celulaTab(svg, ev); selJog = false; if (c) soltar(c); }
-      return;
-    }
-    ev.preventDefault();
-    arr = { g: g, c: null };
-    arrastandoJog = true;
-    selJog = true;
-    try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
+    var t = meuTok();
+    selJog = !!(g && t && g.dataset.tok === acaoPub.eu && !selJog);
+    if (selJog) {
+      var cb = acaoPub.combate, resta = cb && cb.fase === "turnos" ? Math.max(0, (t.desl || 6) - (t.gasto || 0)) : (t.desl || 6);
+      mostrarAcaoMsg("Escolha uma casa azul para se mover (até " + resta + (resta === 1 ? " casa" : " casas") + ").", false);
+    } else mostrarAcaoMsg("", false);
+    desenharAcaoJogador();
   };
-  svg.onpointermove = function (ev) {
-    if (!arr) return;
-    var c = celulaTab(svg, ev);
-    if (!c) return;
-    arr.c = c;
-    arr.g.setAttribute("transform", "translate(" + ((c.x + 0.5) * tabGeo.cw).toFixed(1) + "," + ((c.y + 0.5) * tabGeo.ch).toFixed(1) + ")");
-    avisar(c);
-  };
-  svg.onpointerup = svg.onpointercancel = function () {
-    if (!arr) return;
-    var c = arr.c;
-    arr = null;
-    arrastandoJog = false;
-    if (c) { selJog = false; soltar(c); }
-  };
+}
+
+/* O token já desliza na hora (otimista). Se o servidor recusar, ele volta e o motivo aparece. */
+function moverJogadorPara(x, y) {
+  var t = meuTok();
+  if (!t) return;
+  var casas = Math.max(Math.abs(x - t.x), Math.abs(y - t.y)), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
+  var antes = { x: t.x, y: t.y, gasto: t.gasto };
+  t.x = x; t.y = y;
+  if (turnos) t.gasto = (t.gasto || 0) + casas;
+  selJog = false; movendoJog = true;
+  mostrarAcaoMsg("Movendo para " + coordNome(x, y) + "…", false);
+  desenharAcaoJogador();
+  api("campo_op", { op: "mover", x: x, y: y }).then(function () {
+    mostrarAcaoMsg(coordNome(antes.x, antes.y) + " → " + coordNome(x, y) + ", " + casas + (casas === 1 ? " casa." : " casas.") + (turnos ? " Restam " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + "." : ""), false);
+  }, function (e) {
+    t.x = antes.x; t.y = antes.y; t.gasto = antes.gasto;
+    mostrarAcaoMsg(e.message, true);
+    desenharAcaoJogador();
+  }).then(function () { movendoJog = false; return buscarAcaoAgora(true); });
 }
 
 function acaoAtualizarUI(trocouTela) {
@@ -853,7 +912,7 @@ function acaoAtualizarUI(trocouTela) {
   var g = document.getElementById("acaoLog");
   if (g) g.innerHTML = acaoLogHTML();
   var m = document.getElementById("acaoMsg");
-  if (m && !arrastandoJog) m.textContent = acaoMsg;
+  if (m && !movendoJog) { m.textContent = acaoMsg; m.classList.toggle("tok-aviso", acaoMsgErro); }
   desenharAcaoJogador();
 }
 
@@ -874,7 +933,7 @@ function buscarAcaoAgora(forcar) {
 function buscarAcao(ger) {
   if (ger !== acaoGer || MESTRE || !USUARIO || rotaAtual() !== "acao") return;
   var depois = function () { if (ger === acaoGer) acaoTimer = setTimeout(function () { buscarAcao(ger); }, acaoPub && acaoPub.combate ? 2000 : 4000); };
-  if (document.hidden || arrastandoJog) { depois(); return; }
+  if (document.hidden || movendoJog) { depois(); return; }
   buscarAcaoAgora().then(depois);
 }
 
@@ -1062,9 +1121,18 @@ function montarNav(atual) {
   fecharMenus(true);
 }
 
+/* Com a imersão ou o combate ativos, a aba Ação usa a largura toda e o card de combate desce para baixo do mapa. */
+function imersivoAtivo() {
+  if (!USUARIO || rotaAtual() !== "acao") return false;
+  if (MESTRE) return !!(acaoEst().ativo || CAMPO.combate);
+  return !!(acaoPub && acaoPub.ativo);
+}
+function marcarImersivo() { app.classList.toggle("imersivo", imersivoAtivo()); }
+
 function renderizar() {
   montarTopo();
   if (!USUARIO) {
+    marcarImersivo();
     montarNav("");
     app.innerHTML = viewConta();
     document.title = (modoConta === "registrar" ? "Criar conta" : "Entrar") + " | Grimório do Mestre";
@@ -1076,6 +1144,7 @@ function renderizar() {
   app.innerHTML = VIEWFN[r]();
   if (MESTRE) MESTRE.depois(r);
   if (r === "mapa") desenharMapa();
+  marcarImersivo();
   if (r === "acao" && !MESTRE) { desenharAcaoJogador(); iniciarAcao(); }
   if (r !== "acao" && acaoRodando) pararAcao();
   document.title = (listaViews().filter(function (v) { return v[0] === r; })[0][1]) + " | Grimório do Mestre";

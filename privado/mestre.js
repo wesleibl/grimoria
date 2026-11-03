@@ -1757,7 +1757,7 @@ function setCenLiberado(id, v) {
 function statusCen(c) {
   var a = acaoEst();
   if (!a.ativo || a.envio !== c.id) return "";
-  return a.modo === "foto" || !gridAtivo(a) ? "Foto na tela dos jogadores" : "Ao vivo (grid)";
+  return a.modo === "foto" || !gridAtivo(a) ? "Foto na tela dos jogadores" : "Imersão ativa (grid)";
 }
 
 function novoCenarioHTML() {
@@ -1814,7 +1814,7 @@ function cenDetalheHTML() {
   var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c), lk = localDoCenario(c.id);
   return '<section class="panel cen-det"><h3>' + esc(c.nome) + (st ? ' <span class="tag leg">' + st + "</span>" : "") + "</h3>" +
     '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> Liberado aos jogadores</label>" +
-    '<p class="mdica">' + (cenLiberado(c.id) ? "Os jogadores veem o nome, a foto e o resumo deste cenário ao clicar no local dele no mapa (se o local estiver revelado)." : "Oculto: os jogadores só o veem enquanto você o mostra ao vivo. No mapa, ele só aparece depois de liberado.") + "</p>" +
+    '<p class="mdica">' + (cenLiberado(c.id) ? "Os jogadores veem o nome, a foto e o resumo deste cenário ao clicar no local dele no mapa (se o local estiver revelado)." : "Oculto: os jogadores só o veem enquanto a imersão estiver ativa neste cenário. No mapa, ele só aparece depois de liberado.") + "</p>" +
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + c.id + '" value="' + esc(c.nome) + '"></label>' +
     '<label>Local no mapa<select class="sorteio-in" data-cenloc="' + c.id + '"><option value="">Nenhum</option>' +
     LOCAIS.map(function (l) { return '<option value="' + l.id + '"' + (lk === l.id ? " selected" : "") + ">" + esc(l.nome) + "</option>"; }).join("") + "</select></label>" +
@@ -2118,6 +2118,7 @@ function movel(t) { return t.tipo !== "armadilha"; }
 function salvarAcao() {
   var a = acaoEst();
   a.tokens.forEach(function (t) { if (movel(t)) t.desl = deslTok(t); });
+  a.livre = true; /* a opção de travar o movimento fora de combate foi substituída pelo botão de imersão */
   if (tabGeo) { a.cols = tabGeo.cols; a.rows = tabGeo.rows; }
   else { var gg = gridDe(a); if (gg.cols) a.cols = gg.cols; if (gg.rows) a.rows = gg.rows; }
   var copia = JSON.parse(JSON.stringify(a));
@@ -2283,8 +2284,8 @@ function combatePainelHTML() {
   var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
   if (!cb) {
     return h + '<p class="mdica">Ao iniciar, os jogadores rolam a iniciativa (d20 + Destreza) e a ordem de turnos aparece para todos.</p>' +
-      '<button type="button" class="primary" id="cmbIniciar"' + (a.ativo ? "" : " disabled") + ">Iniciar combate</button>" +
-      (a.ativo ? "" : '<p class="mdica">Coloque a cena ao vivo para iniciar.</p>') + "</section>";
+      '<button type="button" class="primary" id="cmbIniciar">Iniciar combate</button>' +
+      (a.ativo ? "" : '<p class="mdica">A imersão está desligada: você pode iniciar o combate, mas os jogadores só o veem (e rolam a iniciativa) depois que você ativá-la.</p>') + "</section>";
   }
   var ini = cb.ini || {};
   if (cb.fase === "ini") {
@@ -2324,6 +2325,7 @@ function emEdicao(id) {
 }
 
 function renderAcaoUI() {
+  marcarImersivo();
   var c = document.getElementById("combatePainel");
   if (c && !emEdicao("combatePainel")) c.innerHTML = combatePainelHTML();
   var p = document.getElementById("tokPainel");
@@ -2366,10 +2368,10 @@ function viewAcaoMestre() {
   var foto = a.modo === "foto" || !g;
   h += '<div class="acao-ctl">' +
     '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + (g ? "" : " disabled") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
-    '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Ao vivo (os jogadores veem)</label>" +
-    (foto ? "" : '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>") +
+    '<button type="button" class="chip acao-imersao" id="imersao" aria-pressed="' + !!a.ativo + '">' + ic(a.ativo ? "olho" : "cadeado") + (a.ativo ? "Desativar imersão" : "Ativar imersão") + "</button>" +
     '<label>Título para os jogadores<input class="sorteio-in" type="text" maxlength="80" data-acao="titulo" value="' + esc(a.titulo || "") + '" placeholder="Cena atual"></label>' +
-    '<span class="tok-desl">Grid: <b>' + (g ? gridTexto(g) : "sem mapa de grid") + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>';
+    '<span class="tok-desl">Grid: <b>' + (g ? gridTexto(g) : "sem mapa de grid") + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>' +
+    '<p class="mdica" id="imersaoInfo">' + (a.ativo ? (foto ? "Imersão ativa: os jogadores estão vendo a foto." : "Imersão ativa: os jogadores veem o mapa e movem o personagem deles. Fora de combate, a movimentação é livre; no combate, só na vez de cada um.") : "Imersão desligada: só você vê esta cena. Você pode montar o mapa, e até iniciar o combate, sem os jogadores verem.") + "</p>";
   if (foto) {
     return h + '<p class="mdica">' + (!grids.length ? "Este cenário ainda não tem mapa de grid, então só dá para mostrar a foto. Para combater, adicione uma imagem de grid na aba Cenários." : (!g ? "Escolha um mapa de grid acima para usar o grid e os tokens." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.")) + "</p>" +
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
@@ -2398,7 +2400,13 @@ function viewAcaoMestre() {
 function desenharAcaoMestre() {
   var a = acaoEst(), g = gridDe(a);
   var tokens = a.tokens.map(function (t) { var c = extras({}, t); c.oculto = !!t.oculto && !revelado(t); return c; });
-  desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: tokens, sel: tokSel, atual: atualId(), mestre: true, depois: ligarArraste });
+  /* Nos turnos, o token selecionado mostra em azul até onde ainda pode ir. */
+  var alcance = function (cols, rows) {
+    var t = tokSel ? acharTok(tokSel) : null;
+    if (!t || !movel(t) || !emTurnos()) return [];
+    return celulasAlcance(a.tokens, t, Math.max(0, deslTok(t) - (parseInt(t.gasto, 10) || 0)), cols, rows);
+  };
+  desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: tokens, sel: tokSel, atual: atualId(), alcance: alcance, mestre: true, depois: ligarArraste });
 }
 
 function infoTok(txt, aviso) {
@@ -2462,6 +2470,7 @@ function ligarArraste() {
     selecionarTok(t.id);
     arr = { t: t, g: g, ox: t.x, oy: t.y, c: null };
     arrastando = true;
+    svg.classList.add("drag");
     try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura: ignora */ }
     infoTok((t.nome || "Token") + " selecionado em " + coordNome(t.x, t.y) + (movel(t) && emTurnos() ? ". Deslocamento " + deslTok(t) + ", já gastou " + (parseInt(t.gasto, 10) || 0) + "." : ".") + " Arraste, ou toque na casa de destino.");
   };
@@ -2470,7 +2479,7 @@ function ligarArraste() {
     var c = celulaTab(svg, ev);
     if (!c) return;
     arr.c = c;
-    arr.g.setAttribute("transform", "translate(" + ((c.x + 0.5) * tabGeo.cw).toFixed(1) + "," + ((c.y + 0.5) * tabGeo.ch).toFixed(1) + ")");
+    arr.g.style.transform = "translate(" + ((c.x + 0.5) * tabGeo.cw).toFixed(1) + "px," + ((c.y + 0.5) * tabGeo.ch).toFixed(1) + "px)";
     var r = textoDistancia(arr.t, arr.ox, arr.oy, c);
     infoTok(r[0], r[1]);
   };
@@ -2479,6 +2488,7 @@ function ligarArraste() {
     var a2 = arr;
     arr = null;
     arrastando = false;
+    svg.classList.remove("drag");
     if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) moverTok(a2.t, a2.c, a2.ox, a2.oy);
   };
 }
@@ -2498,7 +2508,6 @@ function changeAcao(el) {
     return true;
   }
   if (d.acao === "grid") { selecionarNaAcao(a.envio, parseInt(el.value, 10) || 0); renderizar(); return true; }
-  if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); renderAcaoUI(); return true; }
   if (d.acao === "modo") {
     a.modo = el.value === "grid" && gridAtivo(a) ? "grid" : "foto";
     if (a.modo === "foto" && CAMPO.combate) campoOp("encerrar");
@@ -2506,7 +2515,6 @@ function changeAcao(el) {
     renderizar();
     return true;
   }
-  if (d.acao === "livre") { a.livre = el.checked; salvarAcao(); return true; }
   if (d.tcor && (t = acharTok(d.tcor))) { t.cor = el.value; salvarAcao(); renderAcaoUI(); return true; }
   if (d.ttipo && (t = acharTok(d.ttipo))) {
     if (t.cor === COR_TOKEN[t.tipo]) t.cor = COR_TOKEN[el.value];
@@ -2559,6 +2567,7 @@ function inputAcao(el) {
 function clickAcao(b) {
   var a = acaoEst(), t;
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
+  if (b.id === "imersao") { a.ativo = !a.ativo; salvarAcao(); renderizar(); return true; }
   if (b.dataset.tsel) { selecionarTok(b.dataset.tsel); desenharAcaoMestre(); return true; }
   if (b.dataset.cenir) { cenSel = parseInt(b.dataset.cenir, 10); location.hash = "#cenarios"; return true; }
   /* --- tokens --- */

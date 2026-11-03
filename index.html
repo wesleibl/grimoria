@@ -455,7 +455,15 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 .tab-svg.editavel { touch-action: none; }
 .tab-linha { fill: none; stroke: #fff; stroke-opacity: .55; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .tab-coord { fill: #fff; stroke: #000; stroke-width: .35px; paint-order: stroke; font-weight: 700; opacity: .85; pointer-events: none; font-family: system-ui, sans-serif; }
-.token { cursor: grab; }
+.token { cursor: pointer; transition: transform .45s cubic-bezier(.4, 0, .2, 1); }
+.tab-svg.drag .token { transition: none !important; cursor: grabbing; }
+/* Casas azuis: onde o token selecionado pode ir */
+.alc { fill: rgba(120, 190, 255, .36); stroke: rgba(170, 220, 255, .95); stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer; transform-box: fill-box; transform-origin: center; animation: alc-in .28s ease-out both; }
+.alc:hover { fill: rgba(150, 210, 255, .68); }
+@keyframes alc-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes pulso { 0%, 100% { stroke-width: 4; } 50% { stroke-width: 7; } }
+.token.sel circle { animation: pulso 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .token { transition: none !important; } .alc { animation: none; } .token.sel circle { animation: none; } }
 .token circle { stroke: #fff; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
 .token text { fill: #fff; font-weight: 700; pointer-events: none; font-family: system-ui, sans-serif; paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 2px; }
 .token.sel circle { stroke: var(--accent); stroke-width: 4; }
@@ -483,6 +491,10 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 .ficha .num { width: 76px; }
 .acao-mapa { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; margin-bottom: 1rem; }
 .acao-lado { display: grid; gap: 12px; }
+/* Imersão ou combate ativos: tela larga, card de combate (e painel do token) embaixo do mapa */
+main.imersivo { max-width: min(1700px, 100%); }
+main.imersivo .acao-mapa { grid-template-columns: minmax(0, 1fr); }
+main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px, 560px)); align-items: start; }
 .acao-lado .panel { margin: 0; }
 .acao-lado h3 { margin: 0 0 .5rem; }
 @media (max-width: 900px) { .acao-mapa { grid-template-columns: 1fr; } }
@@ -539,6 +551,7 @@ nav ul { flex-wrap: wrap; align-items: center; }
 .cen-card small { color: var(--muted); }
 .cen-card.sel { border-color: var(--accent); background: var(--surface2); }
 .cen-det { margin-top: 1rem; }
+.acao-imersao { padding: 8px 16px; font-weight: 700; }
 .gm-lista { display: grid; gap: 8px; margin: 0 0 1rem; }
 .gm-linha { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .gm-linha.sel { border-color: var(--accent); }
