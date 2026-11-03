@@ -164,8 +164,7 @@ header.top {
   text-decoration: none;
 }
 .brand svg { width: 26px; height: 26px; color: var(--accent); }
-nav { flex: 1; overflow-x: auto; scrollbar-width: none; }
-nav::-webkit-scrollbar { display: none; }
+nav { flex: 1; }
 nav ul { list-style: none; display: flex; gap: 2px; margin: 0; padding: 0; }
 nav a {
   display: flex;
@@ -519,9 +518,36 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 .tok-linha input[type="color"] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
 .tok-linha .rev-label { margin: 0; }
 .tok-coord { font-weight: 700; }
+/* Menu em grupos */
+.menu-btn { display: none; align-items: center; gap: 6px; }
+#menuBtn[hidden] { display: none !important; }
+nav ul { flex-wrap: wrap; align-items: center; }
+.grupo { position: relative; }
+.grupo-btn { background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 10px 8px; color: var(--muted); white-space: nowrap; }
+.grupo-btn:hover, nav a:hover { color: var(--text); }
+.grupo.ativo > .grupo-btn { color: var(--text); border-bottom-color: var(--accent); font-weight: 700; }
+.submenu { position: absolute; top: 100%; left: 0; min-width: 190px; z-index: 30; list-style: none; margin: 0; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.submenu[hidden] { display: none; }
+.submenu a { border-bottom: 0; border-radius: 6px; padding: 8px 10px; }
+.submenu a[aria-current="page"] { background: var(--surface2); }
+.foto-cena { margin: 0 0 1rem; }
+.foto-cena img { width: 100%; max-height: 80vh; object-fit: contain; border-radius: 10px; background: var(--surface2); display: block; }
+.cen-lista { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); margin-bottom: 1rem; }
+.cen-card { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; padding: 8px; border-radius: 10px; line-height: 1.35; }
+.cen-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; background: var(--surface2); }
+.cen-card small { color: var(--muted); }
+.cen-card.sel { border-color: var(--accent); background: var(--surface2); }
+.cen-det { margin-top: 1rem; }
 @media (max-width: 720px) {
   .topin { flex-wrap: wrap; }
-  nav { order: 5; flex-basis: 100%; }
+  .menu-btn { display: inline-flex; }
+  nav { display: none; order: 5; flex-basis: 100%; }
+  header.top.menu-aberto nav { display: block; }
+  nav ul { flex-direction: column; align-items: stretch; gap: 0; padding: 4px 0 8px; }
+  nav a { padding: 10px 6px; }
+  .grupo-btn { width: 100%; text-align: left; pointer-events: none; border: 0; font-weight: 700; color: var(--text); padding: 12px 6px 4px; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+  .grupo-btn span { display: none; }
+  .submenu, .submenu[hidden] { position: static; display: block; box-shadow: none; border: 0; background: none; padding: 0 0 0 10px; }
   .conta-topo { margin-left: auto; }
 }
 
@@ -535,6 +561,7 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="5"/><circle cx="16" cy="8" r="5"/><circle cx="8" cy="16" r="5"/><circle cx="16" cy="16" r="5"/><rect x="11" y="11" width="2" height="12" transform="rotate(35 12 12)" fill="var(--bar)"/></svg>
       <span>Grimório do Mestre</span>
     </a>
+    <button id="menuBtn" type="button" class="menu-btn" aria-label="Abrir o menu" aria-expanded="false" aria-controls="nav" hidden>☰ Menu</button>
     <nav aria-label="Seções"><ul id="nav"></ul></nav>
     <span id="salvo" class="salvo" role="status" aria-live="polite"></span>
     <div id="conta" class="conta-topo"></div>

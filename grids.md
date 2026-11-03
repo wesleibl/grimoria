@@ -4,16 +4,39 @@
 
 ---
 
-## 0. Duas formas de ter cenários
+## 0. Cenários: onde tudo começa
 
-1. **Enviar pelo site (mais simples):** na aba Ação, em "Novo cenário", preencha o nome, as colunas e as linhas, e escolha a imagem. Ela é reduzida no navegador (até 2400 px), enviada na hora e fica salva no banco de dados. Cada cenário enviado guarda o próprio grid, que dá para mudar depois, e também pode ser renomeado ou excluído ali mesmo.
-2. **Pasta no servidor:** coloque arquivos em `misterio/{local}/grid/{cenario}.png` (item 1 abaixo). O grid de cada um fica salvo por cenário na aba Ação.
+Tudo parte da aba **Cenários** (só do mestre). Cada cenário reúne, num lugar só:
 
-Os dois tipos aparecem no mesmo seletor "Cenário": os enviados no grupo "Enviados" e os de pasta em "Pasta: {local}". Deixe as **linhas em branco** para o site calcular e manter as casas quadradas.
+- a **foto** (gerada sem grade);
+- o **grid**: colunas e linhas, com a prévia do grid sobre a foto e o tamanho em metros. Linhas em branco = automático, com casas quadradas;
+- a **história e os detalhes**, que só o mestre vê (segredos, o que acontece, como os jogadores chegam);
+- o **local no mapa** ao qual ele pertence (ver 0.1).
+
+Dali o mestre escolhe o que fazer com o cenário:
+
+- **Usar na Ação (grid):** leva para a aba Ação com o grid já configurado.
+- **Mostrar só a foto aos jogadores:** os jogadores veem apenas a imagem (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
+- **Trocar a foto**, renomear, mudar o grid ou excluir.
+
+A aba **Ação** apenas **chama** um cenário já pronto. Ela tem o seletor de cenário, "Como mostrar" (Grid e tokens, ou Só a foto), "Ao vivo", o título para os jogadores e os tokens. O grid mostrado ali é o do cenário, e há o botão "Editar o cenário".
+
+### 0.1 Vínculos entre o mapa e os cenários
+
+Nada fica solto: cada local do mapa pode ter **um cenário**, e cada cenário fica em **um local**.
+
+- O vínculo se faz nos dois sentidos: no detalhe de um local do mapa ("Cenário deste local") ou no detalhe do cenário ("Local no mapa").
+- **Para o jogador:** quando o local for revelado no mapa, clicar nele mostra a **foto** do cenário ligado. Locais não revelados não mostram nada. O nome do cenário também aparece. A história e o grid ficam só com o mestre. O servidor só entrega a foto de um cenário ligado a um local revelado (ou a cena ativa), e não aceita o pedido de nenhum outro.
+- **Para o mestre:** o detalhe do local tem atalhos "Abrir o cenário", "Usar na Ação" e "Mostrar só a foto". O cenário mostra o nome do local na lista e tem "Ver no mapa".
+- Excluir um cenário desfaz o vínculo.
+
+### 0.2 Importar da pasta do servidor
+
+Se já houver imagens em `misterio/{local}/grid/`, a aba Cenários tem "Importar da pasta do servidor": cada imagem importada vira um cenário (usa as colunas do campo "Colunas" de Novo cenário).
 
 ---
 
-## 1. Estrutura de pastas (opção 2)
+## 1. Estrutura de pastas (só para importar)
 
 As imagens ficam no servidor, em:
 
@@ -76,10 +99,10 @@ O sistema desenha a grade por cima da imagem, na hora da ação. Motivos:
 ## 4. Aba Ação
 
 **Mestre**
-- Escolhe o cenário (enviado pelo site ou de pasta) ou envia um novo, com o grid que quiser.
-- Ajusta colunas e linhas do grid a qualquer momento. O ajuste fica salvo por cenário.
-- Define um título, que é o único nome que o jogador vê (o nome da pasta pode ser spoiler).
-- Marca "Mostrar aos jogadores" para ativar a cena.
+- Chama um cenário já criado na aba Cenários. O grid vem do cenário.
+- Escolhe "Como mostrar": **Grid e tokens** ou **Só a foto**.
+- Define um título, que é o único nome que o jogador vê (ele começa com o nome do cenário, e dá para trocar).
+- Marca "Ao vivo" para os jogadores verem a cena.
 - Tokens: adiciona todos os jogadores de uma vez, inimigos e aliados; muda nome, tipo e cor; marca como **oculto** (só o mestre vê).
 - Move os tokens arrastando, ou tocando no token e depois na casa de destino. Mostra a distância em casas e metros.
 - **Inimigos:** escolhe um inimigo do Bestiário e adiciona no grid (já vem com vida e defesa; nomes repetidos viram "Lobo de Mana 2"). Também há "Inimigo avulso". A barra de vida aparece só para o mestre.
@@ -133,7 +156,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 ## 4.3 Perfil do jogador: status e atributos
 
-- **Status mostrados:** Nível, Vida máx., Mana, Defesa (10 + Destreza), Redução de dano (= Poder) e Deslocamento (6 + 1 a cada 2 de Destreza). Vida e Mana vêm da tabela de níveis (Vida 20, 24, 28, 32, 36; Mana 10, 10, 12, 12, 14).
+- **Status mostrados:** Nível, Vida máx., Mana, Defesa (10 + Destreza), Redução de dano (= Poder) e Deslocamento (6 + 1 a cada 2 de Destreza). A tabela de níveis completa fica só para o mestre. A **Vida** vem do nível (20, 24, 28, 32, 36). A **Mana** é 10 + 1 a cada 2 pontos de Inteligência.
 - **Criação:** o jogador distribui **+5 pontos** entre Poder, Destreza e Inteligência, no máximo **+3** em cada. Depois de **Salvar atributos**, a base fica **travada**.
 - **Bônus:** um campo por atributo, sempre editável, para anotar os pontos ganhos ao subir de nível (+1 por nível). O total é base + bônus. Se passar do limite do nível (+3, +3, +4, +4, +5), aparece um aviso, e o mestre confere.
 - **Mestre:** na aba Jogadores, "Ficha (atributos)" permite mudar o nível, a base e o bônus de qualquer jogador. Desmarcar "Atributos travados" apaga a base e devolve os 5 pontos para o jogador distribuir de novo (pede confirmação).
@@ -143,7 +166,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 ## 5. Pendências
 
-- Enviar os cenários pelo site (ou, se preferir pasta, reorganizar `misterio/` na estrutura do item 1 e subir a pasta para a hospedagem).
+- Criar os cenários na aba Cenários e ligar cada um ao seu local no mapa (por exemplo, a Pedra Velha).
 - Testar na hospedagem (o PHP da aba Ação ainda não foi executado).
 - Cada jogador distribuir os 5 pontos no Perfil (sem isso, a Destreza é 0 e o deslocamento é 6).
 - Vida atual dos jogadores (hoje só aparece a Vida máx.): ainda não é controlada pelo site.

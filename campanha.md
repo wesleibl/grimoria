@@ -29,7 +29,7 @@
 - **Treino prévio:** distribuir **+5 pontos** entre os atributos (máximo **+3** em um).
 - Os pontos são distribuídos **antes** de ver o grimório (o personagem treinou antes de recebê-lo).
 - **Vida:** 20
-- **Mana:** 10 (fixa para todos)
+- **Mana:** 10, mais 1 a cada 2 pontos de Inteligência
 - **Defesa:** 10 + Destreza
 - **Redução de dano:** igual ao Poder (dano mínimo sempre 1)
 - **Deslocamento:** 6 casas por turno, mais 1 a cada 2 pontos de Destreza (regra definida na aba Ação do site)
@@ -56,7 +56,7 @@
 
 ### Mana
 
-- **Máxima:** 10 (fixa).
+- **Máxima:** 10, mais 1 a cada 2 pontos de Inteligência.
 - **Custos:** 1 (básico), 2 (médio), 4 (ultimate).
 - **Recuperação:** 1 por turno, ou tudo em um descanso.
 

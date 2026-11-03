@@ -531,9 +531,11 @@ function grimPub() {
   return out;
 }
 function locaisPub() {
-  var rev = getRev();
+  var rev = getRev(), lig = EST.locais_cen || {};
   return LOCAIS.filter(function (l) { return !l.secreto && rev[l.id]; }).map(function (l) {
-    return { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab, pub: l.pub };
+    var o = { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab, pub: l.pub }, c = lig[l.id] ? acharEnvio(lig[l.id]) : null;
+    if (c) { o.cenario = c.id; o.cv = c.v; o.cenNome = c.nome; }
+    return o;
   });
 }
 function sincronizarPub() {
@@ -608,7 +610,7 @@ function viewInicio() {
     '<div class="stat"><b>8</b>jogadores</div></div>' +
     '<div class="cols">' +
     panel("O conceito", "<ul><li>Mundo inspirado em Black Clover, com magia e cavaleiros mágicos.</li><li>Todo personagem é um plebeu de vilarejo.</li><li>O grimório é sorteado em um evento com cards físicos.</li><li>Rolagens são presenciais, com dados físicos.</li></ul>") +
-    panel("O sistema", "<ul><li>Três atributos: Poder, Destreza e Inteligência.</li><li>Rolagem: d20 + atributo contra uma dificuldade.</li><li>Vida 20, Mana 10, Defesa 10 + Destreza.</li><li>Poder reduz o dano que você recebe.</li></ul>") +
+    panel("O sistema", "<ul><li>Três atributos: Poder, Destreza e Inteligência.</li><li>Rolagem: d20 + atributo contra uma dificuldade.</li><li>Vida 20, Mana 10 + 1 a cada 2 de Inteligência, Defesa 10 + Destreza.</li><li>Poder reduz o dano que você recebe.</li></ul>") +
     panel("Atalhos", '<ul><li><a href="#regras">Regras e combate</a></li><li><a href="#grimorios">Os grimórios</a></li><li><a href="#mapa">Mapa de Grimoria</a></li><li><a href="#sorteio">Sorteio dos grimórios (mestre)</a></li><li><a href="#jogadores">Anotações dos jogadores (mestre)</a></li><li><a href="#sessao-zero">Roteiro da Sessão Zero</a></li><li><a href="#mestre">Segredos da campanha (modo mestre)</a></li></ul>') +
     "</div>" +
     "<h2>Pendências</h2>" +
@@ -758,9 +760,9 @@ function viewSessaoZero() {
     '<p class="lead">Com 8 jogadores, reserve de 75 a 90 minutos antes da Sessão 1. Ela não revela nada da organização nem da marca. Só prepara a mesa e cria os personagens.</p>' +
     "<div class=\"rules\">" +
     panel("Boas-vindas e tom (5 min)", "<ul><li>Explique a ideia: Black Clover, com magia e aventura, todos plebeus de vilarejo.</li><li>Combine o tom: aventura com momentos sérios e leves, sem terror pesado.</li><li>Diga que é sua primeira vez mestrando e que você vai ajustar regras no caminho.</li></ul>") +
-    panel("O sistema em 5 minutos", "<ul><li>Três atributos: Poder, Destreza, Inteligência.</li><li>Rolagem: d20 + atributo contra uma dificuldade (fácil 10, média 15, difícil 20).</li><li>O inimigo acerta se rolar a sua Defesa (10 + Destreza) ou mais. O Poder reduz o dano.</li><li>Mana 10 para todos. Feitiços custam 1, 2 ou 4.</li><li>Regra de ouro: se algo travar, o mestre decide rápido e ajusta depois.</li></ul>") +
+    panel("O sistema em 5 minutos", "<ul><li>Três atributos: Poder, Destreza, Inteligência.</li><li>Rolagem: d20 + atributo contra uma dificuldade (fácil 10, média 15, difícil 20).</li><li>O inimigo acerta se rolar a sua Defesa (10 + Destreza) ou mais. O Poder reduz o dano.</li><li>Mana 10, mais 1 a cada 2 pontos de Inteligência. Feitiços custam 1, 2 ou 4.</li><li>Regra de ouro: se algo travar, o mestre decide rápido e ajusta depois.</li></ul>") +
     panel("Acordos de mesa (10 min)", "<ul><li><b>Linhas e véus:</b> o que não pode aparecer, e o que acontece só “fora da cena”.</li><li><b>Segurança:</b> qualquer pessoa pode pedir uma pausa, sem explicar.</li><li><b>Drama de personagem:</b> diga “durante a campanha, algum personagem pode ser tentado, enganado, ferido ou perder o controle por um tempo. Isso é parte da história, não punição. Vocês topam?”</li><li><b>Cooperativo:</b> sem jogador contra jogador de verdade.</li><li>Celular guardado durante as cenas.</li><li>Como lidar com ausências.</li><li>Ninguém lê material do mestre.</li></ul>") +
-    panel("Criar o personagem (30 min)", "<p>Com 8 jogadores, deixe 2 por vilarejo: eles criam juntos e já nascem com um laço.</p><ol><li>Escolher o vilarejo e anotar o bônus.</li><li>Nome, idade, um sonho e um medo.</li><li>Distribuir +5 pontos (máximo +3 em um), <b>antes de ver o grimório</b>.</li><li>Anotar Vida 20, Mana 10, Defesa 10 + Destreza e redução de dano igual ao Poder.</li><li>Deixar o grimório em branco para a revelação.</li></ol>") +
+    panel("Criar o personagem (30 min)", "<p>Com 8 jogadores, deixe 2 por vilarejo: eles criam juntos e já nascem com um laço.</p><ol><li>Escolher o vilarejo e anotar o bônus.</li><li>Nome, idade, um sonho e um medo.</li><li>Distribuir +5 pontos (máximo +3 em um), <b>antes de ver o grimório</b>.</li><li>Anotar Vida 20, Mana 10 + 1 a cada 2 de Inteligência, Defesa 10 + Destreza e redução de dano igual ao Poder.</li><li>Deixar o grimório em branco para a revelação.</li></ol>") +
     panel("Laços entre os personagens (5 min)", "<ul><li>Quem do grupo você já conhecia de passagem?</li><li>Do que você mais se orgulha no seu vilarejo?</li><li>Do que você tem medo na cerimônia do grimório?</li></ul><p>Use as respostas como ganchos na Sessão 1.</p>") +
     panel("Expectativas e perguntas (5 min)", "<ul><li>O que cada um espera: ação, mistério, humor?</li><li>Alguma dúvida de regra?</li><li>Regra de ouro: se algo incomodar, fale na hora.</li></ul>") +
     "</div>" +
@@ -1396,7 +1398,7 @@ function fichaJog(j) {
         '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
     }).join("") + "</tbody></table></div>" +
     '<label class="rev-label"><input type="checkbox" data-jtrav="1"' + (j.atrTravado ? " checked" : "") + '> Atributos travados (o jogador não altera mais a base)</label>' +
-    '<p class="mdica">Defesa ' + (10 + atrTotal(j, "destreza")) + ", redução de dano " + atrTotal(j, "poder") + ", deslocamento " + (6 + Math.floor(atrTotal(j, "destreza") / 2)) + ", vida " + VIDA_NIVEL[n - 1] + ", mana " + MANA_NIVEL[n - 1] + '. Desmarque “travados” para o jogador redistribuir os 5 pontos, se precisar corrigir.</p></fieldset>';
+    '<p class="mdica">Defesa ' + (10 + atrTotal(j, "destreza")) + ", redução de dano " + atrTotal(j, "poder") + ", deslocamento " + (6 + Math.floor(atrTotal(j, "destreza") / 2)) + ", vida " + VIDA_NIVEL[n - 1] + ", mana " + manaJog(j) + '. Desmarque “travados” para o jogador redistribuir os 5 pontos, se precisar corrigir.</p></fieldset>';
 }
 
 function acessoJog(j) {
@@ -1603,13 +1605,13 @@ function viewNiveisMestre() {
   var h = "<h1>Níveis e evolução</h1>" +
     '<p class="lead">Sem pontos de experiência. Todos os personagens sobem de nível juntos, em marcos da história. Assim ninguém fica para trás, e com 8 jogadores você não precisa controlar nada.</p>';
 
-  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "Quando sobem", "Vida máx.", "Mana máx.", "Atributos", "Limite por atributo", "Grimório"], [
-    ["1", "Início (Sessão Zero e Sessão 1)", "20", "10", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
-    ["2", "Fim da Sessão 1", "24", "10", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
-    ["3", "Meio do Arco 1", "28", "12", "+1 ponto", "+4", "Nova habilidade"],
-    ["4", "Fim do Arco 1", "32", "12", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
-    ["5", "Fim do Arco 2", "36", "14", "+1 ponto", "+5", "Despertar do grimório"]
-  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza) e a redução de dano (Poder) sobem junto com os atributos.</p>";
+  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "Quando sobem", "Vida máx.", "Atributos", "Limite por atributo", "Grimório"], [
+    ["1", "Início (Sessão Zero e Sessão 1)", "20", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
+    ["2", "Fim da Sessão 1", "24", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
+    ["3", "Meio do Arco 1", "28", "+1 ponto", "+4", "Nova habilidade"],
+    ["4", "Fim do Arco 1", "32", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
+    ["5", "Fim do Arco 2", "36", "+1 ponto", "+5", "Despertar do grimório"]
+  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
@@ -1703,9 +1705,249 @@ function vilaRodapeMestre() {
   return panel("Para equilibrar", "<p>Hoje são +1 em Poder, +1 em Destreza e +2 em Inteligência (Porto Salgado e Pedra Velha). Se quiser, troque um dos bônus de Inteligência por Poder ou Destreza.</p>");
 }
 
+/* ============================ MAPA ↔ CENÁRIO ============================ */
+
+function localDoCenario(id) {
+  var lig = EST.locais_cen || {}, r = null;
+  Object.keys(lig).forEach(function (k) { if (lig[k] === id) r = k; });
+  return r;
+}
+
+/* Liga (ou desliga) um local a um cenário. Cada local tem um cenário; cada cenário fica em um local. */
+function vincularLocal(localId, cenId) {
+  var lig = EST.locais_cen = EST.locais_cen || {};
+  if (cenId) Object.keys(lig).forEach(function (k) { if (lig[k] === cenId) delete lig[k]; });
+  if (cenId && localId) lig[localId] = cenId; else if (localId) delete lig[localId];
+  salvarEstado("locais_cen");
+  sincronizarPub();
+}
+
+/* Bloco que aparece no detalhe de um local do mapa, só para o mestre. */
+function localExtraMestre(l) {
+  var id = (EST.locais_cen || {})[l.id], c = id ? acharEnvio(id) : null;
+  var h = '<label class="pj-obs-l">Cenário deste local<select class="sorteio-in" data-loccen="' + l.id + '"><option value="">Nenhum</option>' +
+    ENVIADAS.map(function (e) { return '<option value="' + e.id + '"' + (c && c.id === e.id ? " selected" : "") + ">" + esc(e.nome) + "</option>"; }).join("") + "</select></label>";
+  if (!ENVIADAS.length) h += '<p class="mdica">Você ainda não tem cenários. Crie na aba Cenários e volte aqui para ligar.</p>';
+  else if (!c) h += '<p class="mdica">Ligue um cenário para os jogadores verem a foto ao clicar neste local, depois de revelado.</p>';
+  if (c) h += '<div class="controls"><button type="button" data-cenir="' + c.id + '">Abrir o cenário</button><button type="button" data-cenusar="' + c.id + '">Usar na Ação</button><button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto</button></div>' +
+    '<p class="mdica">Os jogadores veem só a foto, e só quando o local estiver revelado. A história e o grid ficam com você.</p>';
+  return h;
+}
+
+/* ============================ CENÁRIOS ============================ */
+
+var cenSel = 0, cenMsg = "", confirmarDelCen = false;
+
+function infoCen(id) { var i = EST.cenarios_info || {}; return i[id] || {}; }
+function statusCen(c) {
+  var a = acaoEst();
+  if (!a.ativo || a.envio !== c.id) return "";
+  return a.modo === "foto" ? "Foto na tela dos jogadores" : "Ao vivo (grid)";
+}
+
+function novoCenarioHTML() {
+  return '<section class="panel"><h3>' + ic("brilho") + "Novo cenário</h3>" +
+    '<p class="mdica">Gere a imagem sem grade: o site desenha o grid por cima, com as colunas e linhas que você definir. Preencha tudo e escolha a foto por último, porque o envio começa assim que você a escolhe.</p>' +
+    '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label>' +
+    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" value="20"></label>' +
+    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label></div>' +
+    '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
+    '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
+    '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
+}
+
+function cenCardsHTML() {
+  if (!ENVIADAS.length) return '<div class="empty">Nenhum cenário ainda. Crie o primeiro acima.</div>';
+  return '<div class="cen-lista">' + ENVIADAS.map(function (c) {
+    var st = statusCen(c);
+    return '<button type="button" class="cen-card' + (cenSel === c.id ? " sel" : "") + '" data-cenabrir="' + c.id + '">' +
+      '<img src="' + cenaImgUrl({ envio: c.id }) + '" alt="" loading="lazy">' +
+      "<b>" + esc(c.nome) + "</b><small>Grid " + gridTexto(c) + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
+  }).join("") + "</div>";
+}
+
+function cenDetalheHTML() {
+  var c = cenSel ? acharEnvio(cenSel) : null;
+  if (!c) return "";
+  var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c);
+  return '<section class="panel cen-det"><h3>' + esc(c.nome) + (st ? ' <span class="tag leg">' + st + "</span>" : "") + "</h3>" +
+    '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + c.id + '" value="' + esc(c.nome) + '"></label>' +
+    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="cols" value="' + c.cols + '"></label>' +
+    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="rows" value="' + (c.rows || "") + '" placeholder="auto"></label>' +
+    '<span class="tok-desl" id="cenGridInfo"></span></div>' +
+    '<div class="acao-ctl"><label>Local no mapa<select class="sorteio-in" data-cenloc="' + c.id + '"><option value="">Nenhum</option>' +
+    LOCAIS.map(function (l) { return '<option value="' + l.id + '"' + (localDoCenario(c.id) === l.id ? " selected" : "") + ">" + esc(l.nome) + "</option>"; }).join("") + "</select></label>" +
+    (localDoCenario(c.id) ? '<button type="button" data-vermapa="' + localDoCenario(c.id) + '">Ver no mapa</button>' : "") + "</div>" +
+    (localDoCenario(c.id) ? '<p class="mdica">Quando o local for revelado no mapa, os jogadores veem a foto deste cenário ao clicar nele.</p>' : "") +
+    '<p class="mdica">Deixe as linhas em branco para o site calcular e manter as casas quadradas. A prévia abaixo mostra o grid sobre a foto.</p>' +
+    tabuleiroHTML(cenaImgUrl({ envio: c.id }), c.nome) +
+    '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="5" data-cenhist="' + c.id + '" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…">' + esc(infoCen(c.id).historia || "") + "</textarea></label>" +
+    '<div class="controls">' +
+    '<button type="button" class="primary" data-cenusar="' + c.id + '">Usar na Ação (grid)</button>' +
+    (noar && a.modo === "foto" ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
+    '<input type="file" accept="image/*" class="vh" id="cenaTroca" data-troca="' + c.id + '"><label class="btn" for="cenaTroca">Trocar a foto</label>' +
+    '<button type="button" data-cenexcluir="' + c.id + '">' + (confirmarDelCen ? "Clique de novo para excluir" : "Excluir cenário") + "</button></div></section>";
+}
+
+function importarPastaHTML() {
+  var arqs = [];
+  (CENAS || []).forEach(function (l) { l.cenas.forEach(function (c) { arqs.push([l.local, c]); }); });
+  if (!arqs.length) return "";
+  return "<h2>Importar da pasta do servidor</h2>" + '<details class="panel"><summary>Há ' + arqs.length + ' imagem(ns) em misterio/{local}/grid/</summary>' +
+    '<p class="mdica">Cada imagem importada vira um cenário (fica salva na sua conta). As colunas usadas são as do campo “Colunas” de Novo cenário.</p>' +
+    '<ul class="cmb-lista">' + arqs.map(function (p) {
+      return '<li><span class="cmb-nome">' + esc(nomeBonito(p[0])) + " › " + esc(nomeBonito(p[1])) + '</span><button type="button" data-impl="' + esc(p[0]) + '" data-impc="' + esc(p[1]) + '">Importar</button></li>';
+    }).join("") + "</ul></details>";
+}
+
+function viewCenarios() {
+  if (CENAS === null) carregarCenas();
+  var h = "<h1>Cenários</h1>" + '<p class="lead">Cada cenário tem uma foto, o grid (colunas e linhas) e a sua história, que só você vê. Na aba Ação você chama o grid já pronto. Aqui você também pode mostrar só a foto aos jogadores.</p>';
+  if (CENAS === null) return h + '<p class="mdica">Procurando os cenários…</p>';
+  if (cenMsg) h += '<p role="status" class="mdica">' + esc(cenMsg) + "</p>";
+  return h + novoCenarioHTML() + "<h2>Seus cenários</h2>" + '<div id="cenCards">' + cenCardsHTML() + '</div><div id="cenDetalhe">' + cenDetalheHTML() + "</div>" + importarPastaHTML();
+}
+
+function infoGridCen() {
+  var s = document.getElementById("cenGridInfo");
+  if (!s || !tabGeo) return;
+  s.innerHTML = "Grid: <b>" + tabGeo.cols + " colunas × " + tabGeo.rows + " linhas</b> (" + String(tabGeo.cols * 1.5).replace(".", ",") + " × " + String(tabGeo.rows * 1.5).replace(".", ",") + " m)";
+}
+function desenharCenPreview() {
+  var c = cenSel ? acharEnvio(cenSel) : null;
+  if (!c) return;
+  var g = desenharTabuleiro({ cols: c.cols, rows: c.rows, tokens: [], mestre: true, depois: infoGridCen });
+  if (g) infoGridCen();
+}
+
+function enviarCenario(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  var nome = document.getElementById("cenaNome").value.trim() || nomeBonito(f.name);
+  var cols = parseInt(document.getElementById("cenaCols").value, 10) || 20;
+  var rows = parseInt(document.getElementById("cenaRows").value, 10) || null;
+  var hist = document.getElementById("cenaHist").value;
+  upMsg = "Preparando a imagem…";
+  renderizar();
+  reduzirImagem(f, 2400, 2600000, function (erro, url) {
+    if (erro) { upMsg = erro; renderizar(); return; }
+    upMsg = "Enviando…";
+    renderizar();
+    gravar("cena_enviar", { nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
+      if (!r) { upMsg = "Não foi possível enviar o cenário. Tente de novo."; renderizar(); return; }
+      ENVIADAS.push({ id: r.id, nome: r.nome, cols: Math.max(1, Math.min(200, cols)), rows: rows && rows >= 1 && rows <= 200 ? rows : null, v: Math.floor(Date.now() / 1000) });
+      if (hist.trim()) { (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { historia: hist }; salvarEstado("cenarios_info"); }
+      cenSel = r.id;
+      upMsg = "Cenário “" + r.nome + "” criado.";
+      renderizar();
+    });
+  });
+}
+
+function trocarFotoCenario(input) {
+  var f = input.files && input.files[0], id = parseInt(input.dataset.troca, 10), c = acharEnvio(id);
+  if (!f || !c) return;
+  cenMsg = "Enviando a nova foto…";
+  renderizar();
+  reduzirImagem(f, 2400, 2600000, function (erro, url) {
+    if (erro) { cenMsg = erro; renderizar(); return; }
+    gravar("cena_editar", { id: id, dados: url }).then(function (r) {
+      cenMsg = r ? "Foto trocada." : "Não foi possível trocar a foto. Tente de novo.";
+      if (r) { c.v = Math.floor(Date.now() / 1000); sincronizarPub(); }
+      renderizar();
+    });
+  });
+}
+
+function inputCenarios(el) {
+  var d = el.dataset, c;
+  if (d.cengrid && cenSel && (c = acharEnvio(cenSel))) {
+    var n = parseInt(el.value, 10), valido = n >= 1 && n <= 200;
+    if (d.cengrid === "cols") c.cols = valido ? n : 20; else c.rows = valido ? n : null;
+    adiar("cena-" + c.id, function () { gravar("cena_editar", { id: c.id, cols: c.cols, rows: c.rows }); }, 400);
+    desenharCenPreview();
+    var cards = document.getElementById("cenCards");
+    if (cards) cards.innerHTML = cenCardsHTML();
+    return true;
+  }
+  if (d.cenhist) {
+    (EST.cenarios_info = EST.cenarios_info || {})[d.cenhist] = { historia: el.value };
+    salvarEstado("cenarios_info");
+    return true;
+  }
+  return false;
+}
+
+function mostrarFotoCenario(id) {
+  var a = acaoEst(), c = acharEnvio(id);
+  if (!c) return;
+  trocarCenario("e:" + id);
+  if (CAMPO.combate) campoOp("encerrar");
+  a.modo = "foto"; a.ativo = true; a.titulo = c.nome;
+  salvarAcao();
+  cenMsg = "Os jogadores estão vendo só a foto de “" + c.nome + "”.";
+  renderizar();
+}
+
+function clickCenarios(b) {
+  var d = b.dataset, a = acaoEst(), c;
+  if (d.cenabrir) { cenSel = parseInt(d.cenabrir, 10); confirmarDelCen = false; renderizar(); window.scrollTo(0, document.getElementById("cenDetalhe") ? document.getElementById("cenDetalhe").offsetTop - 80 : 0); return true; }
+  if (d.cenfoto) { mostrarFotoCenario(parseInt(d.cenfoto, 10)); return true; }
+  if (d.vermapa) { localSel = d.vermapa; location.hash = "#mapa"; return true; }
+  if (d.cenesconder) { a.ativo = false; salvarAcao(); cenMsg = "A foto foi escondida dos jogadores."; renderizar(); return true; }
+  if (d.cenusar) {
+    trocarCenario("e:" + parseInt(d.cenusar, 10));
+    a.modo = "grid";
+    salvarAcao();
+    location.hash = "#acao";
+    return true;
+  }
+  if (d.cenexcluir && (c = acharEnvio(parseInt(d.cenexcluir, 10)))) {
+    if (!confirmarDelCen) {
+      confirmarDelCen = true;
+      b.textContent = "Clique de novo para excluir";
+      setTimeout(function () { confirmarDelCen = false; var x = document.querySelector("[data-cenexcluir]"); if (x) x.textContent = "Excluir cenário"; }, 6000);
+      return true;
+    }
+    confirmarDelCen = false;
+    var id = c.id;
+    gravar("cena_excluir", { id: id }).then(function (r) {
+      if (!r) return;
+      ENVIADAS = ENVIADAS.filter(function (x) { return x.id !== id; });
+      if (EST.cena_tokens) { delete EST.cena_tokens["e:" + id]; salvarEstado("cena_tokens"); }
+      if (EST.cenarios_info) { delete EST.cenarios_info[id]; salvarEstado("cenarios_info"); }
+      var lk = localDoCenario(id);
+      if (lk) vincularLocal(lk, 0);
+      if (a.envio === id) {
+        campoOp("pos", { remover: a.tokens.map(function (x) { return x.id; }) });
+        if (CAMPO.combate) campoOp("encerrar");
+        a.envio = 0; a.ativo = false; a.tokens = []; tokSel = null;
+        salvarAcao();
+      }
+      cenSel = 0;
+      cenMsg = "Cenário excluído.";
+      renderizar();
+    });
+    return true;
+  }
+  if (d.impl) {
+    var cols = parseInt((document.getElementById("cenaCols") || {}).value, 10) || 20;
+    b.disabled = true;
+    gravar("cena_importar", { local: d.impl, cena: d.impc, nome: nomeBonito(d.impc), cols: cols }).then(function (r) {
+      if (!r) { b.disabled = false; return; }
+      ENVIADAS.push({ id: r.id, nome: r.nome, cols: cols, rows: null, v: Math.floor(Date.now() / 1000) });
+      cenSel = r.id;
+      cenMsg = "“" + r.nome + "” importado.";
+      renderizar();
+    });
+    return true;
+  }
+  return false;
+}
+
 /* ============================ AÇÃO ============================ */
 
-var CENAS = null, ENVIADAS = [], cenasMsg = "", tokSel = null, confirmarLimpar = false, confirmarDelCena = false, upMsg = "";
+var CENAS = null, ENVIADAS = [], cenasMsg = "", tokSel = null, confirmarLimpar = false, upMsg = "";
 /* Posições e combate vêm do servidor (campo), que é quem manda: o mestre e os jogadores agem ao mesmo tempo. */
 var CAMPO = { pos: {}, combate: null, revelados: {}, eventos: [], v: 0 };
 var campoTimer = null, campoGer = 0, campoRodando = false, arrastando = false;
@@ -1722,8 +1964,11 @@ function gridDe(a) {
   return g[k] || (g[k] = {});
 }
 function cenaImgUrl(a) {
-  return API + "?a=cena_img&" + (a.envio ? "id=" + encodeURIComponent(a.envio) : "local=" + encodeURIComponent(a.local) + "&cena=" + encodeURIComponent(a.cena));
+  var c = a.envio ? acharEnvio(a.envio) : null;
+  return API + "?a=cena_img&" + (a.envio ? "id=" + encodeURIComponent(a.envio) + (c && c.v ? "&v=" + c.v : "") : "local=" + encodeURIComponent(a.local) + "&cena=" + encodeURIComponent(a.cena));
 }
+function gridTexto(c) { return c ? c.cols + " × " + (c.rows || "auto") : ""; }
+
 function acharTok(id) { var r = null; acaoEst().tokens.forEach(function (t) { if (t.id === id) r = t; }); return r; }
 
 /* Deslocamento: 6 casas, mais 1 a cada 2 pontos de Destreza. "aj" é um ajuste manual (por exemplo, -2 se estiver lento).
@@ -1780,18 +2025,18 @@ function atualId() {
 
 function carregarCenas() {
   cenasMsg = "";
+  var rota = function () { var r = rotaAtual(); if (r === "acao" || r === "cenarios") renderizar(); };
   api("cenas").then(function (r) {
     CENAS = r.cenas || [];
     ENVIADAS = r.enviadas || [];
-    if (rotaAtual() === "acao") renderizar();
+    rota();
   }, function (e) {
     CENAS = [];
     cenasMsg = e.message;
-    if (rotaAtual() === "acao") renderizar();
+    rota();
   });
 }
 
-/* Primeira casa livre: jogadores e aliados a partir do canto de cima à esquerda, o resto a partir do canto oposto. */
 function casaLivre(tipo) {
   var a = acaoEst(), cols = tabGeo ? tabGeo.cols : 20, rows = tabGeo ? tabGeo.rows : 15, ocup = {};
   a.tokens.forEach(function (t) { ocup[t.x + "," + t.y] = true; });
@@ -1815,7 +2060,24 @@ function nomeUnico(base) {
   for (var n = 2; ; n++) if (usados.indexOf(base + " " + n) === -1) return base + " " + n;
 }
 
-function valorCena(a) { return a.envio ? "e:" + a.envio : (a.local && a.cena ? "p:" + a.local + "/" + a.cena : ""); }
+function valorCena(a) { return a.envio ? "e:" + a.envio : ""; }
+
+/* Chama um cenário na Ação. Cada cenário guarda os próprios tokens: o convés continua montado quando você volta do porão. */
+function trocarCenario(v) {
+  var a = acaoEst(), antiga = valorCena(a);
+  if (v === antiga) return;
+  EST.cena_tokens = EST.cena_tokens || {};
+  if (antiga) EST.cena_tokens[antiga] = { tokens: a.tokens };
+  a.envio = v.indexOf("e:") === 0 ? parseInt(v.slice(2), 10) : 0;
+  a.local = ""; a.cena = ""; a.ativo = false; a.modo = "grid"; tokSel = null;
+  var c = a.envio ? acharEnvio(a.envio) : null;
+  a.titulo = c ? c.nome : "";
+  a.tokens = (v && (EST.cena_tokens[v] || {}).tokens) || [];
+  aplicarCampo();
+  if (CAMPO.combate) campoOp("encerrar");
+  salvarEstado("cena_tokens");
+  salvarAcao();
+}
 
 function selecionarTok(id) {
   tokSel = id;
@@ -1953,44 +2215,27 @@ function pollCampo(ger) {
 function viewAcaoMestre() {
   if (CENAS === null) carregarCenas();
   var a = acaoEst();
-  var h = "<h1>Ação</h1>" + '<p class="lead">Escolha o cenário, ajuste o grid e posicione os tokens. Os jogadores veem a cena na aba Ação deles quando você marcar “Mostrar aos jogadores”.</p>';
+  var h = "<h1>Ação</h1>" + '<p class="lead">Chame um cenário já configurado na aba Cenários, escolha como mostrar e posicione os tokens. O grid (colunas e linhas) vem do cenário.</p>';
   if (CENAS === null) return h + '<p class="mdica">Procurando os cenários…</p>';
-
-  h += "<h2>Novo cenário</h2>" + '<section class="panel"><p class="mdica">Preencha o nome e o grid e depois escolha a imagem: ela é enviada na hora e fica salva na sua conta. Gere a imagem sem grade, pois o site desenha o grid por cima.</p>' +
-    '<div class="acao-ctl"><label>Nome do cenário<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label>' +
-    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" value="20"></label>' +
-    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label>' +
-    '<span><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher imagem e enviar</label></span></div>' +
-    '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
-
-  var opts = '<option value="">Escolha…</option>';
-  if (ENVIADAS.length) opts += '<optgroup label="Enviados">' + ENVIADAS.map(function (c) { return '<option value="e:' + c.id + '"' + (valorCena(a) === "e:" + c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>"; }).join("") + "</optgroup>";
-  CENAS.forEach(function (l) {
-    opts += '<optgroup label="Pasta: ' + esc(nomeBonito(l.local)) + '">' + l.cenas.map(function (c) {
-      var v = "p:" + l.local + "/" + c;
-      return '<option value="' + esc(v) + '"' + (valorCena(a) === v ? " selected" : "") + ">" + esc(nomeBonito(c)) + "</option>";
-    }).join("") + "</optgroup>";
-  });
-  h += "<h2>Cena</h2>" + '<div class="acao-ctl"><label>Cenário<select class="sorteio-in" data-acao="cenario">' + opts + "</select></label>" +
-    '<button type="button" id="acaoRecarregar">Atualizar lista</button></div>';
-  if (!ENVIADAS.length && !CENAS.length) {
-    h += '<div class="empty">Nenhum cenário ainda. Envie uma imagem acima' + (cenasMsg ? ". " + esc(cenasMsg) : ", ou coloque arquivos em misterio/{local}/grid/{cenario}.png no servidor") + ".</div>";
-  }
+  if (!ENVIADAS.length) return h + '<div class="note"><p><b>Você ainda não tem cenários.</b> Crie o primeiro na aba <a href="#cenarios">Cenários</a>, com foto, grid e história.</p></div>';
   var env = a.envio ? acharEnvio(a.envio) : null;
-  var ok = env || (!a.envio && CENAS.some(function (l) { return l.local === a.local && l.cenas.indexOf(a.cena) !== -1; }));
-  if (!ok) return h + '<div class="empty">Escolha um cenário.</div>';
-  var g = gridDe(a);
+  h += '<div class="acao-ctl"><label>Cenário<select class="sorteio-in" data-acao="cenario"><option value="">Escolha…</option>' +
+    ENVIADAS.map(function (c) { return '<option value="e:' + c.id + '"' + (a.envio === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>"; }).join("") + "</select></label>" +
+    '<button type="button" id="acaoRecarregar">Atualizar lista</button></div>';
+  if (!env) return h + '<div class="empty">Escolha um cenário.</div>';
+  var foto = a.modo === "foto";
   h += '<div class="acao-ctl">' +
-    '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Cena ao vivo (os jogadores veem e movem o personagem)</label>" +
-    '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>" +
+    '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
+    '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Ao vivo (os jogadores veem)</label>" +
+    (foto ? "" : '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>") +
     '<label>Título para os jogadores<input class="sorteio-in" type="text" maxlength="80" data-acao="titulo" value="' + esc(a.titulo || "") + '" placeholder="Cena atual"></label>' +
-    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" data-grid="cols" value="' + (g.cols || 20) + '"></label>' +
-    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" data-grid="rows" value="' + (g.rows || "") + '" placeholder="auto"></label>' +
-    (env ? '<label>Nome do cenário<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + env.id + '" value="' + esc(env.nome) + '"></label>' +
-      '<button type="button" id="cenaDel">' + (confirmarDelCena ? "Clique de novo para excluir" : "Excluir este cenário") + "</button>" : "") + "</div>";
-  h += '<p class="mdica">Deixe as linhas em branco para o site calcular e manter as casas quadradas.</p>';
+    '<span class="tok-desl">Grid: <b>' + gridTexto(env) + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>';
+  if (foto) {
+    return h + '<p class="mdica">Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.</p>' +
+      '<figure class="foto-cena"><img src="' + cenaImgUrl(a) + '" alt="' + esc(env.nome) + '"></figure>';
+  }
   h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m e a diagonal conta como 1 casa.</p>';
-  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(cenaImgUrl(a), env ? env.nome : nomeBonito(a.cena)) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(cenaImgUrl(a), env.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   h += '<div class="controls">' +
     '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
@@ -2008,30 +2253,6 @@ function viewAcaoMestre() {
     '<p class="mdica">Os tokens são salvos por cenário: ao trocar de cena e voltar, tudo continua onde estava. Tokens ocultos e armadilhas escondidas aparecem só para você. A vida e a defesa dos inimigos nunca vão para os jogadores.</p>' +
     '<div id="tokLista"></div><div id="campoLog"></div>';
   return h;
-}
-
-function enviarCenario(input) {
-  var f = input.files && input.files[0];
-  if (!f) return;
-  var nome = document.getElementById("cenaNome").value.trim() || nomeBonito(f.name);
-  var cols = parseInt(document.getElementById("cenaCols").value, 10) || 20;
-  var rows = parseInt(document.getElementById("cenaRows").value, 10) || null;
-  upMsg = "Preparando a imagem…";
-  renderizar();
-  reduzirImagem(f, 2400, 2600000, function (erro, url) {
-    if (erro) { upMsg = erro; renderizar(); return; }
-    upMsg = "Enviando…";
-    renderizar();
-    gravar("cena_enviar", { nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
-      if (!r) { upMsg = "Não foi possível enviar o cenário. Tente de novo."; renderizar(); return; }
-      ENVIADAS.push({ id: r.id, nome: r.nome, cols: Math.max(1, Math.min(200, cols)), rows: rows && rows >= 1 && rows <= 200 ? rows : null });
-      var a = acaoEst();
-      a.envio = r.id; a.local = ""; a.cena = ""; a.ativo = false; tokSel = null;
-      salvarAcao();
-      upMsg = "Cenário “" + r.nome + "” enviado e selecionado.";
-      renderizar();
-    });
-  });
 }
 
 function desenharAcaoMestre() {
@@ -2128,39 +2349,19 @@ function redesenharTokens() {
 function changeAcao(el) {
   var d = el.dataset, a = acaoEst(), t;
   if (d.acao === "cenario") {
-    var v = el.value, antiga = valorCena(a);
-    /* Cada cenário guarda os próprios tokens: o convés continua montado quando você volta do porão. */
-    EST.cena_tokens = EST.cena_tokens || {};
-    if (antiga) EST.cena_tokens[antiga] = { tokens: a.tokens };
-    a.envio = 0; a.local = ""; a.cena = ""; a.ativo = false; tokSel = null;
-    if (v.indexOf("e:") === 0) a.envio = parseInt(v.slice(2), 10);
-    else if (v.indexOf("p:") === 0) { var k = v.slice(2), p = k.indexOf("/"); a.local = k.slice(0, p); a.cena = k.slice(p + 1); }
-    a.tokens = (v && (EST.cena_tokens[v] || {}).tokens) || [];
-    aplicarCampo();
-    if (CAMPO.combate) campoOp("encerrar");
-    confirmarDelCena = false;
-    salvarEstado("cena_tokens");
-    salvarAcao();
+    trocarCenario(el.value);
     renderizar();
     return true;
   }
   if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); renderAcaoUI(); return true; }
-  if (d.acao === "livre") { a.livre = el.checked; salvarAcao(); return true; }
-  if (d.grid) {
-    var g = gridDe(a), n = parseInt(el.value, 10);
-    var valido = n >= 1 && n <= 200;
-    if (a.envio) {
-      if (d.grid === "cols") g.cols = valido ? n : 20; else g.rows = valido ? n : null;
-      var c = g;
-      adiar("cena-" + c.id, function () { gravar("cena_editar", { id: c.id, cols: c.cols, rows: c.rows }); }, 400);
-    } else {
-      if (valido) g[d.grid] = n; else delete g[d.grid];
-      salvarEstado("grids");
-    }
-    desenharAcaoMestre();
+  if (d.acao === "modo") {
+    a.modo = el.value === "foto" ? "foto" : "grid";
+    if (a.modo === "foto" && CAMPO.combate) campoOp("encerrar");
     salvarAcao();
+    renderizar();
     return true;
   }
+  if (d.acao === "livre") { a.livre = el.checked; salvarAcao(); return true; }
   if (d.tcor && (t = acharTok(d.tcor))) { t.cor = el.value; salvarAcao(); renderAcaoUI(); return true; }
   if (d.ttipo && (t = acharTok(d.ttipo))) {
     if (t.cor === COR_TOKEN[t.tipo]) t.cor = COR_TOKEN[el.value];
@@ -2204,7 +2405,7 @@ function inputAcao(el) {
   if (d.tvidamax && (t = acharTok(d.tvidamax))) { t.vidaMax = Math.max(0, parseInt(el.value, 10) || 0) || null; if (t.vidaMax && t.vida == null) t.vida = t.vidaMax; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.cenanome) {
     var ce = acharEnvio(parseInt(d.cenanome, 10));
-    if (ce) { ce.nome = el.value; adiar("cenanome-" + ce.id, function () { gravar("cena_editar", { id: ce.id, nome: ce.nome }); }, 600); }
+    if (ce) { ce.nome = el.value; sincronizarPub(); adiar("cenanome-" + ce.id, function () { gravar("cena_editar", { id: ce.id, nome: ce.nome }); }, 600); }
     return true;
   }
   return false;
@@ -2214,28 +2415,7 @@ function clickAcao(b) {
   var a = acaoEst(), t;
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
   if (b.dataset.tsel) { selecionarTok(b.dataset.tsel); desenharAcaoMestre(); return true; }
-  if (b.id === "cenaDel" && a.envio) {
-    if (!confirmarDelCena) {
-      confirmarDelCena = true;
-      b.textContent = "Clique de novo para excluir";
-      setTimeout(function () { confirmarDelCena = false; var x = document.getElementById("cenaDel"); if (x) x.textContent = "Excluir este cenário"; }, 6000);
-      return true;
-    }
-    confirmarDelCena = false;
-    var id = a.envio;
-    gravar("cena_excluir", { id: id }).then(function (r) {
-      if (!r) return;
-      ENVIADAS = ENVIADAS.filter(function (c) { return c.id !== id; });
-      if (EST.cena_tokens) { delete EST.cena_tokens["e:" + id]; salvarEstado("cena_tokens"); }
-      campoOp("pos", { remover: a.tokens.map(function (x) { return x.id; }) });
-      if (CAMPO.combate) campoOp("encerrar");
-      a.envio = 0; a.ativo = false; a.tokens = []; tokSel = null;
-      salvarAcao();
-      upMsg = "Cenário excluído.";
-      renderizar();
-    });
-    return true;
-  }
+  if (b.dataset.cenir) { cenSel = parseInt(b.dataset.cenir, 10); location.hash = "#cenarios"; return true; }
   /* --- tokens --- */
   if (b.id === "tokJogadores") {
     var novos = [];
@@ -2365,21 +2545,27 @@ VIEWFN.jogadores = viewJogadores;
 VIEWFN["sessao-zero"] = viewSessaoZero;
 VIEWFN.mestre = viewMestre;
 VIEWFN.acao = viewAcaoMestre;
+VIEWFN.cenarios = viewCenarios;
 
 MESTRE = {
+  /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
+  localExtra: localExtraMestre,
   regrasExtra: regrasExtraMestre,
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,
   views: [
     ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"],
-    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["acao", "Ação", "espada"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
+    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
   iniciar: function (d) {
     jogs = d.jogadores || [];
     sorteio = null;
     if (d.campo) CAMPO = d.campo;
+    /* Os cenários precisam estar carregados antes de sincronizar o mapa dos jogadores, ou os vínculos se perderiam. */
+    ENVIADAS = d.enviadas || [];
     aplicarCampo();
     sincronizarPub();
   },
@@ -2395,11 +2581,13 @@ MESTRE = {
     if (r === "grimorios") desenharGrimorios();
     if (r === "bestiario") desenharBestiario();
     if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
+    if (r === "cenarios") desenharCenPreview();
   },
 
   change: function (el) {
     var d = el.dataset || {};
     if (el.id === "cenaUp") { enviarCenario(el); return; }
+    if (el.id === "cenaTroca") { trocarFotoCenario(el); return; }
     if (changeAcao(el)) return;
     if (el.classList.contains("chk")) setCheck(d.key, parseInt(d.i, 10), el.checked);
     else if (el.classList.contains("rev")) { setRev(d.id, el.checked); desenharMapa(); }
@@ -2434,8 +2622,14 @@ MESTRE = {
       var j = achaJog(jogSel);
       if (j) { j.grimRev = el.checked; salvarJog(j, true, ["grimRev"]); }
     }
+    else if (d.loccen) { vincularLocal(d.loccen, el.value ? parseInt(el.value, 10) : 0); renderizar(); }
+    else if (d.cenloc) {
+      var cid = parseInt(d.cenloc, 10), antigo = localDoCenario(cid);
+      if (antigo) vincularLocal(antigo, 0);
+      if (el.value) vincularLocal(el.value, cid);
+      renderizar();
+    }
     else if (el.id === "mapaUp") enviarImagem(el, "mapa", "");
-    else if (el.id === "localImg") enviarImagem(el, "local", d.local);
     else if (d.imglib) {
       var im = acharImg(parseInt(d.imglib, 10));
       if (im) { im.liberado = el.checked; gravar("img_editar", { id: im.id, liberado: im.liberado }); }
@@ -2444,6 +2638,7 @@ MESTRE = {
 
   input: function (el) {
     var d = el.dataset || {};
+    if (inputCenarios(el)) return;
     if (inputAcao(el)) return;
     if (el.id === "busca") { filtro.q = el.value; desenharGrimorios(); }
     if (d.jf || d.obs) salvarCampoJog(el);
@@ -2454,6 +2649,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (clickCenarios(b)) return true;
     if (clickAcao(b)) return true;
     if (acoesSorteio(b)) return true;
     if (acoesJog(b)) return true;

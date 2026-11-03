@@ -29,6 +29,7 @@ try {
         'POST cena_enviar' => acaoCenaEnviar(),
         'POST cena_editar' => acaoCenaEditar(),
         'POST cena_excluir' => acaoCenaExcluir(),
+        'POST cena_importar' => acaoCenaImportar(),
         'POST registrar' => acaoRegistrar(),
         'POST entrar' => acaoEntrar(),
         'POST sair' => acaoSair(),
@@ -122,6 +123,7 @@ function acaoInicio(): never
             'jogadores' => listarJogadores(),
             'usuarios' => db()->query('SELECT id, nome, email, papel FROM usuarios ORDER BY nome')->fetchAll(),
             'imagens' => listarImagens(),
+            'enviadas' => listarCenasEnviadas(),
             'campo' => campoLer(),
         ]);
     }
@@ -387,10 +389,16 @@ function acaoCenaImg(): never
         $envio = (int)($_GET['id'] ?? 0);
         $arq = $envio ? null : arquivoCena($_GET['local'] ?? null, $_GET['cena'] ?? null);
     } else {
-        /* O jogador não escolhe: recebe a cena que o mestre ativou, se houver. */
-        $a = lerEstado('acao') ?? [];
-        $envio = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
-        $arq = !empty($a['ativo']) && !$envio ? arquivoCena($a['local'] ?? null, $a['cena'] ?? null) : null;
+        /* O jogador recebe a cena que o mestre ativou, ou a foto de um cenário ligado a um local revelado no mapa. */
+        $pedido = (int)($_GET['id'] ?? 0);
+        if ($pedido && cenaLiberadaJogador($pedido)) {
+            $envio = $pedido;
+            $arq = null;
+        } else {
+            $a = lerEstado('acao') ?? [];
+            $envio = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
+            $arq = !empty($a['ativo']) && !$envio ? arquivoCena($a['local'] ?? null, $a['cena'] ?? null) : null;
+        }
     }
     if ($envio) {
         $c = cenaEnviada($envio, true);
@@ -435,6 +443,10 @@ function acaoCenaEditar(): never
     $c = corpo();
     $id = (int)($c['id'] ?? 0);
     $pdo = db();
+    if (!empty($c['dados'])) {
+        [$mime, $bin] = decodificarImagem($c['dados']);
+        $pdo->prepare('UPDATE cenas SET mime = ?, dados = ?, criado_em = NOW() WHERE id = ?')->execute([$mime, $bin, $id]);
+    }
     if (array_key_exists('nome', $c)) $pdo->prepare('UPDATE cenas SET nome = ? WHERE id = ?')->execute([mb_substr(trim((string)$c['nome']), 0, 120) ?: 'Cenário', $id]);
     if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cenas SET colunas = ? WHERE id = ?')->execute([limiteGrid($c['cols'], false), $id]);
     if (array_key_exists('rows', $c)) $pdo->prepare('UPDATE cenas SET linhas = ? WHERE id = ?')->execute([limiteGrid($c['rows'], true), $id]);
@@ -446,4 +458,22 @@ function acaoCenaExcluir(): never
     exigirMestre();
     db()->prepare('DELETE FROM cenas WHERE id = ?')->execute([(int)(corpo()['id'] ?? 0)]);
     responder(['ok' => true]);
+}
+
+/* Traz uma imagem de misterio/{local}/grid/ para dentro dos cenários (banco de dados). */
+function acaoCenaImportar(): never
+{
+    exigirMestre();
+    $c = corpo();
+    $arq = arquivoCena($c['local'] ?? null, $c['cena'] ?? null);
+    if (!$arq) erro('Imagem não encontrada na pasta.', 404);
+    if (filesize($arq) > 8_000_000) erro('A imagem é grande demais (máximo 8 MB).');
+    $bin = (string)file_get_contents($arq);
+    $mime = @getimagesizefromstring($bin)['mime'] ?? '';
+    if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) erro('Formato de imagem não aceito.');
+    $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Cenário';
+    $pdo = db();
+    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$nome, $mime, $bin, limiteGrid($c['cols'] ?? 20, false), limiteGrid($c['rows'] ?? null, true)]);
+    responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
 }

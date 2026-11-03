@@ -138,7 +138,7 @@ function viewRegras() {
 
   h += "<h2>Criar o personagem</h2>" + panel("Números", "<ul>" +
     "<li><b>Treino prévio:</b> distribua +5 pontos entre os atributos, no máximo +3 em um. Isso é feito antes de ver o grimório.</li>" +
-    "<li><b>Vida:</b> 20.</li><li><b>Mana:</b> 10, igual para todos.</li>" +
+    "<li><b>Vida:</b> 20.</li><li><b>Mana:</b> 10, mais 1 a cada 2 pontos de Inteligência.</li>" +
     "<li><b>Defesa:</b> 10 + Destreza.</li>" +
     "<li><b>Redução de dano:</b> igual ao Poder (o dano mínimo é sempre 1).</li>" +
     "<li><b>Deslocamento:</b> 6 casas por turno, mais 1 a cada 2 pontos de Destreza.</li>" +
@@ -160,7 +160,7 @@ function viewRegras() {
     "<p><b>Exemplo:</b> a Lia (Destreza +3, Poder +1) tem Defesa 13. O bandido rola 12 + 2 = 14 e acerta. Rola o dano: 1d6 + 1 = 5. Ela subtrai o Poder (1) e perde 4 de vida.</p>" +
     "");
 
-  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Custos: 1 (básico), 2 (médio) e 4 (ultimate).</li><li>Recupera 1 por turno, ou tudo em um descanso.</li></ul>");
+  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Mana máxima: 10, mais 1 a cada 2 pontos de Inteligência.</li><li>Custos: 1 (básico), 2 (médio) e 4 (ultimate).</li><li>Recupera 1 por turno, ou tudo em um descanso.</li></ul>");
 
   h += "<h2>Deslocamento</h2>" + panel("Com mapa e sem mapa",
     "<ul><li><b>Com mapa:</b> 6 casas por turno (1 casa = 1,5 m). Perder 2 de deslocamento deixa o alvo com 4. Dobrar deixa com 12.</li>" +
@@ -184,16 +184,8 @@ function viewNiveis() {
   var h = "<h1>Níveis e evolução</h1>" +
     '<p class="lead">Sem pontos de experiência. Todos os personagens sobem de nível juntos, quando o mestre anunciar. Ninguém fica para trás.</p>';
 
-  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "Vida máx.", "Mana máx.", "Atributos", "Limite por atributo", "Grimório"], [
-    ["1", "20", "10", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
-    ["2", "24", "10", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
-    ["3", "28", "12", "+1 ponto", "+4", "Nova habilidade"],
-    ["4", "32", "12", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
-    ["5", "36", "14", "+1 ponto", "+5", "Despertar do grimório"]
-  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza) e a redução de dano (Poder) sobem junto com os atributos.</p>";
-
   h += "<h2>O que acontece ao subir de nível</h2>" +
-    panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
+    panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
     panel(ic("brilho") + "Aprimorar um feitiço",
       "<p>Você escolhe um feitiço do seu grimório e um aprimoramento:</p>" +
       "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
@@ -369,12 +361,15 @@ function introMapa() {
     "<p>Toque em um marcador para ver o que há ali." + (souMestre() ? " Os nomes são provisórios: troque pelos que combinarem mais com você." : "") + "</p>";
 }
 
-function imagemDe(tipo, ref) {
-  var r = null;
-  IMAGENS.forEach(function (i) { if (i.tipo === tipo && i.ref === ref) r = i; });
-  return r;
-}
 function imgUrl(id) { return API + "?a=img&id=" + encodeURIComponent(id); }
+
+/* Cada local do mapa pode ter um cenário ligado (foto, grid e história). O mestre faz o vínculo; o jogador
+   recebe só o id e a versão da foto dos locais já revelados. */
+function cenarioDoLocal(l) {
+  if (!souMestre()) return l.cenario ? { id: l.cenario, v: l.cv, nome: l.cenNome } : null;
+  var id = (EST.locais_cen || {})[l.id], c = id ? acharEnvio(id) : null;
+  return c ? { id: c.id, v: c.v, nome: c.nome } : null;
+}
 
 function desenharDetalhe() {
   var box = document.getElementById("mapaDetalhe");
@@ -385,13 +380,15 @@ function desenharDetalhe() {
   if (!l || (l.secreto && !camadaMestre()) || (modoMesa && !rev[l.id])) { box.innerHTML = introMapa(); return; }
   var h = "<h3>" + l.nome + '</h3><div class="meta"><span class="tag role">' + TIPO_NOME[l.tipo] + "</span>" + (souMestre() ? '<span class="tag role">' + l.arco + "</span>" : "") + "</div>";
   h += "<p>" + l.pub + "</p>";
-  var im = imagemDe("local", l.id);
-  if (im) h += '<a href="' + imgUrl(im.id) + '" target="_blank" rel="noopener"><img class="local-img" src="' + imgUrl(im.id) + '" alt="Imagem de ' + esc(l.nome) + '"></a>';
+  var cen = cenarioDoLocal(l);
+  if (cen) {
+    var u = API + "?a=cena_img&id=" + encodeURIComponent(cen.id) + (cen.v ? "&v=" + cen.v : "");
+    h += (cen.nome ? '<p class="meta"><span class="tag role">' + ic("pino") + esc(cen.nome) + "</span></p>" : "") +
+      '<a href="' + u + '" target="_blank" rel="noopener"><img class="local-img" src="' + u + '" alt="' + esc(cen.nome || "Cenário de " + l.nome) + '"></a>';
+  }
   if (souMestre() && !modoMesa) {
     if (!l.secreto) h += '<label class="rev-label"><input type="checkbox" class="rev" data-id="' + l.id + '"' + (rev[l.id] ? " checked" : "") + "> Revelado aos jogadores</label>";
-    h += '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="localImg" data-local="' + l.id + '"><label class="btn" for="localImg">' + (im ? "Trocar imagem" : "Adicionar imagem") + "</label>" +
-      (im ? '<button type="button" data-imgdel="' + im.id + '">' + (confirmarDelImg === im.id ? "Clique de novo" : "Remover imagem") + "</button>" : "") + "</p>";
-    if (im) h += '<p class="mdica">A imagem aparece para os jogadores junto com o local, quando ele estiver revelado.</p>';
+    h += MESTRE.localExtra(l);
     if (l.ganchos.length) h += "<h4>Ganchos</h4><ul>" + l.ganchos.map(function (g) { return "<li>" + g + "</li>"; }).join("") + "</ul>";
     if (l.inimigos.length) h += "<h4>Inimigos (veja o Bestiário)</h4><p>" + l.inimigos.join(", ") + ".</p>";
     if (camadaMestre() && (l.segredo || l.inimigosSec)) {
@@ -511,21 +508,23 @@ function viewMeuGrimorio() {
 
 var perfilPend = {}, perfilMsg = "";
 var ATRS = [["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]];
-var VIDA_NIVEL = [20, 24, 28, 32, 36], MANA_NIVEL = [10, 10, 12, 12, 14], LIM_NIVEL = [3, 3, 4, 4, 5];
+var VIDA_NIVEL = [20, 24, 28, 32, 36], LIM_NIVEL = [3, 3, 4, 4, 5];
 var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
 function nivelJog(j) { return Math.max(1, Math.min(5, parseInt(j.nivel, 10) || 1)); }
 function atrBase(j, k) { return parseInt(j.atr && j.atr[k], 10) || 0; }
 function atrBonus(j, k) { return parseInt(j.bonus && j.bonus[k], 10) || 0; }
 function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k); }
+/* Mana: 10, mais 1 a cada 2 pontos de Inteligência. */
+function manaJog(j) { return 10 + Math.floor(atrTotal(j, "inteligencia") / 2); }
 function sinal(n) { return (n >= 0 ? "+" : "") + n; }
 
 function statCaixa(rot, v) { return '<div class="stat"><b>' + v + "</b>" + rot + "</div>"; }
 
 /* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder,
-   deslocamento 6 + 1 a cada 2 de Destreza, Vida e Mana pelo nível). */
+   deslocamento 6 + 1 a cada 2 de Destreza, mana 10 + 1 a cada 2 de Inteligência, Vida pelo nível). */
 function statusHTML(j) {
   var n = nivelJog(j), dex = atrTotal(j, "destreza"), h = '<h2>Status</h2><section class="panel ficha">' +
-    '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", MANA_NIVEL[n - 1]) +
+    '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(j)) +
     statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", atrTotal(j, "poder")) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
   if (!j.atrTravado) {
     var usado = atrRasc.poder + atrRasc.destreza + atrRasc.inteligencia, resta = 5 - usado;
@@ -769,6 +768,10 @@ function viewAcaoJogador() {
   var a = acaoPub;
   if (!a) return "<h1>Ação</h1><p class=\"mdica\">Carregando…</p>";
   if (!a.ativo) return '<div class="lock"><h1>Ação</h1><p>Nenhum mapa ativo agora. Quando o mestre abrir uma cena, ela aparece aqui e se atualiza sozinha.</p></div>';
+  if (a.modo === "foto") {
+    var u = API + "?a=cena_img&v=" + encodeURIComponent(a.img);
+    return "<h1>" + esc(a.titulo || "Cena atual") + '</h1><figure class="foto-cena"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="' + esc(a.titulo || "Cenário") + '"></a></figure>';
+  }
   return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
     '<p id="acaoMsg" role="status" class="mdica tok-aviso">' + esc(acaoMsg) + "</p>" +
     '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
@@ -776,7 +779,7 @@ function viewAcaoJogador() {
 }
 
 function desenharAcaoJogador() {
-  if (!acaoPub || !acaoPub.ativo) return;
+  if (!acaoPub || !acaoPub.ativo || acaoPub.modo === "foto") return;
   var cb = acaoPub.combate;
   desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: acaoPub.eu, atual: cb ? cb.atual : null, depois: ligarArrasteJog });
   ligarArrasteJog();
@@ -858,7 +861,7 @@ function buscarAcaoAgora(forcar) {
   return api("acao").then(function (a) {
     var j = JSON.stringify(a);
     if (j === acaoJson) { if (forcar) acaoAtualizarUI(false); return; }
-    var troc = !acaoPub || acaoPub.ativo !== a.ativo || acaoPub.img !== a.img || acaoPub.titulo !== a.titulo;
+    var troc = !acaoPub || acaoPub.ativo !== a.ativo || acaoPub.modo !== a.modo || acaoPub.img !== a.img || acaoPub.titulo !== a.titulo;
     acaoJson = j;
     acaoPub = a;
     acaoAtualizarUI(troc);
@@ -1026,10 +1029,33 @@ function rotaAtual() {
   return listaViews().some(function (v) { return v[0] === r; }) ? r : "inicio";
 }
 
+/* Menu em grupos. Cada item é o id de uma aba, ou um grupo ({ g: nome, i: ids }) que abre uma lista. */
+var NAV_JOGADOR = ["inicio", "perfil", "meu-grimorio", "acao", { g: "Guia", i: ["regras", "niveis", "vilarejos", "mapa"] }];
+function navAtual() { return MESTRE ? MESTRE.nav : NAV_JOGADOR; }
+function viewInfo(id) { var r = null; listaViews().forEach(function (v) { if (v[0] === id) r = v; }); return r; }
+function linkNav(id, atual) {
+  var v = viewInfo(id);
+  return v ? '<a href="#' + id + '"' + (id === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + "</a>" : "";
+}
+
+function fecharMenus(tudo) {
+  document.querySelectorAll("#nav .submenu").forEach(function (m) { m.hidden = true; });
+  document.querySelectorAll("#nav .grupo-btn").forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+  if (tudo) {
+    var h = document.querySelector("header.top"), mb = document.getElementById("menuBtn");
+    if (h) h.classList.remove("menu-aberto");
+    if (mb) mb.setAttribute("aria-expanded", "false");
+  }
+}
+
 function montarNav(atual) {
-  document.getElementById("nav").innerHTML = USUARIO ? listaViews().map(function (v) {
-    return '<li><a href="#' + v[0] + '"' + (v[0] === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + "</a></li>";
+  document.getElementById("nav").innerHTML = USUARIO ? navAtual().map(function (n, k) {
+    if (typeof n === "string") return "<li>" + linkNav(n, atual) + "</li>";
+    return '<li class="grupo' + (n.i.indexOf(atual) !== -1 ? " ativo" : "") + '"><button type="button" class="grupo-btn" aria-haspopup="true" aria-expanded="false" data-grupo="' + k + '">' + n.g + ' <span aria-hidden="true">▾</span></button>' +
+      '<ul class="submenu" hidden>' + n.i.map(function (id) { return "<li>" + linkNav(id, atual) + "</li>"; }).join("") + "</ul></li>";
   }).join("") : "";
+  document.getElementById("menuBtn").hidden = !USUARIO;
+  fecharMenus(true);
 }
 
 function renderizar() {
@@ -1129,6 +1155,27 @@ app.addEventListener("keydown", function (e) {
     selecionarLocal(e.target.dataset.id);
   }
 });
+
+document.getElementById("nav").addEventListener("click", function (e) {
+  var b = e.target.closest ? e.target.closest(".grupo-btn") : null;
+  if (b) {
+    var abrir = b.getAttribute("aria-expanded") !== "true";
+    fecharMenus();
+    if (abrir) { b.setAttribute("aria-expanded", "true"); if (b.nextElementSibling) b.nextElementSibling.hidden = false; }
+    return;
+  }
+  if (e.target.closest && e.target.closest("a")) fecharMenus(true);
+});
+document.getElementById("menuBtn").addEventListener("click", function () {
+  var h = document.querySelector("header.top");
+  if (!h) return;
+  var aberto = h.classList.toggle("menu-aberto");
+  document.getElementById("menuBtn").setAttribute("aria-expanded", String(aberto));
+});
+document.addEventListener("click", function (e) {
+  if (!e.target.closest || !e.target.closest("#nav, #menuBtn")) fecharMenus();
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenus(); });
 
 document.getElementById("conta").addEventListener("click", function (e) {
   if (!e.target.closest || !e.target.closest("#sairBtn")) return;

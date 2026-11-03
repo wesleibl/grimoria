@@ -105,7 +105,7 @@ function exigirMestre(): array
 /* ============================ ESTADO ============================ */
 
 /* Chaves que o mestre pode gravar. As que terminam em _pub são cópias filtradas que os jogadores leem. */
-const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens'];
+const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens', 'cenarios_info', 'locais_cen'];
 
 function lerEstado(string $chave): mixed
 {
@@ -259,8 +259,9 @@ function cenaEnviada(int $id, bool $comDados = false): ?array
 function listarCenasEnviadas(): array
 {
     $out = [];
-    foreach (db()->query('SELECT id, nome, colunas, linhas FROM cenas ORDER BY criado_em, id') as $r) {
-        $out[] = ['id' => (int)$r['id'], 'nome' => $r['nome'], 'cols' => (int)$r['colunas'], 'rows' => $r['linhas'] === null ? null : (int)$r['linhas']];
+    foreach (db()->query('SELECT id, nome, colunas, linhas, UNIX_TIMESTAMP(criado_em) AS ts FROM cenas ORDER BY criado_em, id') as $r) {
+        /* v muda quando a foto é trocada, para o navegador não mostrar a antiga guardada. */
+        $out[] = ['id' => (int)$r['id'], 'nome' => $r['nome'], 'cols' => (int)$r['colunas'], 'rows' => $r['linhas'] === null ? null : (int)$r['linhas'], 'v' => (int)$r['ts']];
     }
     return $out;
 }
@@ -481,6 +482,7 @@ function campoOpJogador(array $u, string $op, array $c): never
     if (!$jog) erro('Sua conta ainda não está ligada a um personagem.', 409);
     $a = lerEstado('acao') ?? [];
     if (empty($a['ativo'])) erro('Nenhuma cena ativa.', 409);
+    if (($a['modo'] ?? 'grid') === 'foto') erro('Esta cena é só uma imagem.', 409);
     $tokens = tokensAcao();
     $meu = null;
     foreach ($tokens as $id => $t) {
@@ -559,6 +561,10 @@ function acaoPublica(?string $jogId = null): array
         $g = (lerEstado('grids') ?? [])[$a['local'] . '/' . $a['cena']] ?? [];
         $imgId = substr(md5($a['local'] . '/' . $a['cena']), 0, 12);
     }
+    /* "Só a foto": o jogador vê a imagem do cenário, sem grid, tokens nem combate. */
+    if (($a['modo'] ?? 'grid') === 'foto') {
+        return ['ativo' => true, 'modo' => 'foto', 'img' => $imgId, 'titulo' => (string)($a['titulo'] ?? '')];
+    }
     $campo = campoLer();
     $tokens = [];
     $vis = [];
@@ -615,6 +621,7 @@ function acaoPublica(?string $jogId = null): array
 
     return [
         'ativo' => true,
+        'modo' => 'grid',
         'img' => $imgId,
         'titulo' => (string)($a['titulo'] ?? ''),
         'cols' => (int)($g['cols'] ?? 0),
@@ -625,4 +632,14 @@ function acaoPublica(?string $jogId = null): array
         'combate' => $combate,
         'eventos' => array_slice($eventos, -8),
     ];
+}
+
+/* O jogador só vê a foto de um cenário se ele estiver ligado a um local já revelado no mapa, ou se for a cena ativa. */
+function cenaLiberadaJogador(int $id): bool
+{
+    foreach ((lerEstado('locais_pub') ?? []) as $l) {
+        if (is_array($l) && (int)($l['cenario'] ?? 0) === $id) return true;
+    }
+    $a = lerEstado('acao') ?? [];
+    return !empty($a['ativo']) && (int)($a['envio'] ?? 0) === $id;
 }
