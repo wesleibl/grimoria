@@ -534,7 +534,11 @@ function locaisPub() {
   var rev = getRev(), lig = EST.locais_cen || {};
   return LOCAIS.filter(function (l) { return !l.secreto && rev[l.id]; }).map(function (l) {
     var o = { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab, pub: l.pub }, c = lig[l.id] ? acharEnvio(lig[l.id]) : null;
-    if (c) { o.cenario = c.id; o.cv = c.v; o.cenNome = c.nome; }
+    if (c) {
+      o.cenario = c.id; o.cv = c.v; o.cenNome = c.nome;
+      var rs = String(infoCen(c.id).resumo || "").trim();
+      if (rs) o.cenResumo = rs;
+    }
     return o;
   });
 }
@@ -858,22 +862,22 @@ var LOCAIS = [
       inimigos: ["Bandido do Reino", "Capitão Bandido", "Corvo de Mana", "Lobo de Mana"],
       segredo: "Os infiltrados passam por aqui. Um cavaleiro da Ordem acompanha a cerimônia e oferece ajuda, o que pode ser a primeira pista.", ideia: true }),
   lo("vale", "Vale das Colheitas", "vilarejo", 430, 545, [0, -18, "middle"], "Arco 1",
-    "Um vilarejo agrícola e pacífico, cercado de plantações. Os moradores são fortes de tanto trabalhar na terra (+1 em Poder para esforço).",
+    "Um vilarejo agrícola e pacífico, cercado de plantações. Os moradores são fortes de tanto trabalhar na terra.",
     { ganchos: ["As plantações estão sendo atacadas por criaturas de mana"],
       inimigos: ["Espantalho de Mana", "Javali de Mana", "Devorador de Colheitas"],
       segredo: "A criatura foi solta de propósito pelo primeiro infiltrado (o curandeiro ou fazendeiro que ajuda depois do ataque)." }),
   lo("porto", "Porto Salgado", "vilarejo", 848, 300, [-16, -14, "end"], "Arco 1",
-    "Um vilarejo pesqueiro e de comércio, cheio de viajantes e contrabando. As pessoas são falantes e espertas (+1 em Inteligência para negociar e conseguir informação).",
+    "Um vilarejo pesqueiro e de comércio, cheio de viajantes e contrabando. As pessoas são falantes e espertas.",
     { ganchos: ["Um navio misterioso atracou ao largo e ninguém desceu"],
       inimigos: ["Marujo Afogado", "Caranguejo Blindado", "Polvo da Maré", "Serpente das Marés"],
       segredo: "O navio é do segundo infiltrado (o comerciante ou capitão). Os marinheiros são pessoas marcadas." }),
   lo("floresta", "Floresta dos Cedros", "vilarejo", 232, 352, [0, -18, "middle"], "Arco 1",
-    "Um vilarejo de caçadores, isolado entre as árvores. Os moradores são rastreadores (+1 em Destreza para furtividade e rastreio).",
+    "Um vilarejo de caçadores, isolado entre as árvores. Os moradores são rastreadores.",
     { ganchos: ["Caçadores estão desaparecendo na mata"],
       inimigos: ["Aranha Tecelã", "Raposa Sombria", "Árvore Desperta", "Cervo Ancestral"],
       segredo: "Os caçadores sumiram por ordem do terceiro infiltrado (o caçador-guia que oferece ajuda na mata)." }),
   lo("pedra", "Pedra Velha", "vilarejo", 300, 188, [0, 28, "middle"], "Arco 1",
-    "Um vilarejo de mineradores, perto das ruínas. A gente é teimosa e resistente, e já ouviu histórias do que existe nas minas (+1 em Inteligência para ruínas, símbolos e magia antiga).",
+    "Um vilarejo de mineradores, perto das ruínas. A gente é teimosa e resistente, e já ouviu histórias do que existe nas minas.",
     { ganchos: ["Uma mina foi lacrada depois de um tremor estranho"],
       inimigos: ["Morcego-Cristal", "Verme das Rochas", "Golem de Entulho", "Guardião das Ruínas"],
       segredo: "O quarto infiltrado (o estudioso de ruínas) quer o que está dentro da mina lacrada." }),
@@ -899,7 +903,7 @@ var LOCAIS = [
       inimigos: ["Morcego-Cristal", "Verme das Rochas", "Golem de Entulho"],
       segredo: "Dentro está a Câmara Selada, que o estudioso quer usar.", ideia: true }),
   lo("ruinas", "Ruínas Antigas", "misterio", 402, 132, [0, 32, "middle"], "Arco 1",
-    "Ruínas de uma civilização de magos, cobertas de símbolos que ninguém sabe ler. O bônus de Pedra Velha ajuda a decifrar. Um guardião protege a entrada.",
+    "Ruínas de uma civilização de magos, cobertas de símbolos que ninguém sabe ler. Um guardião protege a entrada.",
     { ganchos: ["Decifrar os símbolos", "Passar pelo guardião"],
       inimigos: ["Guardião das Ruínas"],
       segredo: "Os símbolos descrevem um ritual de controle de magos, a origem da marca.", ideia: true }),
@@ -1751,7 +1755,8 @@ function novoCenarioHTML() {
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label>' +
     '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" placeholder="sem grid"></label>' +
     '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label></div>' +
-    '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
+    '<label class="pj-obs-l">Resumo (os jogadores leem)<textarea class="sorteio-in" rows="2" maxlength="400" id="cenaResumo" placeholder="Uma descrição curta do lugar, do que dá para ver e sentir."></textarea></label>' +
+    '<label class="pj-obs-l">Descrição completa (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
     '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
     '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
 }
@@ -1781,7 +1786,9 @@ function cenDetalheHTML() {
     (localDoCenario(c.id) ? '<p class="mdica">Quando o local for revelado no mapa, os jogadores veem a foto deste cenário ao clicar nele.</p>' : "") +
     '<p class="mdica">Deixe as <b>colunas</b> em branco para um cenário sem grid (só a imagem). Com colunas, deixe as linhas em branco para o site calcular e manter as casas quadradas.</p>' +
     (temGrid(c) ? tabuleiroHTML(cenaImgUrl({ envio: c.id }), c.nome) : '<figure class="foto-cena"><img src="' + cenaImgUrl({ envio: c.id }) + '" alt="' + esc(c.nome) + '"></figure>') +
-    '<label class="pj-obs-l">História e detalhes (só você vê)<textarea class="sorteio-in" rows="5" data-cenhist="' + c.id + '" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…">' + esc(infoCen(c.id).historia || "") + "</textarea></label>" +
+    '<label class="pj-obs-l">Resumo (os jogadores leem)<textarea class="sorteio-in" rows="3" maxlength="400" data-cenresumo="' + c.id + '" placeholder="Uma descrição curta do lugar, do que dá para ver e sentir.">' + esc(infoCen(c.id).resumo || "") + "</textarea></label>" +
+    '<p class="mdica">O resumo aparece para os jogadores no mapa (quando o local estiver revelado) e quando você mostra o cenário na tela deles.</p>' +
+    '<label class="pj-obs-l">Descrição completa (só você vê)<textarea class="sorteio-in" rows="5" data-cenhist="' + c.id + '" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…">' + esc(infoCen(c.id).historia || "") + "</textarea></label>" +
     '<div class="controls">' +
     (temGrid(c) ? '<button type="button" class="primary" data-cenusar="' + c.id + '">Usar na Ação (grid)</button>' : "") +
     (noar && (a.modo === "foto" || !temGrid(c)) ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
@@ -1826,7 +1833,7 @@ function enviarCenario(input) {
   var nome = document.getElementById("cenaNome").value.trim() || nomeBonito(f.name);
   var cols = parseInt(document.getElementById("cenaCols").value, 10) || 0;
   var rows = cols ? parseInt(document.getElementById("cenaRows").value, 10) || null : null;
-  var hist = document.getElementById("cenaHist").value;
+  var hist = document.getElementById("cenaHist").value, resumo = document.getElementById("cenaResumo").value;
   upMsg = "Preparando a imagem…";
   renderizar();
   reduzirImagem(f, 2400, 2600000, function (erro, url) {
@@ -1836,7 +1843,7 @@ function enviarCenario(input) {
     gravar("cena_enviar", { nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
       if (!r) { upMsg = "Não foi possível enviar o cenário. Tente de novo."; renderizar(); return; }
       ENVIADAS.push({ id: r.id, nome: r.nome, cols: cols ? Math.max(1, Math.min(200, cols)) : 0, rows: rows && rows >= 1 && rows <= 200 ? rows : null, v: Math.floor(Date.now() / 1000) });
-      if (hist.trim()) { (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { historia: hist }; salvarEstado("cenarios_info"); }
+      if (hist.trim() || resumo.trim()) { (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { historia: hist, resumo: resumo }; salvarEstado("cenarios_info"); }
       cenSel = r.id;
       upMsg = "Cenário “" + r.nome + "” criado.";
       renderizar();
@@ -1871,8 +1878,9 @@ function inputCenarios(el) {
     if (cards) cards.innerHTML = cenCardsHTML();
     return true;
   }
-  if (d.cenhist) {
-    (EST.cenarios_info = EST.cenarios_info || {})[d.cenhist] = { historia: el.value };
+  if (d.cenhist || d.cenresumo) {
+    var id = d.cenhist || d.cenresumo, info = (EST.cenarios_info = EST.cenarios_info || {})[id] || (EST.cenarios_info[id] = {});
+    if (d.cenhist) info.historia = el.value; else { info.resumo = el.value.slice(0, 400); sincronizarPub(); }
     salvarEstado("cenarios_info");
     return true;
   }

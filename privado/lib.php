@@ -567,9 +567,11 @@ function acaoPublica(?string $jogId = null): array
         $g = (lerEstado('grids') ?? [])[$a['local'] . '/' . $a['cena']] ?? [];
         $imgId = substr(md5($a['local'] . '/' . $a['cena']), 0, 12);
     }
+    /* Só o resumo do cenário vai para o jogador. A história e os detalhes ficam com o mestre. */
+    $resumo = !empty($a['envio']) ? mb_substr((string)((lerEstado('cenarios_info') ?? [])[(int)$a['envio']]['resumo'] ?? ''), 0, 600) : '';
     /* "Só a foto": o jogador vê a imagem do cenário, sem grid, tokens nem combate. */
     if (($a['modo'] ?? 'grid') === 'foto' || $semGrid) {
-        return ['ativo' => true, 'modo' => 'foto', 'img' => $imgId, 'titulo' => (string)($a['titulo'] ?? '')];
+        return ['ativo' => true, 'modo' => 'foto', 'img' => $imgId, 'titulo' => (string)($a['titulo'] ?? ''), 'resumo' => $resumo];
     }
     $campo = campoLer();
     $tokens = [];
@@ -630,6 +632,7 @@ function acaoPublica(?string $jogId = null): array
         'modo' => 'grid',
         'img' => $imgId,
         'titulo' => (string)($a['titulo'] ?? ''),
+        'resumo' => $resumo,
         'cols' => (int)($g['cols'] ?? 0),
         'rows' => (int)($g['rows'] ?? 0),
         'livre' => (bool)($a['livre'] ?? true),

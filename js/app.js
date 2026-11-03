@@ -366,9 +366,9 @@ function imgUrl(id) { return API + "?a=img&id=" + encodeURIComponent(id); }
 /* Cada local do mapa pode ter um cenário ligado (foto, grid e história). O mestre faz o vínculo; o jogador
    recebe só o id e a versão da foto dos locais já revelados. */
 function cenarioDoLocal(l) {
-  if (!souMestre()) return l.cenario ? { id: l.cenario, v: l.cv, nome: l.cenNome } : null;
+  if (!souMestre()) return l.cenario ? { id: l.cenario, v: l.cv, nome: l.cenNome, resumo: l.cenResumo } : null;
   var id = (EST.locais_cen || {})[l.id], c = id ? acharEnvio(id) : null;
-  return c ? { id: c.id, v: c.v, nome: c.nome } : null;
+  return c ? { id: c.id, v: c.v, nome: c.nome, resumo: String(((EST.cenarios_info || {})[c.id] || {}).resumo || "") } : null;
 }
 
 function desenharDetalhe() {
@@ -384,7 +384,8 @@ function desenharDetalhe() {
   if (cen) {
     var u = API + "?a=cena_img&id=" + encodeURIComponent(cen.id) + (cen.v ? "&v=" + cen.v : "");
     h += (cen.nome ? '<p class="meta"><span class="tag role">' + ic("pino") + esc(cen.nome) + "</span></p>" : "") +
-      '<a href="' + u + '" target="_blank" rel="noopener"><img class="local-img" src="' + u + '" alt="' + esc(cen.nome || "Cenário de " + l.nome) + '"></a>';
+      '<a href="' + u + '" target="_blank" rel="noopener"><img class="local-img" src="' + u + '" alt="' + esc(cen.nome || "Cenário de " + l.nome) + '"></a>' +
+      (cen.resumo ? '<p class="resumo">' + esc(cen.resumo) + "</p>" : "");
   }
   if (souMestre() && !modoMesa) {
     if (!l.secreto) h += '<label class="rev-label"><input type="checkbox" class="rev" data-id="' + l.id + '"' + (rev[l.id] ? " checked" : "") + "> Revelado aos jogadores</label>";
@@ -770,9 +771,10 @@ function viewAcaoJogador() {
   if (!a.ativo) return '<div class="lock"><h1>Ação</h1><p>Nenhum mapa ativo agora. Quando o mestre abrir uma cena, ela aparece aqui e se atualiza sozinha.</p></div>';
   if (a.modo === "foto") {
     var u = API + "?a=cena_img&v=" + encodeURIComponent(a.img);
-    return "<h1>" + esc(a.titulo || "Cena atual") + '</h1><figure class="foto-cena"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="' + esc(a.titulo || "Cenário") + '"></a></figure>';
+    return "<h1>" + esc(a.titulo || "Cena atual") + '</h1><figure class="foto-cena"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="' + esc(a.titulo || "Cenário") + '"></a></figure>' +
+      (a.resumo ? '<p class="resumo lead">' + esc(a.resumo) + "</p>" : "");
   }
-  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
+  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + (a.resumo ? '<p class="resumo">' + esc(a.resumo) + "</p>" : "") + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
     '<p id="acaoMsg" role="status" class="mdica tok-aviso">' + esc(acaoMsg) + "</p>" +
     '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
     listaTokensHTML(a.tokens || [], a.eu) + '<div id="acaoLog">' + acaoLogHTML() + "</div>";

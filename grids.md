@@ -10,13 +10,13 @@ Tudo parte da aba **Cenários** (só do mestre). Cada cenário reúne, num lugar
 
 - a **foto** (gerada sem grade);
 - o **grid** (**opcional**): colunas e linhas, com a prévia do grid sobre a foto e o tamanho em metros. Linhas em branco = automático, com casas quadradas. **Colunas em branco = cenário sem grid**, só uma imagem para mostrar como é o lugar;
-- a **história e os detalhes**, que só o mestre vê (segredos, o que acontece, como os jogadores chegam);
+- dois textos: o **resumo** (descrição breve, que os jogadores leem) e a **descrição completa** (só o mestre vê: segredos, o que acontece, como os jogadores chegam);
 - o **local no mapa** ao qual ele pertence (ver 0.1).
 
 Dali o mestre escolhe o que fazer com o cenário:
 
 - **Usar na Ação (grid):** leva para a aba Ação com o grid já configurado. Só existe para cenários com grid.
-- **Mostrar só a foto aos jogadores:** os jogadores veem apenas a imagem (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
+- **Mostrar só a foto aos jogadores:** os jogadores veem a imagem e o resumo (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
 - **Trocar a foto**, renomear, mudar o grid ou excluir.
 
 **Cenário sem grid:** tem o mesmo cartão e a mesma história, mas só pode ser mostrado como foto (o botão de grid some e, na Ação, a opção "Grid e tokens" fica desabilitada). O servidor também recusa movimentos e combate nele. Para combater num cenário assim, basta definir as colunas depois. Ligar e desligar o grid não perde a foto nem a história.
@@ -28,7 +28,7 @@ A aba **Ação** apenas **chama** um cenário já pronto. Ela tem o seletor de c
 Nada fica solto: cada local do mapa pode ter **um cenário**, e cada cenário fica em **um local**.
 
 - O vínculo se faz nos dois sentidos: no detalhe de um local do mapa ("Cenário deste local") ou no detalhe do cenário ("Local no mapa").
-- **Para o jogador:** quando o local for revelado no mapa, clicar nele mostra a **foto** do cenário ligado. Locais não revelados não mostram nada. O nome do cenário também aparece. A história e o grid ficam só com o mestre. O servidor só entrega a foto de um cenário ligado a um local revelado (ou a cena ativa), e não aceita o pedido de nenhum outro.
+- **Para o jogador:** quando o local for revelado no mapa, clicar nele mostra o **nome**, a **foto** e o **resumo** do cenário ligado. Locais não revelados não mostram nada. O nome do cenário também aparece. A descrição completa e o grid ficam só com o mestre. O servidor só entrega a foto de um cenário ligado a um local revelado (ou a cena ativa), e não aceita o pedido de nenhum outro.
 - **Para o mestre:** o detalhe do local tem atalhos "Abrir o cenário", "Usar na Ação" e "Mostrar só a foto". O cenário mostra o nome do local na lista e tem "Ver no mapa".
 - Excluir um cenário desfaz o vínculo.
 
