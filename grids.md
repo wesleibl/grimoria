@@ -6,22 +6,24 @@
 
 ## 0. Cenários: onde tudo começa
 
-Tudo parte da aba **Cenários** (só do mestre). Cada cenário reúne, num lugar só:
+Tudo parte da aba **Cenários** (só do mestre). Um cenário reúne, num lugar só:
 
-- a **foto** (gerada sem grade);
-- o **grid** (**opcional**): colunas e linhas, com a prévia do grid sobre a foto e o tamanho em metros. Linhas em branco = automático, com casas quadradas. **Colunas em branco = cenário sem grid**, só uma imagem para mostrar como é o lugar;
+- a **foto**: uma imagem para mostrar como é o lugar. **A foto não leva grid**;
+- os **mapas de grid**: zero ou mais imagens **extras**, cada uma com as próprias colunas e linhas. É nelas que se combate. Um cenário pode ter vários (por exemplo, o convés e o porão), e cada mapa tem a prévia do grid sobre a imagem e o tamanho em metros. Linhas em branco = automático, com casas quadradas;
 - dois textos: o **resumo** (descrição breve, que os jogadores leem) e a **descrição completa** (só o mestre vê: segredos, o que acontece, como os jogadores chegam);
 - o **local no mapa** ao qual ele pertence (ver 0.1).
 
-Dali o mestre escolhe o que fazer com o cenário:
+**Como montar:** crie o cenário com a foto. Para combater nele, abra o cenário e use **"Adicionar imagem de grid"**: escolha a imagem, o nome do mapa e as colunas e linhas. Dá para adicionar quantos mapas quiser, trocar a imagem de um mapa, ajustar o grid, renomear ou remover. Um cenário que é só para mostrar o lugar fica sem mapa de grid, e isso é normal.
 
-- **Usar na Ação (grid):** leva para a aba Ação com o grid já configurado. Só existe para cenários com grid.
-- **Mostrar só a foto aos jogadores:** os jogadores veem a imagem e o resumo (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
-- **Trocar a foto**, renomear, mudar o grid ou excluir.
+Dali o mestre escolhe o que fazer:
 
-**Cenário sem grid:** tem o mesmo cartão e a mesma história, mas só pode ser mostrado como foto (o botão de grid some e, na Ação, a opção "Grid e tokens" fica desabilitada). O servidor também recusa movimentos e combate nele. Para combater num cenário assim, basta definir as colunas depois. Ligar e desligar o grid não perde a foto nem a história.
+- **Usar na Ação** (em cada mapa de grid): leva para a aba Ação com aquele mapa e o grid já configurados.
+- **Mostrar só a foto aos jogadores:** os jogadores veem a foto e o resumo (sem grid, tokens nem combate). Serve para abrir uma cena, descrever o ambiente e só depois combater. Há o botão para esconder de novo.
+- **Trocar a foto**, renomear ou excluir o cenário (isso apaga também os mapas de grid dele).
 
-A aba **Ação** apenas **chama** um cenário já pronto. Ela tem o seletor de cenário, "Como mostrar" (Grid e tokens, ou Só a foto), "Ao vivo", o título para os jogadores e os tokens. O grid mostrado ali é o do cenário, e há o botão "Editar o cenário".
+A aba **Ação** apenas **chama** um cenário já pronto: escolhe o **cenário**, o **mapa de grid** dele e "Como mostrar" (Grid e tokens, ou Só a foto). Sem mapa de grid, só dá para mostrar a foto, e o servidor recusa movimentos e combate. Os **tokens ficam por mapa de grid**: ao trocar de mapa e voltar, tudo continua onde estava.
+
+> **Cenários criados antes desta versão:** quem já tinha colunas viram um cenário com a foto e um mapa de grid ("Mapa de grid", com a mesma imagem e as mesmas colunas). Os tokens que estavam em cena precisam ser colocados de novo.
 
 ### 0.0 Liberar aos jogadores
 
@@ -42,7 +44,7 @@ Nada fica solto: cada local do mapa pode ter **um cenário**, e cada cenário fi
 
 ### 0.2 Importar da pasta do servidor
 
-Se já houver imagens em `misterio/{local}/grid/`, a aba Cenários tem "Importar da pasta do servidor": cada imagem importada vira um cenário (usa as colunas do campo "Colunas" de Novo cenário).
+Se já houver imagens em `misterio/{local}/grid/`, a aba Cenários tem "Importar da pasta do servidor": cada imagem importada vira um cenário (a imagem é a foto dele) e também o primeiro mapa de grid, com 20 colunas, que dá para ajustar depois.
 
 ---
 
@@ -109,7 +111,7 @@ O sistema desenha a grade por cima da imagem, na hora da ação. Motivos:
 ## 4. Aba Ação
 
 **Mestre**
-- Chama um cenário já criado na aba Cenários. O grid vem do cenário.
+- Chama um cenário já criado na aba Cenários e escolhe um dos mapas de grid dele. O grid vem do mapa.
 - Escolhe "Como mostrar": **Grid e tokens** ou **Só a foto**.
 - Define um título, que é o único nome que o jogador vê (ele começa com o nome do cenário, e dá para trocar).
 - Marca "Ao vivo" para os jogadores verem a cena.
@@ -176,7 +178,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 ## 5. Pendências
 
-- Criar os cenários na aba Cenários e ligar cada um ao seu local no mapa (por exemplo, a Pedra Velha).
+- Criar os cenários na aba Cenários (foto, resumo, descrição), adicionar as imagens de grid dos que vão ter combate e ligar cada cenário ao seu local no mapa (por exemplo, a Pedra Velha).
 - Testar na hospedagem (o PHP da aba Ação ainda não foi executado).
 - Cada jogador distribuir os 5 pontos no Perfil (sem isso, a Destreza é 0 e o deslocamento é 6).
 - Vida atual dos jogadores (hoje só aparece a Vida máx.): ainda não é controlada pelo site.

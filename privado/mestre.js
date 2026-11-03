@@ -533,7 +533,7 @@ function grimPub() {
 function locaisPub() {
   var rev = getRev(), lig = EST.locais_cen || {};
   return LOCAIS.filter(function (l) { return !l.secreto && rev[l.id]; }).map(function (l) {
-    var o = { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab, pub: l.pub }, c = lig[l.id] ? acharEnvio(lig[l.id]) : null;
+    var o = { id: l.id, nome: l.nome, tipo: l.tipo, x: l.x, y: l.y, lab: l.lab }, c = lig[l.id] ? acharEnvio(lig[l.id]) : null;
     if (c && cenLiberado(c.id)) {
       o.cenario = c.id; o.cv = c.v; o.cenNome = c.nome;
       var rs = String(infoCen(c.id).resumo || "").trim();
@@ -1757,15 +1757,13 @@ function setCenLiberado(id, v) {
 function statusCen(c) {
   var a = acaoEst();
   if (!a.ativo || a.envio !== c.id) return "";
-  return a.modo === "foto" ? "Foto na tela dos jogadores" : "Ao vivo (grid)";
+  return a.modo === "foto" || !gridAtivo(a) ? "Foto na tela dos jogadores" : "Ao vivo (grid)";
 }
 
 function novoCenarioHTML() {
   return '<section class="panel"><h3>' + ic("brilho") + "Novo cenário</h3>" +
-    '<p class="mdica">Gere a imagem sem grade: o site desenha o grid por cima, com as colunas e linhas que você definir. <b>O grid é opcional:</b> deixe as colunas em branco para um cenário que é só uma imagem, para mostrar como é o lugar. Preencha tudo e escolha a foto por último, porque o envio começa assim que você a escolhe.</p>' +
-    '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label>' +
-    '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaCols" placeholder="sem grid"></label>' +
-    '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" id="cenaRows" placeholder="auto"></label></div>' +
+    '<p class="mdica">A foto serve para mostrar como é o lugar, e não leva grid. Para combater, depois de criar o cenário você adiciona uma ou mais imagens de grid a ele. Preencha tudo e escolha a foto por último, porque o envio começa assim que você a escolhe.</p>' +
+    '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" id="cenaNome" placeholder="ex.: Convés do navio"></label></div>' +
     '<label class="pj-obs-l">Resumo (os jogadores leem)<textarea class="sorteio-in" rows="2" maxlength="400" id="cenaResumo" placeholder="Uma descrição curta do lugar, do que dá para ver e sentir."></textarea></label>' +
     '<label class="pj-obs-l">Descrição completa (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
     '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
@@ -1778,34 +1776,58 @@ function cenCardsHTML() {
     var st = statusCen(c);
     return '<button type="button" class="cen-card' + (cenSel === c.id ? " sel" : "") + '" data-cenabrir="' + c.id + '">' +
       '<img src="' + cenaImgUrl({ envio: c.id }) + '" alt="" loading="lazy">' +
-      "<b>" + esc(c.nome) + "</b><small>" + (temGrid(c) ? "Grid " + gridTexto(c) : "Só imagem") + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + '<span class="tag role">' + (cenLiberado(c.id) ? "Liberado" : "Oculto") + "</span>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
+      "<b>" + esc(c.nome) + "</b><small>" + (gridsDe(c).length ? gridsDe(c).length + (gridsDe(c).length === 1 ? " mapa de grid" : " mapas de grid") : "Só imagem") + (localDoCenario(c.id) ? " · " + esc((LOCAIS.filter(function (l) { return l.id === localDoCenario(c.id); })[0] || {}).nome || "") : "") + "</small>" + '<span class="tag role">' + (cenLiberado(c.id) ? "Liberado" : "Oculto") + "</span>" + (st ? '<span class="tag leg">' + st + "</span>" : "") + "</button>";
   }).join("") + "</div>";
+}
+
+var gridSel = 0, gridMsg = "", confirmarDelGrid = 0;
+
+function gridsHTML(c) {
+  var gs = gridsDe(c), h = "<h3>" + ic("estrela") + "Mapas de grid</h3>" +
+    '<p class="mdica">A foto acima é só para mostrar o lugar. Para combater, adicione uma imagem de mapa e defina as colunas e as linhas dela. Você pode ter vários mapas no mesmo cenário (por exemplo, o convés e o porão).</p>';
+  if (!gs.length) h += '<div class="empty">Este cenário ainda não tem mapa de grid.</div>';
+  else {
+    h += '<div class="gm-lista">' + gs.map(function (g) {
+      return '<div class="gm-linha' + (gridSel === g.id ? " sel" : "") + '"><img class="gm-thumb" src="' + gridUrl(g) + '" alt="" loading="lazy">' +
+        '<input class="sorteio-in gm-nome" type="text" maxlength="120" data-gnome="' + g.id + '" value="' + esc(g.nome) + '" aria-label="Nome do mapa">' +
+        '<label class="tok-num">Colunas <input class="sorteio-in num" type="number" min="1" max="200" data-gcols="' + g.id + '" value="' + g.cols + '"></label>' +
+        '<label class="tok-num">Linhas <input class="sorteio-in num" type="number" min="1" max="200" data-grows="' + g.id + '" value="' + (g.rows || "") + '" placeholder="auto"></label>' +
+        '<button type="button" data-gabrir="' + g.id + '">Ver prévia</button>' +
+        '<button type="button" class="primary" data-gusar="' + g.id + '">Usar na Ação</button>' +
+        '<input type="file" accept="image/*" class="vh" id="gTroca' + g.id + '" data-gtroca="' + g.id + '"><label class="btn" for="gTroca' + g.id + '">Trocar a imagem</label>' +
+        '<button type="button" data-gexcluir="' + g.id + '">' + (confirmarDelGrid === g.id ? "Clique de novo para remover" : "Remover") + "</button></div>";
+    }).join("") + "</div>";
+    var sel = gridSel ? acharGrid(c, gridSel) : null;
+    if (sel) h += '<p class="tok-desl" id="cenGridInfo"></p>' + tabuleiroHTML(gridUrl(sel), sel.nome);
+  }
+  h += '<div class="acao-ctl"><label>Nome do novo mapa<input class="sorteio-in" type="text" maxlength="120" id="gridNome" placeholder="ex.: Convés"></label>' +
+    '<label>Colunas<input class="sorteio-in num" type="number" min="1" max="200" id="gridCols" value="20"></label>' +
+    '<label>Linhas<input class="sorteio-in num" type="number" min="1" max="200" id="gridRows" placeholder="auto"></label>' +
+    '<span><input type="file" accept="image/*" class="vh" id="gridUp"><label class="btn primary-btn" for="gridUp">Adicionar imagem de grid</label></span></div>' +
+    '<p role="status" class="mdica">' + esc(gridMsg || "Deixe as linhas em branco para o site calcular e manter as casas quadradas.") + "</p>";
+  return h;
 }
 
 function cenDetalheHTML() {
   var c = cenSel ? acharEnvio(cenSel) : null;
   if (!c) return "";
-  var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c);
+  var a = acaoEst(), noar = a.ativo && a.envio === c.id, st = statusCen(c), lk = localDoCenario(c.id);
   return '<section class="panel cen-det"><h3>' + esc(c.nome) + (st ? ' <span class="tag leg">' + st + "</span>" : "") + "</h3>" +
     '<label class="rev-label"><input type="checkbox" data-cenlib="' + c.id + '"' + (cenLiberado(c.id) ? " checked" : "") + "> Liberado aos jogadores</label>" +
     '<p class="mdica">' + (cenLiberado(c.id) ? "Os jogadores veem o nome, a foto e o resumo deste cenário ao clicar no local dele no mapa (se o local estiver revelado)." : "Oculto: os jogadores só o veem enquanto você o mostra ao vivo. No mapa, ele só aparece depois de liberado.") + "</p>" +
     '<div class="acao-ctl"><label>Nome<input class="sorteio-in" type="text" maxlength="120" data-cenanome="' + c.id + '" value="' + esc(c.nome) + '"></label>' +
-    '<label>Colunas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="cols" value="' + (c.cols || "") + '" placeholder="sem grid"></label>' +
-    '<label>Linhas (opcional)<input class="sorteio-in num" type="number" min="1" max="200" data-cengrid="rows" value="' + (c.rows || "") + '" placeholder="auto"' + (temGrid(c) ? "" : " disabled") + '></label>' +
-    '<span class="tok-desl" id="cenGridInfo">' + (temGrid(c) ? "" : "Sem grid: este cenário é só uma imagem.") + '</span></div>' +
-    '<div class="acao-ctl"><label>Local no mapa<select class="sorteio-in" data-cenloc="' + c.id + '"><option value="">Nenhum</option>' +
-    LOCAIS.map(function (l) { return '<option value="' + l.id + '"' + (localDoCenario(c.id) === l.id ? " selected" : "") + ">" + esc(l.nome) + "</option>"; }).join("") + "</select></label>" +
-    (localDoCenario(c.id) ? '<button type="button" data-vermapa="' + localDoCenario(c.id) + '">Ver no mapa</button>' : "") + "</div>" +
-    (localDoCenario(c.id) ? '<p class="mdica">Quando o local for revelado no mapa, os jogadores veem a foto deste cenário ao clicar nele.</p>' : "") +
-    '<p class="mdica">Deixe as <b>colunas</b> em branco para um cenário sem grid (só a imagem). Com colunas, deixe as linhas em branco para o site calcular e manter as casas quadradas.</p>' +
-    (temGrid(c) ? tabuleiroHTML(cenaImgUrl({ envio: c.id }), c.nome) : '<figure class="foto-cena"><img src="' + cenaImgUrl({ envio: c.id }) + '" alt="' + esc(c.nome) + '"></figure>') +
+    '<label>Local no mapa<select class="sorteio-in" data-cenloc="' + c.id + '"><option value="">Nenhum</option>' +
+    LOCAIS.map(function (l) { return '<option value="' + l.id + '"' + (lk === l.id ? " selected" : "") + ">" + esc(l.nome) + "</option>"; }).join("") + "</select></label>" +
+    (lk ? '<button type="button" data-vermapa="' + lk + '">Ver no mapa</button>' : "") + "</div>" +
+    (lk ? '<p class="mdica">Quando o local for revelado no mapa, os jogadores veem a foto deste cenário ao clicar nele.</p>' : "") +
     '<label class="pj-obs-l">Resumo (os jogadores leem)<textarea class="sorteio-in" rows="3" maxlength="400" data-cenresumo="' + c.id + '" placeholder="Uma descrição curta do lugar, do que dá para ver e sentir.">' + esc(infoCen(c.id).resumo || "") + "</textarea></label>" +
     '<p class="mdica">O resumo aparece para os jogadores no mapa (quando o local estiver revelado) e quando você mostra o cenário na tela deles.</p>' +
     '<label class="pj-obs-l">Descrição completa (só você vê)<textarea class="sorteio-in" rows="5" data-cenhist="' + c.id + '" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…">' + esc(infoCen(c.id).historia || "") + "</textarea></label>" +
+    "<h3>Foto</h3>" + '<figure class="foto-cena"><img src="' + fotoUrl(c) + '" alt="' + esc(c.nome) + '"></figure>' +
+    '<p><input type="file" accept="image/*" class="vh" id="cenaTroca" data-troca="' + c.id + '"><label class="btn" for="cenaTroca">Trocar a foto</label></p>' +
+    gridsHTML(c) +
     '<div class="controls">' +
-    (temGrid(c) ? '<button type="button" class="primary" data-cenusar="' + c.id + '">Usar na Ação (grid)</button>' : "") +
-    (noar && (a.modo === "foto" || !temGrid(c)) ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
-    '<input type="file" accept="image/*" class="vh" id="cenaTroca" data-troca="' + c.id + '"><label class="btn" for="cenaTroca">Trocar a foto</label>' +
+    (noar && (a.modo === "foto" || !gridAtivo(a)) ? '<button type="button" data-cenesconder="' + c.id + '">Esconder a foto dos jogadores</button>' : '<button type="button" data-cenfoto="' + c.id + '">Mostrar só a foto aos jogadores</button>') +
     '<button type="button" data-cenexcluir="' + c.id + '">' + (confirmarDelCen ? "Clique de novo para excluir" : "Excluir cenário") + "</button></div></section>";
 }
 
@@ -1814,7 +1836,7 @@ function importarPastaHTML() {
   (CENAS || []).forEach(function (l) { l.cenas.forEach(function (c) { arqs.push([l.local, c]); }); });
   if (!arqs.length) return "";
   return "<h2>Importar da pasta do servidor</h2>" + '<details class="panel"><summary>Há ' + arqs.length + ' imagem(ns) em misterio/{local}/grid/</summary>' +
-    '<p class="mdica">Cada imagem importada vira um cenário (fica salva na sua conta). As colunas usadas são as do campo “Colunas” de Novo cenário (em branco, o cenário é importado sem grid).</p>' +
+    '<p class="mdica">Cada imagem importada vira um cenário (a imagem é a foto dele) e também o primeiro mapa de grid, com 20 colunas, que você pode ajustar depois.</p>' +
     '<ul class="cmb-lista">' + arqs.map(function (p) {
       return '<li><span class="cmb-nome">' + esc(nomeBonito(p[0])) + " › " + esc(nomeBonito(p[1])) + '</span><button type="button" data-impl="' + esc(p[0]) + '" data-impc="' + esc(p[1]) + '">Importar</button></li>';
     }).join("") + "</ul></details>";
@@ -1834,18 +1856,16 @@ function infoGridCen() {
   s.innerHTML = "Grid: <b>" + tabGeo.cols + " colunas × " + tabGeo.rows + " linhas</b> (" + String(tabGeo.cols * 1.5).replace(".", ",") + " × " + String(tabGeo.rows * 1.5).replace(".", ",") + " m)";
 }
 function desenharCenPreview() {
-  var c = cenSel ? acharEnvio(cenSel) : null;
-  if (!c || !temGrid(c)) return;
-  var g = desenharTabuleiro({ cols: c.cols, rows: c.rows, tokens: [], mestre: true, depois: infoGridCen });
-  if (g) infoGridCen();
+  var c = cenSel ? acharEnvio(cenSel) : null, g = c && gridSel ? acharGrid(c, gridSel) : null;
+  if (!g) return;
+  var geo = desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: [], mestre: true, depois: infoGridCen });
+  if (geo) infoGridCen();
 }
 
 function enviarCenario(input) {
   var f = input.files && input.files[0];
   if (!f) return;
   var nome = document.getElementById("cenaNome").value.trim() || nomeBonito(f.name);
-  var cols = parseInt(document.getElementById("cenaCols").value, 10) || 0;
-  var rows = cols ? parseInt(document.getElementById("cenaRows").value, 10) || null : null;
   var hist = document.getElementById("cenaHist").value, resumo = document.getElementById("cenaResumo").value;
   upMsg = "Preparando a imagem…";
   renderizar();
@@ -1853,12 +1873,51 @@ function enviarCenario(input) {
     if (erro) { upMsg = erro; renderizar(); return; }
     upMsg = "Enviando…";
     renderizar();
-    gravar("cena_enviar", { nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
+    gravar("cena_enviar", { nome: nome, dados: url }).then(function (r) {
       if (!r) { upMsg = "Não foi possível enviar o cenário. Tente de novo."; renderizar(); return; }
-      ENVIADAS.push({ id: r.id, nome: r.nome, cols: cols ? Math.max(1, Math.min(200, cols)) : 0, rows: rows && rows >= 1 && rows <= 200 ? rows : null, v: Math.floor(Date.now() / 1000) });
+      ENVIADAS.push({ id: r.id, nome: r.nome, v: Math.floor(Date.now() / 1000), grids: [] });
       if (hist.trim() || resumo.trim()) { (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { historia: hist, resumo: resumo }; salvarEstado("cenarios_info"); }
-      cenSel = r.id;
-      upMsg = "Cenário “" + r.nome + "” criado.";
+      cenSel = r.id; gridSel = 0; gridMsg = "";
+      upMsg = "Cenário “" + r.nome + "” criado. Agora adicione um mapa de grid, se for combater nele.";
+      renderizar();
+    });
+  });
+}
+
+function enviarGrid(input) {
+  var f = input.files && input.files[0], c = cenSel ? acharEnvio(cenSel) : null;
+  if (!f || !c) return;
+  var nome = document.getElementById("gridNome").value.trim() || nomeBonito(f.name);
+  var cols = parseInt(document.getElementById("gridCols").value, 10) || 20;
+  var rows = parseInt(document.getElementById("gridRows").value, 10) || null;
+  cols = Math.max(1, Math.min(200, cols));
+  if (rows && (rows < 1 || rows > 200)) rows = null;
+  gridMsg = "Preparando a imagem…";
+  renderizar();
+  reduzirImagem(f, 2400, 2600000, function (erro, url) {
+    if (erro) { gridMsg = erro; renderizar(); return; }
+    gridMsg = "Enviando…";
+    renderizar();
+    gravar("grid_enviar", { cena: c.id, nome: nome, cols: cols, rows: rows, dados: url }).then(function (r) {
+      if (!r) { gridMsg = "Não foi possível enviar o mapa. Tente de novo."; renderizar(); return; }
+      c.grids = gridsDe(c).concat([{ id: r.id, nome: r.nome, cols: cols, rows: rows, v: Math.floor(Date.now() / 1000) }]);
+      gridSel = r.id;
+      gridMsg = "Mapa “" + r.nome + "” adicionado (" + cols + " colunas). Ajuste as colunas e as linhas na lista, se quiser.";
+      renderizar();
+    });
+  });
+}
+
+function trocarImagemGrid(input) {
+  var f = input.files && input.files[0], id = parseInt(input.dataset.gtroca, 10), g = achaGridPorId(id);
+  if (!f || !g) return;
+  gridMsg = "Enviando a nova imagem…";
+  renderizar();
+  reduzirImagem(f, 2400, 2600000, function (erro, url) {
+    if (erro) { gridMsg = erro; renderizar(); return; }
+    gravar("grid_editar", { id: id, dados: url }).then(function (r) {
+      gridMsg = r ? "Imagem do mapa trocada." : "Não foi possível trocar a imagem. Tente de novo.";
+      if (r) g.v = Math.floor(Date.now() / 1000);
       renderizar();
     });
   });
@@ -1880,13 +1939,14 @@ function trocarFotoCenario(input) {
 }
 
 function inputCenarios(el) {
-  var d = el.dataset, c;
-  if (d.cengrid && cenSel && (c = acharEnvio(cenSel))) {
-    var n = parseInt(el.value, 10), valido = n >= 1 && n <= 200, tinha = temGrid(c);
-    if (d.cengrid === "cols") { c.cols = valido ? n : 0; if (!c.cols) c.rows = null; } else c.rows = valido ? n : null;
-    adiar("cena-" + c.id, function () { gravar("cena_editar", { id: c.id, cols: c.cols, rows: c.rows }); }, 400);
-    /* Ao ligar ou desligar o grid a tela é refeita quando o campo perde o foco (evento change). */
-    if (tinha && temGrid(c)) desenharCenPreview();
+  var d = el.dataset, c, g;
+  if ((d.gnome || d.gcols || d.grows) && (g = achaGridPorId(parseInt(d.gnome || d.gcols || d.grows, 10)))) {
+    var n = parseInt(el.value, 10), valido = n >= 1 && n <= 200;
+    if (d.gnome) g.nome = el.value;
+    else if (d.gcols) g.cols = valido ? n : g.cols;
+    else g.rows = valido ? n : null;
+    adiar("grid-" + g.id, function () { gravar("grid_editar", { id: g.id, nome: g.nome, cols: g.cols, rows: g.rows }); }, 400);
+    if (!d.gnome && gridSel === g.id) desenharCenPreview();
     var cards = document.getElementById("cenCards");
     if (cards) cards.innerHTML = cenCardsHTML();
     return true;
@@ -1903,7 +1963,7 @@ function inputCenarios(el) {
 function mostrarFotoCenario(id) {
   var a = acaoEst(), c = acharEnvio(id);
   if (!c) return;
-  trocarCenario("e:" + id);
+  if (a.envio !== id) selecionarNaAcao(id, gridsDe(c).length ? gridsDe(c)[0].id : 0);
   if (CAMPO.combate) campoOp("encerrar");
   a.modo = "foto"; a.ativo = true; a.titulo = c.nome;
   salvarAcao();
@@ -1912,15 +1972,57 @@ function mostrarFotoCenario(id) {
 }
 
 function clickCenarios(b) {
-  var d = b.dataset, a = acaoEst(), c;
-  if (d.cenabrir) { cenSel = parseInt(d.cenabrir, 10); confirmarDelCen = false; renderizar(); window.scrollTo(0, document.getElementById("cenDetalhe") ? document.getElementById("cenDetalhe").offsetTop - 80 : 0); return true; }
+  var d = b.dataset, a = acaoEst(), c, g;
+  if (d.cenabrir) { cenSel = parseInt(d.cenabrir, 10); confirmarDelCen = false; confirmarDelGrid = 0; gridMsg = ""; gridSel = gridsDe(acharEnvio(cenSel)).length ? gridsDe(acharEnvio(cenSel))[0].id : 0; renderizar(); window.scrollTo(0, document.getElementById("cenDetalhe") ? document.getElementById("cenDetalhe").offsetTop - 80 : 0); return true; }
   if (d.cenfoto) { mostrarFotoCenario(parseInt(d.cenfoto, 10)); return true; }
   if (d.vermapa) { localSel = d.vermapa; location.hash = "#mapa"; return true; }
   if (d.cenesconder) { a.ativo = false; salvarAcao(); cenMsg = "A foto foi escondida dos jogadores."; renderizar(); return true; }
+  if (d.gabrir) { gridSel = parseInt(d.gabrir, 10); confirmarDelGrid = 0; renderizar(); return true; }
+  if (d.gusar && (g = achaGridPorId(parseInt(d.gusar, 10)))) {
+    var dono = null;
+    ENVIADAS.forEach(function (x) { if (acharGrid(x, g.id)) dono = x; });
+    selecionarNaAcao(dono.id, g.id);
+    a.modo = "grid";
+    salvarAcao();
+    location.hash = "#acao";
+    return true;
+  }
+  if (d.gexcluir && (g = achaGridPorId(parseInt(d.gexcluir, 10)))) {
+    if (confirmarDelGrid !== g.id) {
+      confirmarDelGrid = g.id;
+      b.textContent = "Clique de novo para remover";
+      setTimeout(function () { if (confirmarDelGrid === g.id) { confirmarDelGrid = 0; var x = document.querySelector('[data-gexcluir="' + g.id + '"]'); if (x) x.textContent = "Remover"; } }, 6000);
+      return true;
+    }
+    confirmarDelGrid = 0;
+    var gid = g.id;
+    gravar("grid_excluir", { id: gid }).then(function (r) {
+      if (!r) return;
+      ENVIADAS.forEach(function (x) { x.grids = gridsDe(x).filter(function (y) { return y.id !== gid; }); });
+      if (EST.cena_tokens) { delete EST.cena_tokens["g:" + gid]; salvarEstado("cena_tokens"); }
+      if (a.grid === gid) {
+        campoOp("pos", { remover: a.tokens.map(function (x) { return x.id; }) });
+        if (CAMPO.combate) campoOp("encerrar");
+        a.grid = 0; a.modo = "foto"; a.ativo = false; a.tokens = []; tokSel = null;
+        salvarAcao();
+      }
+      if (gridSel === gid) gridSel = 0;
+      gridMsg = "Mapa removido.";
+      renderizar();
+    });
+    return true;
+  }
   if (d.cenusar) {
-    var cu = acharEnvio(parseInt(d.cenusar, 10));
-    trocarCenario("e:" + parseInt(d.cenusar, 10));
-    a.modo = temGrid(cu) ? "grid" : "foto";
+    var cu = acharEnvio(parseInt(d.cenusar, 10)), g0 = gridsDe(cu)[0];
+    if (!g0) {
+      cenSel = cu.id; gridSel = 0;
+      cenMsg = "Este cenário ainda não tem mapa de grid. Adicione uma imagem de grid abaixo para usar na Ação.";
+      location.hash = "#cenarios";
+      renderizar();
+      return true;
+    }
+    selecionarNaAcao(cu.id, g0.id);
+    a.modo = "grid";
     salvarAcao();
     location.hash = "#acao";
     return true;
@@ -1954,12 +2056,12 @@ function clickCenarios(b) {
     return true;
   }
   if (d.impl) {
-    var cols = parseInt((document.getElementById("cenaCols") || {}).value, 10) || 0;
     b.disabled = true;
-    gravar("cena_importar", { local: d.impl, cena: d.impc, nome: nomeBonito(d.impc), cols: cols }).then(function (r) {
+    gravar("cena_importar", { local: d.impl, cena: d.impc, nome: nomeBonito(d.impc) }).then(function (r) {
       if (!r) { b.disabled = false; return; }
-      ENVIADAS.push({ id: r.id, nome: r.nome, cols: cols, rows: null, v: Math.floor(Date.now() / 1000) });
-      cenSel = r.id;
+      var agora = Math.floor(Date.now() / 1000);
+      ENVIADAS.push({ id: r.id, nome: r.nome, v: agora, grids: [{ id: r.grid, nome: "Mapa de grid", cols: 20, rows: null, v: agora }] });
+      cenSel = r.id; gridSel = r.grid;
       cenMsg = "“" + r.nome + "” importado.";
       renderizar();
     });
@@ -1980,19 +2082,22 @@ function nomeBonito(n) { return String(n).replace(/\.[^.]+$/, "").replace(/[_-]+
 function acaoEst() { var a = EST.acao || (EST.acao = {}); a.tokens = a.tokens || []; return a; }
 function acharEnvio(id) { var r = null; ENVIADAS.forEach(function (c) { if (c.id === id) r = c; }); return r; }
 /* Grid do cenário ativo: o de um cenário enviado fica na própria linha dele; o de uma pasta, em EST.grids. */
-function gridDe(a) {
-  if (a.envio) return acharEnvio(a.envio) || {};
-  var g = EST.grids || (EST.grids = {}), k = a.local && a.cena ? a.local + "/" + a.cena : "";
-  if (!k) return {};
-  return g[k] || (g[k] = {});
-}
+function gridDe(a) { return gridAtivo(a) || {}; }
+
 function cenaImgUrl(a) {
   var c = a.envio ? acharEnvio(a.envio) : null;
-  return API + "?a=cena_img&" + (a.envio ? "id=" + encodeURIComponent(a.envio) + (c && c.v ? "&v=" + c.v : "") : "local=" + encodeURIComponent(a.local) + "&cena=" + encodeURIComponent(a.cena));
+  if (!c) return "";
+  var g = a.grid ? acharGrid(c, a.grid) : null;
+  return g ? gridUrl(g) : fotoUrl(c);
 }
-/* Sem colunas, o cenário não tem grid: é só uma imagem. */
-function temGrid(c) { return !!(c && c.cols); }
-function gridTexto(c) { return !c ? "" : (c.cols ? c.cols + " × " + (c.rows || "auto") : "sem grid"); }
+
+function gridsDe(c) { return (c && c.grids) || []; }
+function acharGrid(c, id) { var r = null; gridsDe(c).forEach(function (g) { if (g.id === id) r = g; }); return r; }
+function gridAtivo(a) { var c = a.envio ? acharEnvio(a.envio) : null; return c && a.grid ? acharGrid(c, a.grid) : null; }
+function gridTexto(g) { return g ? g.cols + " × " + (g.rows || "auto") : ""; }
+function fotoUrl(c) { return API + "?a=cena_img&id=" + encodeURIComponent(c.id) + (c.v ? "&v=" + c.v : ""); }
+function gridUrl(g) { return API + "?a=cena_img&grid=" + encodeURIComponent(g.id) + (g.v ? "&v=" + g.v : ""); }
+function achaGridPorId(id) { var r = null; ENVIADAS.forEach(function (c) { var g = acharGrid(c, id); if (g) r = g; }); return r; }
 
 function acharTok(id) { var r = null; acaoEst().tokens.forEach(function (t) { if (t.id === id) r = t; }); return r; }
 
@@ -2085,20 +2190,23 @@ function nomeUnico(base) {
   for (var n = 2; ; n++) if (usados.indexOf(base + " " + n) === -1) return base + " " + n;
 }
 
-function valorCena(a) { return a.envio ? "e:" + a.envio : ""; }
+/* Os tokens pertencem a um mapa de grid, não ao cenário: cada mapa guarda os seus. */
+function valorCena(a) { return a.grid ? "g:" + a.grid : ""; }
 
-/* Chama um cenário na Ação. Cada cenário guarda os próprios tokens: o convés continua montado quando você volta do porão. */
-function trocarCenario(v) {
+/* Chama um cenário (e um dos seus mapas de grid) na Ação. Cada mapa guarda os próprios tokens:
+   o convés continua montado quando você volta do porão. Sem mapa de grid, só dá para mostrar a foto. */
+function selecionarNaAcao(envioId, gridId) {
   var a = acaoEst(), antiga = valorCena(a);
-  if (v === antiga) return;
+  envioId = envioId || 0; gridId = gridId || 0;
+  if (a.envio === envioId && (a.grid || 0) === gridId) return;
   EST.cena_tokens = EST.cena_tokens || {};
   if (antiga) EST.cena_tokens[antiga] = { tokens: a.tokens };
-  a.envio = v.indexOf("e:") === 0 ? parseInt(v.slice(2), 10) : 0;
-  a.local = ""; a.cena = ""; a.ativo = false; a.modo = "grid"; tokSel = null;
-  var c = a.envio ? acharEnvio(a.envio) : null;
+  a.envio = envioId; a.grid = gridId; a.local = ""; a.cena = "";
+  a.ativo = false; a.modo = gridId ? "grid" : "foto"; tokSel = null;
+  var c = envioId ? acharEnvio(envioId) : null;
   a.titulo = c ? c.nome : "";
-  if (c && !temGrid(c)) a.modo = "foto";
-  a.tokens = (v && (EST.cena_tokens[v] || {}).tokens) || [];
+  var nova = valorCena(a);
+  a.tokens = (nova && (EST.cena_tokens[nova] || {}).tokens) || [];
   aplicarCampo();
   if (CAMPO.combate) campoOp("encerrar");
   salvarEstado("cena_tokens");
@@ -2241,27 +2349,28 @@ function pollCampo(ger) {
 function viewAcaoMestre() {
   if (CENAS === null) carregarCenas();
   var a = acaoEst();
-  var h = "<h1>Ação</h1>" + '<p class="lead">Chame um cenário já configurado na aba Cenários, escolha como mostrar e posicione os tokens. O grid (colunas e linhas) vem do cenário.</p>';
+  var h = "<h1>Ação</h1>" + '<p class="lead">Chame um cenário já criado na aba Cenários, escolha o mapa de grid e como mostrar, e posicione os tokens. O grid (colunas e linhas) vem do mapa de grid.</p>';
   if (CENAS === null) return h + '<p class="mdica">Procurando os cenários…</p>';
-  if (!ENVIADAS.length) return h + '<div class="note"><p><b>Você ainda não tem cenários.</b> Crie o primeiro na aba <a href="#cenarios">Cenários</a>, com foto, grid e história.</p></div>';
-  var env = a.envio ? acharEnvio(a.envio) : null;
+  if (!ENVIADAS.length) return h + '<div class="note"><p><b>Você ainda não tem cenários.</b> Crie o primeiro na aba <a href="#cenarios">Cenários</a>, com foto, resumo e mapas de grid.</p></div>';
+  var env = a.envio ? acharEnvio(a.envio) : null, grids = gridsDe(env), g = gridAtivo(a);
   h += '<div class="acao-ctl"><label>Cenário<select class="sorteio-in" data-acao="cenario"><option value="">Escolha…</option>' +
     ENVIADAS.map(function (c) { return '<option value="e:' + c.id + '"' + (a.envio === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>"; }).join("") + "</select></label>" +
+    (grids.length ? '<label>Mapa de grid<select class="sorteio-in" data-acao="grid">' + (g ? "" : '<option value="">Escolha…</option>') + grids.map(function (x) { return '<option value="' + x.id + '"' + (g && g.id === x.id ? " selected" : "") + ">" + esc(x.nome) + " (" + gridTexto(x) + ")</option>"; }).join("") + "</select></label>" : "") +
     '<button type="button" id="acaoRecarregar">Atualizar lista</button></div>';
   if (!env) return h + '<div class="empty">Escolha um cenário.</div>';
-  var semGrid = !temGrid(env), foto = a.modo === "foto" || semGrid;
+  var foto = a.modo === "foto" || !g;
   h += '<div class="acao-ctl">' +
-    '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + (semGrid ? " disabled" : "") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
+    '<label>Como mostrar<select class="sorteio-in" data-acao="modo"><option value="grid"' + (foto ? "" : " selected") + (g ? "" : " disabled") + '>Grid e tokens</option><option value="foto"' + (foto ? " selected" : "") + ">Só a foto</option></select></label>" +
     '<label class="rev-label acao-ativo"><input type="checkbox" data-acao="ativo"' + (a.ativo ? " checked" : "") + "> Ao vivo (os jogadores veem)</label>" +
     (foto ? "" : '<label class="rev-label"><input type="checkbox" data-acao="livre"' + (a.livre === false ? "" : " checked") + "> Jogadores podem se mover fora de combate</label>") +
     '<label>Título para os jogadores<input class="sorteio-in" type="text" maxlength="80" data-acao="titulo" value="' + esc(a.titulo || "") + '" placeholder="Cena atual"></label>' +
-    '<span class="tok-desl">Grid: <b>' + gridTexto(env) + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>';
+    '<span class="tok-desl">Grid: <b>' + (g ? gridTexto(g) : "sem mapa de grid") + '</b></span><button type="button" data-cenir="' + env.id + '">Editar o cenário</button></div>';
   if (foto) {
-    return h + '<p class="mdica">' + (semGrid ? "Este cenário não tem grid, então só dá para mostrar a foto. Para combater aqui, defina as colunas na aba Cenários." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.") + "</p>" +
-      '<figure class="foto-cena"><img src="' + cenaImgUrl(a) + '" alt="' + esc(env.nome) + '"></figure>';
+    return h + '<p class="mdica">' + (!grids.length ? "Este cenário ainda não tem mapa de grid, então só dá para mostrar a foto. Para combater, adicione uma imagem de grid na aba Cenários." : (!g ? "Escolha um mapa de grid acima para usar o grid e os tokens." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.")) + "</p>" +
+      '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
   h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m e a diagonal conta como 1 casa.</p>';
-  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(cenaImgUrl(a), env.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   h += '<div class="controls">' +
     '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
@@ -2276,7 +2385,7 @@ function viewAcaoMestre() {
     '<button type="button" id="tokInimigo">Inimigo avulso</button>' +
     '<button type="button" id="tokSemInimigos">Remover inimigos</button>' +
     '<button type="button" id="tokLimpar">' + (confirmarLimpar ? "Clique de novo para remover todos" : "Remover todos") + "</button></div>" +
-    '<p class="mdica">Os tokens são salvos por cenário: ao trocar de cena e voltar, tudo continua onde estava. Tokens ocultos e armadilhas escondidas aparecem só para você. A vida e a defesa dos inimigos nunca vão para os jogadores.</p>' +
+    '<p class="mdica">Os tokens são salvos por mapa de grid: ao trocar de mapa e voltar, tudo continua onde estava. Tokens ocultos e armadilhas escondidas aparecem só para você. A vida e a defesa dos inimigos nunca vão para os jogadores.</p>' +
     '<div id="tokLista"></div><div id="campoLog"></div>';
   return h;
 }
@@ -2375,13 +2484,15 @@ function redesenharTokens() {
 function changeAcao(el) {
   var d = el.dataset, a = acaoEst(), t;
   if (d.acao === "cenario") {
-    trocarCenario(el.value);
+    var id = el.value.indexOf("e:") === 0 ? parseInt(el.value.slice(2), 10) : 0, ce = id ? acharEnvio(id) : null;
+    selecionarNaAcao(id, ce && gridsDe(ce).length ? gridsDe(ce)[0].id : 0);
     renderizar();
     return true;
   }
+  if (d.acao === "grid") { selecionarNaAcao(a.envio, parseInt(el.value, 10) || 0); renderizar(); return true; }
   if (d.acao === "ativo") { a.ativo = el.checked; salvarAcao(); renderAcaoUI(); return true; }
   if (d.acao === "modo") {
-    a.modo = el.value === "foto" || !temGrid(a.envio ? acharEnvio(a.envio) : null) ? "foto" : "grid";
+    a.modo = el.value === "grid" && gridAtivo(a) ? "grid" : "foto";
     if (a.modo === "foto" && CAMPO.combate) campoOp("encerrar");
     salvarAcao();
     renderizar();
@@ -2614,6 +2725,8 @@ MESTRE = {
     var d = el.dataset || {};
     if (el.id === "cenaUp") { enviarCenario(el); return; }
     if (el.id === "cenaTroca") { trocarFotoCenario(el); return; }
+    if (el.id === "gridUp") { enviarGrid(el); return; }
+    if (el.dataset.gtroca) { trocarImagemGrid(el); return; }
     if (changeAcao(el)) return;
     if (el.classList.contains("chk")) setCheck(d.key, parseInt(d.i, 10), el.checked);
     else if (el.classList.contains("rev")) { setRev(d.id, el.checked); desenharMapa(); }
@@ -2648,7 +2761,6 @@ MESTRE = {
       var j = achaJog(jogSel);
       if (j) { j.grimRev = el.checked; salvarJog(j, true, ["grimRev"]); }
     }
-    else if (d.cengrid) { renderizar(); }
     else if (d.cenlib) { setCenLiberado(parseInt(d.cenlib, 10), el.checked); renderizar(); }
     else if (d.loccen) { vincularLocal(d.loccen, el.value ? parseInt(el.value, 10) : 0); renderizar(); }
     else if (d.cenloc) {

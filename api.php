@@ -30,6 +30,9 @@ try {
         'POST cena_editar' => acaoCenaEditar(),
         'POST cena_excluir' => acaoCenaExcluir(),
         'POST cena_importar' => acaoCenaImportar(),
+        'POST grid_enviar' => acaoGridEnviar(),
+        'POST grid_editar' => acaoGridEditar(),
+        'POST grid_excluir' => acaoGridExcluir(),
         'POST registrar' => acaoRegistrar(),
         'POST entrar' => acaoEntrar(),
         'POST sair' => acaoSair(),
@@ -381,41 +384,42 @@ function acaoCenas(): never
     responder(['cenas' => listarCenas(), 'enviadas' => listarCenasEnviadas()]);
 }
 
+function servirImagem(string $mime, string $dados): never
+{
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: private, max-age=300');
+    header('X-Content-Type-Options: nosniff');
+    echo $dados;
+    exit;
+}
+
+/* ?id=N é a foto do cenário N. ?grid=N é um mapa de grid. O jogador recebe só a foto de um cenário liberado e ligado a um
+   local revelado, ou o que o mestre colocou ao vivo (a foto, ou o mapa de grid ativo). */
 function acaoCenaImg(): never
 {
     $u = exigirLogin();
-    $envio = 0;
-    if ($u['papel'] === 'mestre') {
-        $envio = (int)($_GET['id'] ?? 0);
-        $arq = $envio ? null : arquivoCena($_GET['local'] ?? null, $_GET['cena'] ?? null);
-    } else {
-        /* O jogador recebe a cena que o mestre ativou, ou a foto de um cenário ligado a um local revelado no mapa. */
-        $pedido = (int)($_GET['id'] ?? 0);
-        if ($pedido && cenaLiberadaJogador($pedido)) {
-            $envio = $pedido;
-            $arq = null;
-        } else {
-            $a = lerEstado('acao') ?? [];
-            $envio = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
-            $arq = !empty($a['ativo']) && !$envio ? arquivoCena($a['local'] ?? null, $a['cena'] ?? null) : null;
+    $foto = (int)($_GET['id'] ?? 0);
+    $grid = (int)($_GET['grid'] ?? 0);
+    if ($u['papel'] !== 'mestre') {
+        $a = lerEstado('acao') ?? [];
+        $vivo = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
+        if ($foto && !cenaLiberadaJogador($foto)) $foto = 0;
+        if ($grid && !($vivo && ($a['modo'] ?? 'grid') !== 'foto' && (int)($a['grid'] ?? 0) === $grid)) $grid = 0;
+        if (!$foto && !$grid && $vivo) {
+            if (($a['modo'] ?? 'grid') !== 'foto' && !empty($a['grid'])) $grid = (int)$a['grid']; else $foto = $vivo;
         }
     }
-    if ($envio) {
-        $c = cenaEnviada($envio, true);
-        if (!$c) erro('Cenário não encontrado.', 404);
-        header('Content-Type: ' . $c['mime']);
-        header('Cache-Control: private, max-age=300');
-        header('X-Content-Type-Options: nosniff');
-        echo $c['dados'];
-        exit;
+    if ($grid) {
+        $g = gridCena($grid, null, true);
+        if (!$g) erro('Mapa não encontrado.', 404);
+        servirImagem($g['mime'], $g['dados']);
     }
-    if (!$arq) erro('Nenhuma cena ativa.', 404);
-    header('Content-Type: ' . EXT_CENA[strtolower(pathinfo($arq, PATHINFO_EXTENSION))]);
-    header('Content-Length: ' . filesize($arq));
-    header('Cache-Control: private, max-age=300');
-    header('X-Content-Type-Options: nosniff');
-    readfile($arq);
-    exit;
+    if ($foto) {
+        $c = cenaEnviada($foto, true);
+        if (!$c) erro('Cenário não encontrado.', 404);
+        servirImagem($c['mime'], $c['dados']);
+    }
+    erro('Nenhuma imagem disponível.', 404);
 }
 
 /* Sem colunas (0) o cenário não tem grid: é só uma imagem. */
@@ -439,8 +443,7 @@ function acaoCenaEnviar(): never
     $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Cenário';
     [$mime, $bin] = decodificarImagem($c['dados'] ?? '');
     $pdo = db();
-    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$nome, $mime, $bin, limiteColunas($c['cols'] ?? 0), limiteGrid($c['rows'] ?? null, true)]);
+    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, 0, NULL)')->execute([$nome, $mime, $bin]);
     responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
 }
 
@@ -455,15 +458,16 @@ function acaoCenaEditar(): never
         $pdo->prepare('UPDATE cenas SET mime = ?, dados = ?, criado_em = NOW() WHERE id = ?')->execute([$mime, $bin, $id]);
     }
     if (array_key_exists('nome', $c)) $pdo->prepare('UPDATE cenas SET nome = ? WHERE id = ?')->execute([mb_substr(trim((string)$c['nome']), 0, 120) ?: 'Cenário', $id]);
-    if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cenas SET colunas = ? WHERE id = ?')->execute([limiteColunas($c['cols']), $id]);
-    if (array_key_exists('rows', $c)) $pdo->prepare('UPDATE cenas SET linhas = ? WHERE id = ?')->execute([limiteGrid($c['rows'], true), $id]);
     responder(['ok' => true]);
 }
 
 function acaoCenaExcluir(): never
 {
     exigirMestre();
-    db()->prepare('DELETE FROM cenas WHERE id = ?')->execute([(int)(corpo()['id'] ?? 0)]);
+    $id = (int)(corpo()['id'] ?? 0);
+    $pdo = db();
+    $pdo->prepare('DELETE FROM cena_grids WHERE cena_id = ?')->execute([$id]);
+    $pdo->prepare('DELETE FROM cenas WHERE id = ?')->execute([$id]);
     responder(['ok' => true]);
 }
 
@@ -480,7 +484,52 @@ function acaoCenaImportar(): never
     if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) erro('Formato de imagem não aceito.');
     $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Cenário';
     $pdo = db();
-    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$nome, $mime, $bin, limiteColunas($c['cols'] ?? 0), limiteGrid($c['rows'] ?? null, true)]);
+    /* A pasta se chama "grid": a imagem vira a foto do cenário e também o primeiro mapa de grid dele. */
+    $pdo->beginTransaction();
+    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, 0, NULL)')->execute([$nome, $mime, $bin]);
+    $id = (int)$pdo->lastInsertId();
+    $pdo->prepare('INSERT INTO cena_grids (cena_id, nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?, NULL)')->execute([$id, 'Mapa de grid', $mime, $bin, 20]);
+    $gid = (int)$pdo->lastInsertId();
+    $pdo->commit();
+    responder(['id' => $id, 'nome' => $nome, 'grid' => $gid]);
+}
+
+
+/* ============================ MAPAS DE GRID DO CENÁRIO ============================ */
+
+function acaoGridEnviar(): never
+{
+    exigirMestre();
+    $c = corpo();
+    $cena = (int)($c['cena'] ?? 0);
+    if (!cenaEnviada($cena)) erro('Cenário não encontrado.', 404);
+    [$mime, $bin] = decodificarImagem($c['dados'] ?? '');
+    $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Mapa de grid';
+    $pdo = db();
+    $pdo->prepare('INSERT INTO cena_grids (cena_id, nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([$cena, $nome, $mime, $bin, limiteColunas($c['cols'] ?? 20) ?: 20, limiteGrid($c['rows'] ?? null, true)]);
     responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
+}
+
+function acaoGridEditar(): never
+{
+    exigirMestre();
+    $c = corpo();
+    $id = (int)($c['id'] ?? 0);
+    $pdo = db();
+    if (!empty($c['dados'])) {
+        [$mime, $bin] = decodificarImagem($c['dados']);
+        $pdo->prepare('UPDATE cena_grids SET mime = ?, dados = ?, criado_em = NOW() WHERE id = ?')->execute([$mime, $bin, $id]);
+    }
+    if (array_key_exists('nome', $c)) $pdo->prepare('UPDATE cena_grids SET nome = ? WHERE id = ?')->execute([mb_substr(trim((string)$c['nome']), 0, 120) ?: 'Mapa de grid', $id]);
+    if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cena_grids SET colunas = ? WHERE id = ?')->execute([limiteColunas($c['cols']) ?: 20, $id]);
+    if (array_key_exists('rows', $c)) $pdo->prepare('UPDATE cena_grids SET linhas = ? WHERE id = ?')->execute([limiteGrid($c['rows'], true), $id]);
+    responder(['ok' => true]);
+}
+
+function acaoGridExcluir(): never
+{
+    exigirMestre();
+    db()->prepare('DELETE FROM cena_grids WHERE id = ?')->execute([(int)(corpo()['id'] ?? 0)]);
+    responder(['ok' => true]);
 }

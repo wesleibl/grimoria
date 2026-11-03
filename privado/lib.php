@@ -37,7 +37,7 @@ function db(): PDO
 /* Cria as tabelas na primeira vez. O arquivo marcador evita repetir isso a cada requisição. */
 function garantirSchema(PDO $pdo): void
 {
-    $marca = __DIR__ . '/.schema-v2';
+    $marca = __DIR__ . '/.schema-v3';
     if (is_file($marca)) return;
     $sql = file_get_contents(__DIR__ . '/schema.sql');
     foreach (array_filter(array_map('trim', explode(';', $sql))) as $cmd) $pdo->exec($cmd);
@@ -256,12 +256,27 @@ function cenaEnviada(int $id, bool $comDados = false): ?array
     return $st->fetch() ?: null;
 }
 
+/* Cada cenário tem uma foto (sem grid) e zero ou mais mapas de grid, que são imagens extras com as próprias colunas e linhas. */
+function gridCena(int $id, ?int $cena = null, bool $comDados = false): ?array
+{
+    $sql = 'SELECT id, cena_id, nome, mime, colunas, linhas, UNIX_TIMESTAMP(criado_em) AS ts' . ($comDados ? ', dados' : '') . ' FROM cena_grids WHERE id = ?';
+    $par = [$id];
+    if ($cena !== null) { $sql .= ' AND cena_id = ?'; $par[] = $cena; }
+    $st = db()->prepare($sql);
+    $st->execute($par);
+    return $st->fetch() ?: null;
+}
+
 function listarCenasEnviadas(): array
 {
+    $grids = [];
+    foreach (db()->query('SELECT id, cena_id, nome, colunas, linhas, UNIX_TIMESTAMP(criado_em) AS ts FROM cena_grids ORDER BY criado_em, id') as $g) {
+        $grids[(int)$g['cena_id']][] = ['id' => (int)$g['id'], 'nome' => $g['nome'], 'cols' => (int)$g['colunas'], 'rows' => $g['linhas'] === null ? null : (int)$g['linhas'], 'v' => (int)$g['ts']];
+    }
     $out = [];
-    foreach (db()->query('SELECT id, nome, colunas, linhas, UNIX_TIMESTAMP(criado_em) AS ts FROM cenas ORDER BY criado_em, id') as $r) {
-        /* v muda quando a foto é trocada, para o navegador não mostrar a antiga guardada. */
-        $out[] = ['id' => (int)$r['id'], 'nome' => $r['nome'], 'cols' => (int)$r['colunas'], 'rows' => $r['linhas'] === null ? null : (int)$r['linhas'], 'v' => (int)$r['ts']];
+    foreach (db()->query('SELECT id, nome, UNIX_TIMESTAMP(criado_em) AS ts FROM cenas ORDER BY criado_em, id') as $r) {
+        /* v muda quando a imagem é trocada, para o navegador não mostrar a antiga guardada. */
+        $out[] = ['id' => (int)$r['id'], 'nome' => $r['nome'], 'v' => (int)$r['ts'], 'grids' => $grids[(int)$r['id']] ?? []];
     }
     return $out;
 }
@@ -483,10 +498,7 @@ function campoOpJogador(array $u, string $op, array $c): never
     $a = lerEstado('acao') ?? [];
     if (empty($a['ativo'])) erro('Nenhuma cena ativa.', 409);
     if (($a['modo'] ?? 'grid') === 'foto') erro('Esta cena é só uma imagem.', 409);
-    if (!empty($a['envio'])) {
-        $ce = cenaEnviada((int)$a['envio']);
-        if ($ce && (int)$ce['colunas'] < 1) erro('Este cenário não tem grid.', 409);
-    }
+    if (empty($a['envio']) || empty($a['grid']) || !gridCena((int)$a['grid'], (int)$a['envio'])) erro('Esta cena não tem grid.', 409);
     $tokens = tokensAcao();
     $meu = null;
     foreach ($tokens as $id => $t) {
@@ -554,25 +566,18 @@ function campoOpJogador(array $u, string $op, array $c): never
 function acaoPublica(?string $jogId = null): array
 {
     $a = lerEstado('acao') ?? [];
-    if (empty($a['ativo'])) return ['ativo' => false];
-    if (!empty($a['envio'])) {
-        $c = cenaEnviada((int)$a['envio']);
-        if (!$c) return ['ativo' => false];
-        $g = ['cols' => $c['colunas'], 'rows' => $c['linhas']];
-        $semGrid = (int)$c['colunas'] < 1;
-        $imgId = substr(md5('e' . $c['id'] . '-' . $c['ts']), 0, 12);
-    } else {
-        $semGrid = false;
-        if (!arquivoCena($a['local'] ?? null, $a['cena'] ?? null)) return ['ativo' => false];
-        $g = (lerEstado('grids') ?? [])[$a['local'] . '/' . $a['cena']] ?? [];
-        $imgId = substr(md5($a['local'] . '/' . $a['cena']), 0, 12);
+    if (empty($a['ativo']) || empty($a['envio'])) return ['ativo' => false];
+    $c = cenaEnviada((int)$a['envio']);
+    if (!$c) return ['ativo' => false];
+    /* "Grid e tokens" precisa de um mapa de grid do cenário. Sem ele, só a foto. */
+    $grid = ($a['modo'] ?? 'grid') === 'foto' || empty($a['grid']) ? null : gridCena((int)$a['grid'], (int)$c['id']);
+    /* Só o resumo do cenário vai para o jogador. A descrição completa fica com o mestre. */
+    $resumo = mb_substr((string)((lerEstado('cenarios_info') ?? [])[(int)$c['id']]['resumo'] ?? ''), 0, 600);
+    if (!$grid) {
+        return ['ativo' => true, 'modo' => 'foto', 'img' => substr(md5('e' . $c['id'] . '-' . $c['ts']), 0, 12), 'titulo' => (string)($a['titulo'] ?? ''), 'resumo' => $resumo];
     }
-    /* Só o resumo do cenário vai para o jogador. A história e os detalhes ficam com o mestre. */
-    $resumo = !empty($a['envio']) ? mb_substr((string)((lerEstado('cenarios_info') ?? [])[(int)$a['envio']]['resumo'] ?? ''), 0, 600) : '';
-    /* "Só a foto": o jogador vê a imagem do cenário, sem grid, tokens nem combate. */
-    if (($a['modo'] ?? 'grid') === 'foto' || $semGrid) {
-        return ['ativo' => true, 'modo' => 'foto', 'img' => $imgId, 'titulo' => (string)($a['titulo'] ?? ''), 'resumo' => $resumo];
-    }
+    $g = ['cols' => $grid['colunas'], 'rows' => $grid['linhas']];
+    $imgId = substr(md5('g' . $grid['id'] . '-' . $grid['ts']), 0, 12);
     $campo = campoLer();
     $tokens = [];
     $vis = [];

@@ -44,4 +44,22 @@ CREATE TABLE IF NOT EXISTS cenas (
   colunas SMALLINT UNSIGNED NOT NULL DEFAULT 20,
   linhas SMALLINT UNSIGNED NULL,
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS cena_grids (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cena_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(120) NOT NULL DEFAULT '',
+  mime VARCHAR(40) NOT NULL,
+  dados MEDIUMBLOB NOT NULL,
+  colunas SMALLINT UNSIGNED NOT NULL DEFAULT 20,
+  linhas SMALLINT UNSIGNED NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_cena (cena_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO cena_grids (cena_id, nome, mime, dados, colunas, linhas)
+  SELECT c.id, 'Mapa de grid', c.mime, c.dados, c.colunas, c.linhas FROM cenas c
+  WHERE c.colunas > 0 AND NOT EXISTS (SELECT 1 FROM cena_grids g WHERE g.cena_id = c.id);
+
+UPDATE cenas SET colunas = 0, linhas = NULL WHERE colunas > 0

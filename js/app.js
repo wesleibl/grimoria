@@ -379,13 +379,14 @@ function desenharDetalhe() {
   var rev = getRev();
   if (!l || (l.secreto && !camadaMestre()) || (modoMesa && !rev[l.id])) { box.innerHTML = introMapa(); return; }
   var h = "<h3>" + l.nome + '</h3><div class="meta"><span class="tag role">' + TIPO_NOME[l.tipo] + "</span>" + (camadaMestre() ? '<span class="tag role">' + l.arco + "</span>" : "") + "</div>";
-  h += "<p>" + l.pub + "</p>";
   var cen = cenarioDoLocal(l);
   if (cen) {
     var u = API + "?a=cena_img&id=" + encodeURIComponent(cen.id) + (cen.v ? "&v=" + cen.v : "");
     h += (cen.nome ? '<p class="meta"><span class="tag role">' + ic("pino") + esc(cen.nome) + "</span></p>" : "") +
       '<a href="' + u + '" target="_blank" rel="noopener"><img class="local-img" src="' + u + '" alt="' + esc(cen.nome || "Cenário de " + l.nome) + '"></a>' +
       (cen.resumo ? '<p class="resumo">' + esc(cen.resumo) + "</p>" : "");
+  } else if (!souMestre()) {
+    h += '<p class="mdica">Ainda não há nada para ver aqui.</p>';
   }
   if (souMestre() && !modoMesa) {
     if (!l.secreto) h += '<label class="rev-label"><input type="checkbox" class="rev" data-id="' + l.id + '"' + (rev[l.id] ? " checked" : "") + "> Revelado aos jogadores</label>";
