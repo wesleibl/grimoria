@@ -39,13 +39,13 @@ function flagsHTML(s) {
 
 var VILAREJOS = [
   { nome: "Vale das Colheitas", tema: "agrícola, pacífico", desc: "Gente simples, forte de tanto trabalhar na terra.",
-    bonus: "+1 em testes de Poder para carregar, empurrar ou aguentar esforço.", attr: "poder" },
+    attr: "poder" },
   { nome: "Porto Salgado", tema: "pesqueiro, comércio", desc: "Pessoas falantes e espertas, acostumadas com viajantes e contrabando.",
-    bonus: "+1 em testes de Inteligência para negociar ou conseguir informação.", attr: "inteligencia" },
+    attr: "inteligencia" },
   { nome: "Floresta dos Cedros", tema: "caçadores, isolado", desc: "Rastreadores que vivem entre as árvores.",
-    bonus: "+1 em testes de Destreza para furtividade e rastreio.", attr: "destreza" },
+    attr: "destreza" },
   { nome: "Pedra Velha", tema: "mineradores, perto das ruínas", desc: "Gente teimosa e resistente, que já ouviu histórias do que existe nas minas.",
-    bonus: "+1 em testes de Inteligência para ruínas, símbolos e magia antiga.", attr: "inteligencia" }
+    attr: "inteligencia" }
 ];
 
 /* ============================ HELPERS ============================ */
@@ -141,7 +141,7 @@ function viewRegras() {
     "<li><b>Vida:</b> 20.</li><li><b>Mana:</b> 10, igual para todos.</li>" +
     "<li><b>Defesa:</b> 10 + Destreza.</li>" +
     "<li><b>Redução de dano:</b> igual ao Poder (o dano mínimo é sempre 1).</li>" +
-    "<li><b>Deslocamento:</b> 6 casas por turno (opcional: 6 + Destreza).</li>" +
+    "<li><b>Deslocamento:</b> 6 casas por turno, mais 1 a cada 2 pontos de Destreza.</li>" +
     '<li>Ao subir de nível, veja a aba <a href="#niveis">Níveis</a>.</li></ul>');
 
   h += "<h2>Rolagens</h2>" + panel("Teste", "<p>Role d20 + atributo contra a dificuldade que o mestre define. Exemplo: um salto usa Poder, não Atletismo.</p>" +
@@ -206,11 +206,18 @@ function viewNiveis() {
   return h;
 }
 
+/* O jogador só vê o bônus depois de ter um personagem ligado à conta, e só o do próprio vilarejo. */
+function bonusVilaJogador(v) {
+  if (PUB.jogador && PUB.jogador.vila === v.nome && PUB.vilaBonus) return "<p><b>Seu bônus de origem:</b> " + esc(PUB.vilaBonus) + "</p>";
+  return "";
+}
+
 function viewVilarejos() {
-  var h = "<h1>Vilarejos</h1>" + '<p class="lead">Todo personagem é plebeu e vem de um dos quatro vilarejos. Cada um dá um pequeno bônus de origem.</p><div class="cols">';
+  var h = "<h1>Vilarejos</h1>" + '<p class="lead">Todo personagem é plebeu e vem de um dos quatro vilarejos. Cada um dá um pequeno bônus de origem.</p>' +
+    (!MESTRE && !PUB.jogador ? '<div class="note"><p>O bônus de origem aparece aqui depois que o mestre ligar a sua conta ao seu personagem.</p></div>' : "") + '<div class="cols">';
   VILAREJOS.forEach(function (v) {
     h += '<section class="panel" style="border-left:8px solid ' + ATTR[v.attr].cor + '"><h3>' + v.nome + '</h3><p class="meta">' + v.tema + "</p><p>" + v.desc + "</p>" +
-      "<p><b>Bônus:</b> " + v.bonus + "</p>" + (MESTRE ? MESTRE.vilaExtra(v) : "") + "</section>";
+      (MESTRE ? MESTRE.vilaExtra(v) : bonusVilaJogador(v)) + "</section>";
   });
   h += "</div>" + (MESTRE ? MESTRE.vilaRodape() : "");
   return h;
@@ -475,12 +482,14 @@ function viewInicioJogador() {
     '</div><div class="pj-campos"><h2 style="margin-top:0">' + esc(j.personagem || "Personagem sem nome") + "</h2>";
   var campos = [["Jogador", j.nome], ["Vilarejo", j.vila], ["Altura", j.altura], ["Descrição", j.descricao], ["Sonho ou objetivo", j.sonho], ["Medo ou fraqueza", j.medo]];
   campos.forEach(function (c) { if (c[1]) h += '<p><b>' + c[0] + ":</b> " + esc(c[1]) + "</p>"; });
+  if (PUB.vilaBonus) h += "<p><b>Bônus de origem:</b> " + esc(PUB.vilaBonus) + "</p>";
   return h + "</div></div>" + atalhosJogador();
 }
 
 function atalhosJogador() {
   return "<h2>Atalhos</h2>" + '<div class="cols">' +
     panel(ic("livro") + "Meu grimório", '<p>' + (PUB.grimorio ? "Veja as magias que você já desbloqueou." : "Seu grimório aparece aqui depois da cerimônia.") + '</p><p><a href="#meu-grimorio">Abrir</a></p>') +
+    panel(ic("grupo") + "Perfil", '<p>Edite o nome, a descrição e o retrato do seu personagem.</p><p><a href="#perfil">Abrir</a></p>') +
     panel(ic("prancheta") + "Regras", '<p>Atributos, combate, mana e deslocamento.</p><p><a href="#regras">Abrir</a></p>') +
     panel(ic("bussola") + "Mapa", '<p>Os lugares que o grupo já descobriu.</p><p><a href="#mapa">Abrir</a></p>') + "</div>";
 }
@@ -495,6 +504,199 @@ function viewMeuGrimorio() {
   h += '<div class="cer-card">' + bookCard(g, true) + "</div>";
   if (!g.spells.length) h += '<div class="empty">Nenhuma magia liberada ainda.</div>';
   return h;
+}
+
+/* ============================ PERFIL ============================ */
+
+var perfilPend = {}, perfilMsg = "";
+var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altura", 20], ["descricao", "Descrição", 2000], ["sonho", "Sonho ou objetivo", 2000], ["medo", "Medo ou fraqueza", 2000]];
+
+function viewPerfil() {
+  var j = PUB.jogador;
+  if (!j) {
+    return '<div class="lock"><h1>Perfil</h1><p>Sua conta ainda não está ligada a um personagem. Avise o mestre: depois que ele ligar, você edita o seu perfil aqui.</p></div>';
+  }
+  var url = j.img ? imgUrl(j.img) : "";
+  var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. As mudanças são salvas sozinhas e o mestre vê tudo.</p>' +
+    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>";
+  h += '<div class="pj-form"><div class="pj-lado">' +
+    (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
+    '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="perfilImg"><label class="btn" for="perfilImg">' + (url ? "Trocar retrato" : "Escolher retrato") + "</label>" +
+    (url ? '<button type="button" id="perfilImgDel">Remover</button>' : "") + "</p></div>";
+  h += '<div class="pj-campos">';
+  if (j.nome) h += "<p><b>Jogador:</b> " + esc(j.nome) + "</p>";
+  if (j.vila) h += "<p><b>Vilarejo:</b> " + esc(j.vila) + "</p>";
+  CAMPOS_PERFIL.forEach(function (c) {
+    var v = esc(j[c[0]] || "");
+    h += "<label>" + c[1] + (c[2] > 100
+      ? '<textarea class="sorteio-in" rows="' + (c[0] === "descricao" ? 4 : 3) + '" maxlength="' + c[2] + '" data-pf="' + c[0] + '">' + v + "</textarea>"
+      : '<input class="sorteio-in" type="text" maxlength="' + c[2] + '" data-pf="' + c[0] + '" value="' + v + '"' + (c[0] === "altura" ? ' placeholder="ex.: 1,72 m"' : "") + ">") + "</label>";
+  });
+  return h + '<p class="mdica">O nome do jogador, o vilarejo e o grimório são definidos pelo mestre.</p></div></div>';
+}
+
+function salvarPerfil(el) {
+  var k = el.dataset.pf;
+  PUB.jogador[k] = el.value;
+  perfilPend[k] = el.value;
+  adiar("perfil", function () {
+    var c = perfilPend;
+    perfilPend = {};
+    gravar("perfil_salvar", { campos: c });
+  });
+}
+
+function enviarRetrato(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  perfilMsg = "Enviando o retrato…";
+  renderizar();
+  reduzirImagem(f, 480, 200000, function (erro, url) {
+    if (erro) { perfilMsg = erro; renderizar(); return; }
+    gravar("perfil_img", { dados: url }).then(function (r) {
+      perfilMsg = r ? "Retrato salvo." : "Não foi possível salvar o retrato. Tente de novo.";
+      if (r) PUB.jogador.img = r.id;
+      renderizar();
+    });
+  });
+}
+
+/* Reduz a imagem no navegador antes de enviar, para caber no banco sem pesar. */
+function reduzirImagem(f, max, limite, pronto) {
+  if (!f || !/^image\//.test(f.type)) { pronto("Escolha um arquivo de imagem."); return; }
+  var r = new FileReader();
+  r.onerror = function () { pronto("Não consegui ler esse arquivo."); };
+  r.onload = function () {
+    var im = new Image();
+    im.onerror = function () { pronto("Não consegui abrir essa imagem."); };
+    im.onload = function () {
+      var esc2 = Math.min(1, max / Math.max(im.width, im.height));
+      var c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(im.width * esc2));
+      c.height = Math.max(1, Math.round(im.height * esc2));
+      var x = c.getContext("2d");
+      x.fillStyle = "#ffffff";
+      x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(im, 0, 0, c.width, c.height);
+      var q = 0.85, url = c.toDataURL("image/jpeg", q);
+      while (url.length > limite && q > 0.4) { q -= 0.1; url = c.toDataURL("image/jpeg", q); }
+      pronto(null, url);
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+/* ============================ TABULEIRO ============================ */
+
+var COR_TOKEN = { jogador: "#2a6fc9", aliado: "#2e8b57", inimigo: "#c0392b", armadilha: "#d9700f" };
+var tabGeo = null;
+
+function colNome(i) {
+  var s = "";
+  for (i = i + 1; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s;
+  return s;
+}
+function coordNome(x, y) { return colNome(x) + (y + 1); }
+function iniciais(nome) {
+  var p = String(nome || "?").trim().split(/\s+/);
+  return ((p[0] || "?").charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : (p[0] || "").charAt(1))).toUpperCase();
+}
+function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (COR_TOKEN[t.tipo] || COR_TOKEN.inimigo); }
+
+function tabuleiroHTML(src, alt) {
+  return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div></div>';
+}
+
+/* Desenha o grid e os tokens sobre a imagem. As medidas usam os pixels da própria imagem,
+   então o grid acompanha a imagem em qualquer tamanho de tela.
+   cfg: { cols, rows, tokens, meu (id do jogador), sel (token selecionado), mestre } */
+function desenharTabuleiro(cfg) {
+  var img = document.getElementById("tabImg"), svg = document.getElementById("tabSvg");
+  if (!img || !svg) return null;
+  if (!img.complete || !img.naturalWidth) {
+    img.onload = function () { desenharTabuleiro(cfg); if (cfg.depois) cfg.depois(); };
+    img.onerror = function () { svg.outerHTML = '<p class="tab-erro">Não consegui carregar a imagem deste mapa.</p>'; };
+    return null;
+  }
+  var W = img.naturalWidth, H = img.naturalHeight;
+  var cols = Math.max(1, Math.min(200, cfg.cols || 20));
+  var rows = Math.max(1, Math.min(200, cfg.rows || Math.round(cols * H / W)));
+  var cw = W / cols, ch = H / rows, menor = Math.min(cw, ch), d = "", h = "", i, j;
+  for (i = 1; i < cols; i++) d += "M" + (i * cw).toFixed(1) + " 0V" + H;
+  for (j = 1; j < rows; j++) d += "M0 " + (j * ch).toFixed(1) + "H" + W;
+  h += '<path class="tab-linha" d="' + d + '"/>';
+  var fs = Math.max(8, menor * 0.26);
+  for (i = 0; i < cols; i++) h += '<text class="tab-coord" x="' + (i * cw + fs * 0.3).toFixed(1) + '" y="' + (fs * 1.05).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + colNome(i) + "</text>";
+  for (j = 1; j < rows; j++) h += '<text class="tab-coord" x="' + (fs * 0.3).toFixed(1) + '" y="' + (j * ch + fs * 1.05).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + (j + 1) + "</text>";
+  var r = menor * 0.38;
+  (cfg.tokens || []).forEach(function (t) {
+    var x = Math.max(0, Math.min(cols - 1, t.x | 0)), y = Math.max(0, Math.min(rows - 1, t.y | 0));
+    var cls = "token" + (t.oculto ? " oculto" : "") + (cfg.meu && t.jog === cfg.meu ? " meu" : "") + (cfg.sel === t.id ? " sel" : "");
+    var forma = t.tipo === "armadilha"
+      ? '<polygon points="0,' + (-r * 1.15).toFixed(1) + " " + (r * 1.15).toFixed(1) + ",0 0," + (r * 1.15).toFixed(1) + " " + (-r * 1.15).toFixed(1) + ',0" fill="' + corToken(t) + '"/>'
+      : '<circle r="' + r.toFixed(1) + '" fill="' + corToken(t) + '"/>';
+    var barra = "";
+    if (cfg.mestre && t.vidaMax && t.tipo !== "armadilha") {
+      var pc = Math.max(0, Math.min(1, (t.vida == null ? t.vidaMax : t.vida) / t.vidaMax)), bw = r * 1.8;
+      barra = '<rect x="' + (-bw / 2).toFixed(1) + '" y="' + (r * 1.05).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (r * 0.22).toFixed(1) + '" fill="#000" fill-opacity=".6"/>' +
+        '<rect x="' + (-bw / 2).toFixed(1) + '" y="' + (r * 1.05).toFixed(1) + '" width="' + (bw * pc).toFixed(1) + '" height="' + (r * 0.22).toFixed(1) + '" fill="' + (pc > 0.5 ? "#2e8b57" : pc > 0.25 ? "#d9a21f" : "#c0392b") + '"/>';
+    }
+    h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" transform="translate(' + ((x + 0.5) * cw).toFixed(1) + "," + ((y + 0.5) * ch).toFixed(1) + ')">' +
+      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + forma +
+      '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + barra + "</g>";
+  });
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.innerHTML = h;
+  tabGeo = { W: W, H: H, cols: cols, rows: rows, cw: cw, ch: ch };
+  return tabGeo;
+}
+
+function listaTokensHTML(tokens, meu) {
+  if (!tokens.length) return "";
+  return '<ul class="tok-lista">' + tokens.map(function (t) {
+    var mov = meu && t.jog === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
+    return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span>' + esc(t.nome || "Sem nome") + (t.tipo === "armadilha" ? " (armadilha)" : "") + " <small>" + coordNome(t.x | 0, t.y | 0) + (meu && t.jog === meu ? ", você" : "") + mov + "</small></li>";
+  }).join("") + "</ul>";
+}
+
+/* ============================ AÇÃO (JOGADOR) ============================ */
+
+var acaoPub = null, acaoJson = "", acaoTimer = null, acaoGer = 0, acaoRodando = false;
+
+function viewAcaoJogador() {
+  var a = acaoPub;
+  if (!a) return "<h1>Ação</h1><p class=\"mdica\">Carregando…</p>";
+  if (!a.ativo) return '<div class="lock"><h1>Ação</h1><p>Nenhum mapa ativo agora. Quando o mestre abrir uma cena, ela aparece aqui e se atualiza sozinha.</p></div>';
+  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + '<p class="mdica">Cada casa tem 1,5 m. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
+    tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + listaTokensHTML(a.tokens || [], PUB.jogador && PUB.jogador.id);
+}
+
+function desenharAcaoJogador() {
+  if (acaoPub && acaoPub.ativo) desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: PUB.jogador && PUB.jogador.id });
+}
+
+/* Enquanto o jogador está na aba Ação, busca a cena a cada 4 segundos.
+   Só redesenha quando algo mudou, e troca a página inteira só quando muda a imagem. */
+function pararAcao() { clearTimeout(acaoTimer); acaoTimer = null; acaoRodando = false; acaoGer++; }
+function iniciarAcao() { if (!acaoRodando) { acaoRodando = true; buscarAcao(++acaoGer); } }
+function buscarAcao(ger) {
+  if (ger !== acaoGer || MESTRE || !USUARIO || rotaAtual() !== "acao") return;
+  var depois = function () { if (ger === acaoGer) acaoTimer = setTimeout(function () { buscarAcao(ger); }, 4000); };
+  if (document.hidden) { depois(); return; }
+  api("acao").then(function (a) {
+    var j = JSON.stringify(a);
+    if (ger !== acaoGer || j === acaoJson) return;
+    var trocouImg = !acaoPub || acaoPub.ativo !== a.ativo || acaoPub.img !== a.img || acaoPub.titulo !== a.titulo;
+    acaoJson = j;
+    acaoPub = a;
+    if (trocouImg) { renderizar(); return; }
+    desenharAcaoJogador();
+    var l = document.querySelector(".tok-lista"), box = document.querySelector(".tab-box");
+    var lista = listaTokensHTML(a.tokens || [], PUB.jogador && PUB.jogador.id);
+    if (l) l.outerHTML = lista || '<ul class="tok-lista"></ul>';
+    else if (box) box.insertAdjacentHTML("afterend", lista || '<ul class="tok-lista"></ul>');
+  }, function () { /* sem conexão: tenta de novo no próximo ciclo */ }).then(depois);
 }
 
 /* ============================ CONTA ============================ */
@@ -625,7 +827,7 @@ function carregar(aposLogin) {
         renderizar();
       });
     }
-    PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [] };
+    PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [], vilaBonus: d.vilaBonus || "" };
     renderizar();
   }).catch(function (e) {
     app.innerHTML = '<div class="lock"><h1>Sem conexão</h1><p>' + esc(e.message) + '</p><p><button type="button" class="primary" id="tentarDeNovo">Tentar de novo</button></p></div>';
@@ -635,11 +837,11 @@ function carregar(aposLogin) {
 /* ============================ ROTEAMENTO ============================ */
 
 var VIEWS = [
-  ["inicio", "Início", "casa"], ["meu-grimorio", "Meu grimório", "livro"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"],
+  ["inicio", "Início", "casa"], ["perfil", "Perfil", "grupo"], ["meu-grimorio", "Meu grimório", "livro"], ["acao", "Ação", "espada"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"],
   ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"]
 ];
 var VIEWFN = {
-  "inicio": viewInicioJogador, "meu-grimorio": viewMeuGrimorio, "regras": viewRegras, "niveis": viewNiveis, "vilarejos": viewVilarejos, "mapa": viewMapa
+  "inicio": viewInicioJogador, "perfil": viewPerfil, "meu-grimorio": viewMeuGrimorio, "acao": viewAcaoJogador, "regras": viewRegras, "niveis": viewNiveis, "vilarejos": viewVilarejos, "mapa": viewMapa
 };
 function listaViews() { return MESTRE ? MESTRE.views : VIEWS; }
 
@@ -668,6 +870,8 @@ function renderizar() {
   app.innerHTML = VIEWFN[r]();
   if (MESTRE) MESTRE.depois(r);
   if (r === "mapa") desenharMapa();
+  if (r === "acao" && !MESTRE) { desenharAcaoJogador(); iniciarAcao(); }
+  if (r !== "acao" && acaoRodando) pararAcao();
   document.title = (listaViews().filter(function (v) { return v[0] === r; })[0][1]) + " | Grimório do Mestre";
 }
 
@@ -676,11 +880,14 @@ window.addEventListener("hashchange", function () { renderizar(); window.scrollT
 /* ============================ EVENTOS ============================ */
 
 app.addEventListener("change", function (e) {
-  if (MESTRE) MESTRE.change(e.target);
+  if (MESTRE) { MESTRE.change(e.target); return; }
+  if (e.target.id === "perfilImg") enviarRetrato(e.target);
+  else if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
 });
 
 app.addEventListener("input", function (e) {
-  if (MESTRE) MESTRE.input(e.target);
+  if (MESTRE) { MESTRE.input(e.target); return; }
+  if (e.target.dataset && e.target.dataset.pf) salvarPerfil(e.target);
 });
 
 app.addEventListener("submit", function (e) {
@@ -694,6 +901,10 @@ app.addEventListener("click", function (e) {
   if (!b) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
+  if (b.id === "perfilImgDel" && PUB.jogador) {
+    gravar("perfil_img_remover", {}).then(function (r) { if (r) { PUB.jogador.img = null; perfilMsg = "Retrato removido."; renderizar(); } });
+    return;
+  }
   if (MESTRE && MESTRE.click(b)) return;
   if (b.dataset.mtipo) {
     filtroMapa = b.dataset.mtipo;

@@ -32,7 +32,7 @@
 - **Mana:** 10 (fixa para todos)
 - **Defesa:** 10 + Destreza
 - **Redução de dano:** igual ao Poder (dano mínimo sempre 1)
-- **Deslocamento:** 6 casas por turno (opcional: 6 + Destreza)
+- **Deslocamento:** 6 casas por turno, mais 1 a cada 2 pontos de Destreza (regra definida na aba Ação do site)
 
 ### Rolagens
 

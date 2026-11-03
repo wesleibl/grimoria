@@ -21,6 +21,12 @@ try {
         'GET inicio' => acaoInicio(),
         'GET mestre.js' => acaoMestreJs(),
         'GET img' => acaoImg(),
+        'GET acao' => acaoAcao(),
+        'GET cenas' => acaoCenas(),
+        'GET cena_img' => acaoCenaImg(),
+        'POST cena_enviar' => acaoCenaEnviar(),
+        'POST cena_editar' => acaoCenaEditar(),
+        'POST cena_excluir' => acaoCenaExcluir(),
         'POST registrar' => acaoRegistrar(),
         'POST entrar' => acaoEntrar(),
         'POST sair' => acaoSair(),
@@ -31,6 +37,9 @@ try {
         'POST img_enviar' => acaoImgEnviar(),
         'POST img_editar' => acaoImgEditar(),
         'POST img_excluir' => acaoImgExcluir(),
+        'POST perfil_salvar' => acaoPerfilSalvar(),
+        'POST perfil_img' => acaoPerfilImg(),
+        'POST perfil_img_remover' => acaoPerfilImgRemover(),
         default => erro('Ação desconhecida.', 404),
     };
 } catch (Throwable $e) {
@@ -124,6 +133,8 @@ function acaoInicio(): never
         'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img'])) : null,
         'grimorio' => $grim,
         'locais' => lerEstado('locais_pub') ?? [],
+        /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
+        'vilaBonus' => $jog ? ((lerEstado('vilas_pub') ?? [])[$jog['vila'] ?? ''] ?? '') : '',
         'imagens' => listarImagens(fn($i) => jogadorPodeVer($i, $jog, $locaisPub)),
     ]);
 }
@@ -174,9 +185,7 @@ function acaoJogadorSalvar(): never
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
     unset($j['id'], $j['usuario']);
-    $dados = json_encode($j, JSON_UNESCAPED_UNICODE);
-    if (strlen($dados) > 2_000_000) erro('Anotações grandes demais.');
-    db()->prepare('INSERT INTO jogadores (id, dados) VALUES (?, ?) ON DUPLICATE KEY UPDATE dados = VALUES(dados)')->execute([$id, $dados]);
+    salvarCamposJogador($id, $j, true);
     responder(['ok' => true]);
 }
 
@@ -235,12 +244,7 @@ function acaoImgEnviar(): never
     if (!in_array($tipo, ['avatar', 'mapa', 'local'], true)) erro('Tipo de imagem inválido.');
     $ref = $tipo === 'mapa' ? '' : idValido($c['ref'] ?? '');
     $titulo = mb_substr(trim((string)($c['titulo'] ?? '')), 0, 120);
-    if (!preg_match('#^data:image/[a-z+]+;base64,(.+)$#s', (string)($c['dados'] ?? ''), $m)) erro('Imagem inválida.');
-    $bin = base64_decode($m[1], true);
-    if ($bin === false || strlen($bin) > 8_000_000) erro('A imagem é grande demais (máximo 8 MB).');
-    $info = @getimagesizefromstring($bin);
-    $mime = $info['mime'] ?? '';
-    if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) erro('Formato de imagem não aceito.');
+    [$mime, $bin] = decodificarImagem($c['dados'] ?? '');
     $pdo = db();
     $pdo->prepare('INSERT INTO imagens (tipo, ref, titulo, mime, dados) VALUES (?, ?, ?, ?, ?)')->execute([$tipo, $ref, $titulo, $mime, $bin]);
     $novo = (int)$pdo->lastInsertId();
@@ -263,5 +267,135 @@ function acaoImgExcluir(): never
 {
     exigirMestre();
     db()->prepare('DELETE FROM imagens WHERE id = ?')->execute([(int)(corpo()['id'] ?? 0)]);
+    responder(['ok' => true]);
+}
+
+/* ============================ PERFIL DO JOGADOR ============================ */
+
+/* O jogador edita só estes campos do próprio personagem. Observações, moralidade,
+   grimório e vilarejo continuam nas mãos do mestre. */
+const CAMPOS_PERFIL = ['personagem' => 60, 'altura' => 20, 'descricao' => 2000, 'sonho' => 2000, 'medo' => 2000];
+
+function jogadorDaConta(): array
+{
+    $u = exigirLogin();
+    $jog = jogadorDoUsuario($u['id']);
+    if (!$jog) erro('Sua conta ainda não está ligada a um personagem.', 409);
+    return $jog;
+}
+
+function acaoPerfilSalvar(): never
+{
+    $jog = jogadorDaConta();
+    $campos = [];
+    foreach ((array)(corpo()['campos'] ?? []) as $k => $v) {
+        if (!isset(CAMPOS_PERFIL[$k])) continue;
+        $campos[$k] = mb_substr((string)$v, 0, CAMPOS_PERFIL[$k]);
+    }
+    if ($campos) salvarCamposJogador($jog['id'], $campos, false);
+    responder(['ok' => true]);
+}
+
+function acaoPerfilImg(): never
+{
+    $jog = jogadorDaConta();
+    [$mime, $bin] = decodificarImagem(corpo()['dados'] ?? '');
+    $pdo = db();
+    $pdo->prepare("INSERT INTO imagens (tipo, ref, mime, dados) VALUES ('avatar', ?, ?, ?)")->execute([$jog['id'], $mime, $bin]);
+    $novo = (int)$pdo->lastInsertId();
+    $pdo->prepare("DELETE FROM imagens WHERE tipo = 'avatar' AND ref = ? AND id <> ?")->execute([$jog['id'], $novo]);
+    salvarCamposJogador($jog['id'], ['img' => $novo], false);
+    responder(['id' => $novo]);
+}
+
+function acaoPerfilImgRemover(): never
+{
+    $jog = jogadorDaConta();
+    db()->prepare("DELETE FROM imagens WHERE tipo = 'avatar' AND ref = ?")->execute([$jog['id']]);
+    salvarCamposJogador($jog['id'], ['img' => null], false);
+    responder(['ok' => true]);
+}
+
+/* ============================ AÇÃO (GRID) ============================ */
+
+function acaoAcao(): never
+{
+    $u = exigirLogin();
+    if ($u['papel'] === 'mestre') responder(['acao' => lerEstado('acao'), 'grids' => lerEstado('grids')]);
+    responder(acaoPublica());
+}
+
+function acaoCenas(): never
+{
+    exigirMestre();
+    responder(['cenas' => listarCenas(), 'enviadas' => listarCenasEnviadas()]);
+}
+
+function acaoCenaImg(): never
+{
+    $u = exigirLogin();
+    $envio = 0;
+    if ($u['papel'] === 'mestre') {
+        $envio = (int)($_GET['id'] ?? 0);
+        $arq = $envio ? null : arquivoCena($_GET['local'] ?? null, $_GET['cena'] ?? null);
+    } else {
+        /* O jogador não escolhe: recebe a cena que o mestre ativou, se houver. */
+        $a = lerEstado('acao') ?? [];
+        $envio = !empty($a['ativo']) ? (int)($a['envio'] ?? 0) : 0;
+        $arq = !empty($a['ativo']) && !$envio ? arquivoCena($a['local'] ?? null, $a['cena'] ?? null) : null;
+    }
+    if ($envio) {
+        $c = cenaEnviada($envio, true);
+        if (!$c) erro('Cenário não encontrado.', 404);
+        header('Content-Type: ' . $c['mime']);
+        header('Cache-Control: private, max-age=300');
+        header('X-Content-Type-Options: nosniff');
+        echo $c['dados'];
+        exit;
+    }
+    if (!$arq) erro('Nenhuma cena ativa.', 404);
+    header('Content-Type: ' . EXT_CENA[strtolower(pathinfo($arq, PATHINFO_EXTENSION))]);
+    header('Content-Length: ' . filesize($arq));
+    header('Cache-Control: private, max-age=300');
+    header('X-Content-Type-Options: nosniff');
+    readfile($arq);
+    exit;
+}
+
+function limiteGrid(mixed $v, bool $aceitaVazio): ?int
+{
+    if (($v === null || $v === '') && $aceitaVazio) return null;
+    $n = (int)$v;
+    return $n >= 1 && $n <= 200 ? $n : ($aceitaVazio ? null : 20);
+}
+
+function acaoCenaEnviar(): never
+{
+    exigirMestre();
+    $c = corpo();
+    $nome = mb_substr(trim((string)($c['nome'] ?? '')), 0, 120) ?: 'Cenário';
+    [$mime, $bin] = decodificarImagem($c['dados'] ?? '');
+    $pdo = db();
+    $pdo->prepare('INSERT INTO cenas (nome, mime, dados, colunas, linhas) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$nome, $mime, $bin, limiteGrid($c['cols'] ?? 20, false), limiteGrid($c['rows'] ?? null, true)]);
+    responder(['id' => (int)$pdo->lastInsertId(), 'nome' => $nome]);
+}
+
+function acaoCenaEditar(): never
+{
+    exigirMestre();
+    $c = corpo();
+    $id = (int)($c['id'] ?? 0);
+    $pdo = db();
+    if (array_key_exists('nome', $c)) $pdo->prepare('UPDATE cenas SET nome = ? WHERE id = ?')->execute([mb_substr(trim((string)$c['nome']), 0, 120) ?: 'Cenário', $id]);
+    if (array_key_exists('cols', $c)) $pdo->prepare('UPDATE cenas SET colunas = ? WHERE id = ?')->execute([limiteGrid($c['cols'], false), $id]);
+    if (array_key_exists('rows', $c)) $pdo->prepare('UPDATE cenas SET linhas = ? WHERE id = ?')->execute([limiteGrid($c['rows'], true), $id]);
+    responder(['ok' => true]);
+}
+
+function acaoCenaExcluir(): never
+{
+    exigirMestre();
+    db()->prepare('DELETE FROM cenas WHERE id = ?')->execute([(int)(corpo()['id'] ?? 0)]);
     responder(['ok' => true]);
 }

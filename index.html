@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grimório do Mestre</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#192427">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -439,6 +443,46 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 .gal-item img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; background: var(--surface2); display: block; }
 .gal-item figcaption { font-weight: 700; }
 .local-img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 8px; margin: 0 0 .8rem; display: block; }
+/* Ação e tabuleiro */
+.acao-ctl { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; margin: 1rem 0; }
+.acao-ctl label { display: block; color: var(--muted); font-size: .95rem; }
+.acao-ctl .sorteio-in { margin-top: 4px; min-width: 190px; width: auto; }
+.acao-ctl .sorteio-in.num { min-width: 0; width: 84px; }
+.acao-ativo { color: var(--text) !important; font-weight: 700; margin: 0 0 .5rem; }
+.tab-box { overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); margin: 0 0 1rem; }
+.tab { position: relative; line-height: 0; }
+.tab img { width: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+.tab-svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; }
+.tab-svg.editavel { touch-action: none; }
+.tab-linha { fill: none; stroke: #fff; stroke-opacity: .55; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.tab-coord { fill: #fff; stroke: #000; stroke-width: .35px; paint-order: stroke; font-weight: 700; opacity: .85; pointer-events: none; font-family: system-ui, sans-serif; }
+.token { cursor: grab; }
+.token circle { stroke: #fff; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.token text { fill: #fff; font-weight: 700; pointer-events: none; font-family: system-ui, sans-serif; paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 2px; }
+.token.sel circle { stroke: var(--accent); stroke-width: 4; }
+.token.meu circle { stroke: #ffd54a; stroke-width: 4; }
+.token.oculto { opacity: .45; }
+.tab-erro { padding: 24px; line-height: 1.5; color: var(--poder); }
+.tok-lista { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0; margin: 0 0 1rem; }
+.tok-lista small { color: var(--muted); }
+.tok-cor { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; border: 1px solid var(--line); }
+.tok-tabela { display: grid; gap: 8px; margin-bottom: 1rem; }
+.tok-linha { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.tok-linha.armadilha { border-style: dashed; }
+.tok-nome { flex: 1 1 150px; width: auto; min-width: 120px; }
+.tok-efeito { flex: 2 1 260px; width: auto; }
+.tok-linha select.sorteio-in { width: auto; }
+.tok-num { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: .92rem; margin: 0; }
+.tok-num .num { width: 66px; padding: 4px 8px; }
+.tok-desl { font-size: .92rem; color: var(--muted); }
+.tok-desl.excede, .tok-aviso { color: var(--poder); font-weight: 700; }
+.primary-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; display: inline-block; }
+.tok-best { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
+.tok-best select { width: auto; max-width: 100%; }
+.tok-linha.sel { border-color: var(--accent); }
+.tok-linha input[type="color"] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
+.tok-linha .rev-label { margin: 0; }
+.tok-coord { font-weight: 700; }
 @media (max-width: 720px) {
   .topin { flex-wrap: wrap; }
   nav { order: 5; flex-basis: 100%; }
