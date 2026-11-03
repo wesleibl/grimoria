@@ -588,7 +588,15 @@ function api(acao, dados) {
   var op = { credentials: "same-origin", headers: { "X-Grimoria": "1" } };
   if (dados !== undefined) { op.method = "POST"; op.headers["Content-Type"] = "application/json"; op.body = JSON.stringify(dados); }
   return fetch(API + "?a=" + encodeURIComponent(acao), op).then(function (r) {
-    return r.json().catch(function () { return {}; }).then(function (j) {
+    return r.text().then(function (t) {
+      var j = null;
+      try { j = JSON.parse(t); } catch (x) { j = null; }
+      if (j === null) {
+        /* Não veio JSON: mostra o começo da resposta (aviso do PHP, página de erro da hospedagem...). */
+        var e1 = new Error("O servidor respondeu algo inesperado (HTTP " + r.status + "): " + t.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300));
+        e1.status = r.status;
+        throw e1;
+      }
       if (!r.ok) { var e = new Error(j.erro || "Falha na conexão (" + r.status + ")."); e.status = r.status; throw e; }
       return j;
     });
@@ -645,7 +653,7 @@ function enviarConta(form) {
   msg.textContent = "";
   api(modoConta === "registrar" ? "registrar" : "entrar", d).then(function () {
     contaMsg = "";
-    carregar();
+    carregar(true);
   }, function (e) {
     bt.disabled = false;
     msg.textContent = e.message;
@@ -668,11 +676,15 @@ function carregarScript(src) {
   });
 }
 
-function carregar() {
+function carregar(aposLogin) {
   app.innerHTML = '<p class="mdica">Carregando…</p>';
   api("inicio").then(function (d) {
     USUARIO = d.usuario;
-    if (!USUARIO) { renderizar(); return; }
+    if (!USUARIO) {
+      if (aposLogin) contaMsg = "A conta foi aceita, mas o servidor não manteve a sessão. Provável causa: a pasta de sessões do PHP na hospedagem não é gravável.";
+      renderizar();
+      return;
+    }
     IMAGENS = d.imagens || [];
     if (USUARIO.papel === "mestre") {
       EST = d.estado || {};

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+ini_set('display_errors', '0');
 require __DIR__ . '/privado/lib.php';
 
 iniciarSessao();
@@ -32,9 +33,11 @@ try {
         'POST img_excluir' => acaoImgExcluir(),
         default => erro('Ação desconhecida.', 404),
     };
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('grimoria: ' . $e->getMessage());
-    erro('Erro no banco de dados. Tente de novo em instantes.', 500);
+    /* Com debug=1 no .env, o erro real aparece na tela. Desligue depois de resolver. */
+    $debug = (lerEnv(__DIR__ . '/.env')['debug'] ?? '') === '1';
+    erro($debug ? get_class($e) . ': ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')' : 'Erro no servidor. Tente de novo em instantes.', 500);
 }
 
 /* ============================ CONTA ============================ */
