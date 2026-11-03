@@ -1598,6 +1598,111 @@ function excluirImg(id) {
   });
 }
 
+/* ============================ CONTEÚDO SÓ DO MESTRE ============================ */
+
+function viewNiveisMestre() {
+  var h = "<h1>Níveis e evolução</h1>" +
+    '<p class="lead">Sem pontos de experiência. Todos os personagens sobem de nível juntos, em marcos da história. Assim ninguém fica para trás, e com 8 jogadores você não precisa controlar nada.</p>';
+
+  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "Quando sobem", "Vida máx.", "Mana máx.", "Atributos", "Limite por atributo", "Grimório"], [
+    ["1", "Início (Sessão Zero e Sessão 1)", "20", "10", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
+    ["2", "Fim da Sessão 1", "24", "10", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
+    ["3", "Meio do Arco 1", "28", "12", "+1 ponto", "+4", "Nova habilidade"],
+    ["4", "Fim do Arco 1", "32", "12", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
+    ["5", "Fim do Arco 2", "36", "14", "+1 ponto", "+5", "Despertar do grimório"]
+  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza) e a redução de dano (Poder) sobem junto com os atributos.</p>";
+
+  h += "<h2>O que acontece ao subir de nível</h2>" +
+    panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
+    panel(ic("brilho") + "Aprimorar um feitiço (níveis 2 e 4)",
+      "<p>O jogador escolhe um feitiço do grimório e um aprimoramento:</p>" +
+      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
+      "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. Você aprova cada escolha.</p>") +
+    panel(ic("espada") + "Nova habilidade (nível 3)",
+      "<p>No nível 3, todo grimório ganha uma habilidade nova, já pronta. Ela aparece no card, marcada como Nível 3, e custa 2 ou 3 de mana.</p>" +
+      "<p>Os tanks ganham uma habilidade a cada nível (veja abaixo), então a do nível 3 deles é uma das que já estão na lista.</p>") +
+    panel(ic("estrela") + "Despertar do grimório (nível 5)",
+      "<p>Cada jogador cria com você um feitiço novo, ligado ao tema do grimório dele.</p>" +
+      "<ul><li>Custa 4 de mana e só pode ser usado uma vez por combate.</li><li>Tem um efeito de impacto, na altura de um ultimate.</li><li>Você aprova o efeito para não quebrar o equilíbrio.</li></ul>" +
+      "<p><b>Ideias de exemplo:</b> Chamas: Sol Ardente (os inimigos próximos sofrem 3d6 e ficam em chamas). Luz Curativa: Aurora (cura total de um aliado e remove todos os estados negativos). Gelo: Inverno Absoluto (os inimigos próximos ficam congelados por 1 turno).</p>");
+
+  /* Daqui para baixo: habilidades futuras dos tanks e números dos inimigos, só para o mestre. */
+  if (!souMestre()) return h;
+  var tanks = GRIMORIOS.filter(function (g) { return g.papel === "Tank"; });
+  h += "<h2>Os tanks evoluem de outro jeito</h2>" +
+    '<p>Os tanks já têm habilidades futuras prontas. Cada marco vira um nível: o Marco 1 chega no nível 2, o Marco 2 no nível 3, e assim por diante. Eles não aprimoram feitiços. No nível 5, os tanks que ainda não receberam uma habilidade futura (Aço e Névoa) fazem o Despertar.</p>' +
+    table(["Grimório", "Nível 2", "Nível 3", "Nível 4", "Nível 5"], tanks.map(function (g) {
+      var f = g.futuras || [];
+      return [g.nome, f[0] ? f[0].nome : "-", f[1] ? f[1].nome : "-", f[2] ? f[2].nome : "-", f[3] ? f[3].nome : "Despertar do grimório"];
+    }));
+
+  h += "<h2>Inimigos por nível</h2>" +
+    "<p>Uma referência para criar inimigos novos. Os valores são para 4 jogadores (aplique as regras do Bestiário para 8).</p>" +
+    table(["Nível", "Ataque", "Defesa", "Dano típico", "Capanga (Vida)", "Normal (Vida)", "Chefe (Vida)"], [
+      ["1", "+2 a +3", "10 a 13", "1d6 + 1 a 1d8 + 1", "6 a 10", "16 a 18", "-"],
+      ["2", "+3 a +4", "11 a 14", "1d6 + 2 a 1d8 + 2", "12 a 14", "22 a 26", "50 a 60"],
+      ["3", "+4 a +5", "12 a 15", "1d8 + 2 a 1d10 + 2", "8 a 16", "28 a 40", "65 a 80"],
+      ["4", "+5 a +6", "13 a 15", "1d8 + 3 a 2d6 + 2", "14 a 18", "28 a 45", "80 a 90"],
+      ["5", "+6 a +8", "14 a 17", "2d6 + 3 a 3d6 + 3", "20", "40", "110 a 150"]
+    ]);
+
+  h += "<h2>Dicas</h2>" + panel("Para a mesa",
+    "<ul><li>Suba todos juntos, mesmo se alguém faltar a uma sessão.</li><li>Anuncie o marco no fim da sessão, para os jogadores escolherem o aprimoramento em casa.</li><li>Se o grupo estiver forte demais, não suba o nível: aumente a dificuldade dos desafios.</li><li>Os números desta tabela são um ponto de partida. Ajuste depois da Sessão 1.</li></ul>");
+  return h;
+}
+
+
+function regrasExtraMestre() {
+  var h = "";
+  h += "<h2>Os tanks</h2>" + '<p class="lead">Todo grimório tem pelo menos um ataque simples de 1 de mana. Os de tank têm também formas de proteger o grupo.</p>' +
+    '<div class="cols">' +
+    panel(ic("escudo") + "Muralha (Poder)", "<p>Reduz dano, absorve golpes e protege os aliados. Usa <b>Provocar</b>, <b>Interpor-se</b> e <b>Absorver</b>.</p>") +
+    panel(ic("vento") + "Esquiva (Destreza)", "<p>Faz o inimigo errar e desvia ataques. Usa <b>Aparar</b>, <b>Refletir</b> e <b>Isca</b>.</p>") + "</div>";
+
+  h += panel(ic("reacao") + "Aparar (ataques físicos)", "<ul>" +
+    "<li><b>Quando:</b> um inimigo acerta um aliado perto de você, antes do dano.</li>" +
+    "<li><b>Teste:</b> d20 + Destreza contra o total do ataque do inimigo. Empate favorece o tank.</li>" +
+    "<li><b>Sucesso:</b> o ataque é cancelado. <b>Falha:</b> acerta o aliado normalmente.</li>" +
+    "<li><b>Custo:</b> perde a ação do próximo turno (ainda pode se mover), mesmo se der certo. Sem custo de mana.</li>" +
+    "<li>Só dá para tentar uma vez por rodada.</li></ul>");
+
+  h += panel(ic("reacao") + "Refletir e Absorver (ataques mágicos)",
+    "<p>Contra feitiços, cada tank tem uma reação, com punição alta se falhar.</p>" +
+    table(["Custo do feitiço inimigo", "Dificuldade"], [["1 mana", "12"], ["2 mana", "15"], ["4 mana (ultimate)", "18"]]) +
+    "<ul><li><b>Refletir (Destreza):</b> d20 + Destreza. Sucesso: o feitiço volta contra quem lançou.</li>" +
+    "<li><b>Absorver (Poder):</b> d20 + Poder. Sucesso: o feitiço é anulado e o tank ganha Cargas iguais ao custo de mana dele (máximo 4). Cada Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada.</li>" +
+    "<li><b>Falha nos dois:</b> o feitiço atinge o alvo normalmente, o tank perde o próximo turno inteiro e perde 2 de mana.</li>" +
+    "<li>Se o feitiço tiver rolagem de ataque, pode comparar com o total do ataque em vez da dificuldade fixa.</li>" +
+    "<li>Contra feitiços em área, só protege o próprio tank.</li></ul>");
+
+  h += "<h2>Combinações de magias</h2>" +
+    '<div class="note"><p><b>Decisão do mestre.</b> As magias podem se misturar, mas só você decide se e quando isso acontece. É uma opção para deixar o combate mais criativo, não uma regra fixa.</p></div>' +
+    panel(ic("etiqueta") + "Estados", "<p>Muitos feitiços deixam um estado no alvo, mostrado como etiqueta no card. Os estados são o ponto de partida das combinações.</p><p>Estados usados: Molhado, Chocado, Congelado, Lento, Em chamas, Envenenado, Sangrando, Preso, Cego, Atordoado, Silenciado, Enferrujado e Marcado.</p>") +
+    table(["Combinação", "O que o mestre pode permitir"], [
+      ["Molhado + choque", "Inimigos molhados também levam o choque quando outro inimigo próximo é atingido por um feitiço de raio. Exemplo: um inimigo molhado perto de um alvo chocado sofre metade do dano."],
+      ["Molhado + gelo", "O alvo congela com mais facilidade (a dificuldade da resistência sobe em 2)."],
+      ["Em chamas + vento", "O fogo se espalha para os inimigos próximos."],
+      ["Em chamas + água", "A água apaga as chamas e cria vapor: quem estiver perto fica com -1 nas rolagens por 1 turno."],
+      ["Envenenado + fogo", "A nuvem de veneno pega fogo e explode em área."],
+      ["Preso + choque ou aço", "O metal conduz: o alvo preso sofre dano extra."],
+      ["Terra + água", "Vira lama: os inimigos na área perdem 2 de deslocamento."]
+    ]);
+
+  if (souMestre()) h += "<h2>Dicas de mestre</h2>" + panel("Para o primeiro mestrado", "<ul>" +
+    "<li>Se uma regra travar o jogo, decida rápido e ajuste depois.</li>" +
+    "<li>Combate com vida baixa (15 a 20) e dano de 3 a 8 dura poucas rodadas.</li>" +
+    "<li>Se ninguém perde vida, suba o dado de dano dos inimigos em um degrau (1d6 vira 1d8).</li>" +
+    "<li>Pergunte sempre “o que você faz?” e descreva o resultado, não só os números.</li>" +
+    "<li>Contra bandidos fracos, aparar quase nunca compensa. Contra chefes, compensa. Deixe o jogador decidir pelo risco.</li><li>Com 8 jogadores, combine um tempo curto por turno (cerca de 30 segundos) e peça que decidam a ação enquanto esperam a vez.</li></ul>");
+  return h;
+}
+
+var GANCHOS_VILA = {"Vale das Colheitas": "As plantações estão sendo atacadas por criaturas de mana.", "Porto Salgado": "Um navio misterioso atracou e ninguém desceu.", "Floresta dos Cedros": "Caçadores estão desaparecendo na mata.", "Pedra Velha": "Uma mina foi lacrada depois de um tremor estranho."};
+function vilaExtraMestre(v) { return "<p><b>Gancho:</b> " + GANCHOS_VILA[v.nome] + "</p>"; }
+function vilaRodapeMestre() {
+  return panel("Para equilibrar", "<p>Hoje são +1 em Poder, +1 em Destreza e +2 em Inteligência (Porto Salgado e Pedra Velha). Se quiser, troque um dos bônus de Inteligência por Poder ou Destreza.</p>");
+}
+
 /* ============================ LIGAÇÃO COM O APP ============================ */
 
 VIEWFN.inicio = viewInicio;
@@ -1609,6 +1714,10 @@ VIEWFN["sessao-zero"] = viewSessaoZero;
 VIEWFN.mestre = viewMestre;
 
 MESTRE = {
+  niveis: viewNiveisMestre,
+  regrasExtra: regrasExtraMestre,
+  vilaExtra: vilaExtraMestre,
+  vilaRodape: vilaRodapeMestre,
   views: [
     ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"],
     ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
