@@ -132,7 +132,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 - A Destreza dos jogadores vem do perfil, na aba **Jogadores** (campo Destreza). Para aliados e inimigos, é um campo do próprio token (o padrão é 0, ou seja, 6 casas).
 - Cada token tem um contador **Gasto**: a cada movimento, soma as casas andadas. O mestre vê quantas casas restam e recebe um aviso em vermelho se o movimento passar do deslocamento. O sistema só avisa, não bloqueia: quem decide é o mestre.
 - O botão **Novo turno** zera o gasto de todos. O campo Gasto também pode ser corrigido à mão (por exemplo, para desfazer um movimento).
-- A **diagonal conta como 1 casa**. O custo conta a distância entre a casa de origem e a de destino, não o caminho.
+- **O movimento é só na horizontal e na vertical.** Cada passo reto custa 1 casa, então o custo é a **soma** das casas andadas: 3 para a direita e 2 para cima custam 5. A **diagonal não serve para andar** (ela só vale para alcançar um alvo no combate, o que se resolve na mesa). O custo conta a distância entre a casa de origem e a de destino, sem conferir o caminho entre elas.
 - Armadilhas não têm deslocamento.
 
 **Jogador**
@@ -159,7 +159,7 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 3. O token **desliza** até a casa, com uma animação curta (mais longa quanto maior a distância, no máximo 0,9 s). Os outros jogadores veem o mesmo deslize quando a tela deles atualiza. Quem prefere menos movimento no sistema (configuração do aparelho) vê o token pular direto.
 4. A mensagem acima do mapa mostra a origem, o destino e quanto resta. Se o servidor recusar (casa ocupada, não é a vez, falta deslocamento), o token **volta** para onde estava e o motivo aparece em vermelho.
 
-**O que é "alcançável":** a distância até o que resta de deslocamento (a diagonal conta 1 casa), sem as casas ocupadas por outros tokens visíveis. Armadilhas e tokens derrotados não bloqueiam. Em **combate**, o alcance é o que resta no turno e diminui a cada movimento. **Fora de combate**, o alcance é o deslocamento do personagem a cada movimento, e dá para se mover quantas vezes quiser.
+**O que é "alcançável":** a distância em linha reta (horizontal + vertical, sem diagonal) até o que resta de deslocamento, o que forma um **losango** de casas azuis em volta do token, sem as casas ocupadas por outros tokens visíveis. Armadilhas e tokens derrotados não bloqueiam. Em **combate**, o alcance é o que resta no turno e diminui a cada movimento. **Fora de combate**, o alcance é o deslocamento do personagem a cada movimento, e dá para se mover quantas vezes quiser.
 
 ## 4.2 Combate por turnos
 
@@ -172,6 +172,14 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 7. **Derrotado:** o token fica cinza e sai dos turnos. Zerar a vida pelos botões −5 −1 +1 +5 marca como derrotado.
 8. Inimigos ocultos agem normalmente, mas para os jogadores aparece "algo se move nas sombras".
 9. O jogador vê a ordem, de quem é o turno e um registro dos acontecimentos públicos. A tela dele se atualiza a cada 2 s em combate (4 s fora dele).
+
+**Resetar ação (mestre):** o botão **Resetar ação** (vermelho, na aba Ação) recomeça a ação do mapa atual, depois de um **popup de confirmação** que lista o que acontece:
+
+- remove **todos os tokens** do mapa (jogadores, aliados, inimigos e armadilhas, inclusive as já acionadas);
+- **encerra o combate** e apaga o registro de acontecimentos;
+- **desliga a imersão** (os jogadores deixam de ver a cena enquanto você monta a próxima).
+
+**Não** mexe no cenário, nos mapas de grid, nem nos tokens guardados em outros mapas. Cancelar o popup não muda nada. Não dá para desfazer.
 
 **Painel do token (mestre):** clicar num token, no mapa ou na lista, abre o painel com nome, cor, tipo, Destreza, ajuste, gasto, vida (atual e máxima), derrotado, oculto, duplicar e remover.
 

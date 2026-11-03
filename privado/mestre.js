@@ -2376,13 +2376,14 @@ function viewAcaoMestre() {
     return h + '<p class="mdica">' + (!grids.length ? "Este cenário ainda não tem mapa de grid, então só dá para mostrar a foto. Para combater, adicione uma imagem de grid na aba Cenários." : (!g ? "Escolha um mapa de grid acima para usar o grid e os tokens." : "Os jogadores veem só a foto, sem grid nem tokens. Mude “Como mostrar” para “Grid e tokens” quando for combater.")) + "</p>" +
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
-  h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m e a diagonal conta como 1 casa.</p>';
+  h += '<p class="mdica" id="tokInfo" role="status">Arraste um token para movê-lo, ou toque nele e depois na casa de destino. Cada casa tem 1,5 m. O movimento é só na horizontal e na vertical: o custo é a soma das casas andadas, sem diagonal.</p>';
   h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   h += '<div class="controls">' +
     '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
     '<button type="button" id="tokArmadilha">' + ic("alerta") + "Adicionar armadilha</button>" +
-    '<button type="button" id="tokTurno">Zerar movimentos</button></div>';
+    '<button type="button" id="tokTurno">Zerar movimentos</button>' +
+    '<button type="button" class="perigo" id="acaoReset">Resetar ação</button></div>';
   h += '<div class="controls"><label class="tok-best">Inimigo do Bestiário <select class="sorteio-in" id="tokBestSel">' + FASES.map(function (f) {
     var lista = INIMIGOS.map(function (m, i) { return [m, i]; }).filter(function (p) { return p[0].fase === f; });
     return lista.length ? '<optgroup label="' + esc(f) + '">' + lista.map(function (p) {
@@ -2420,7 +2421,7 @@ function infoTok(txt, aviso) {
 function emTurnos() { return !!(CAMPO.combate && CAMPO.combate.fase === "turnos"); }
 
 function textoDistancia(t, ox, oy, c) {
-  var casas = Math.max(Math.abs(c.x - ox), Math.abs(c.y - oy));
+  var casas = distMov(c.x, c.y, ox, oy);
   var s = (t.nome || "Token") + ": " + coordNome(ox, oy) + " → " + coordNome(c.x, c.y) + ", " + casas + (casas === 1 ? " casa" : " casas") + " (" + String(casas * 1.5).replace(".", ",") + " m).";
   var aviso = false;
   if (movel(t) && emTurnos()) {
@@ -2435,8 +2436,10 @@ function armadilhasEm(c, exceto) {
   return acaoEst().tokens.filter(function (t) { return t.tipo === "armadilha" && t.id !== exceto.id && (t.x | 0) === c.x && (t.y | 0) === c.y; });
 }
 
-function moverTok(t, c, ox, oy) {
+function moverTok(t, c, ox, oy, desdeArrasto) {
   var r = textoDistancia(t, ox, oy, c), txt = r[0], aviso = r[1];
+  /* Ao arrastar, o token já está na casa onde foi solto: o redesenho não deve levá-lo de volta à origem para deslizar. */
+  if (desdeArrasto && tabGeo) posTokAnt[t.id] = { px: (c.x + 0.5) * tabGeo.cw, py: (c.y + 0.5) * tabGeo.ch };
   if (movel(t) && emTurnos()) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
   t.x = c.x;
   t.y = c.y;
@@ -2489,7 +2492,7 @@ function ligarArraste() {
     arr = null;
     arrastando = false;
     svg.classList.remove("drag");
-    if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) moverTok(a2.t, a2.c, a2.ox, a2.oy);
+    if (a2.c && (a2.c.x !== a2.ox || a2.c.y !== a2.oy)) moverTok(a2.t, a2.c, a2.ox, a2.oy, true);
   };
 }
 
@@ -2564,10 +2567,33 @@ function inputAcao(el) {
   return false;
 }
 
+/* Recomeça a ação do mapa atual. Só mexe na ação: o cenário, os mapas de grid e os tokens guardados de outros mapas ficam como estão. */
+function resetarAcao() {
+  var a = acaoEst(), n = a.tokens.length;
+  var ok = window.confirm("Resetar a ação deste mapa?\n\n" +
+    "• Remove todos os tokens (" + n + (n === 1 ? " token" : " tokens") + ": jogadores, aliados, inimigos e armadilhas)\n" +
+    "• Encerra o combate e apaga o registro de acontecimentos\n" +
+    "• Desliga a imersão (os jogadores deixam de ver a cena)\n\n" +
+    "O cenário, os mapas de grid e os tokens de outros mapas não são afetados.\nNão dá para desfazer.");
+  if (!ok) return;
+  var ids = a.tokens.map(function (x) { return x.id; });
+  a.tokens = [];
+  tokSel = null;
+  a.ativo = false;
+  if (EST.cena_tokens && valorCena(a)) { delete EST.cena_tokens[valorCena(a)]; salvarEstado("cena_tokens"); }
+  salvarAcao();
+  campoOp("resetar", { remover: ids }).then(function () {
+    renderAcaoUI();
+    infoTok("Ação resetada: sem tokens, sem combate e com a imersão desligada.");
+  });
+  renderizar();
+}
+
 function clickAcao(b) {
   var a = acaoEst(), t;
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
   if (b.id === "imersao") { a.ativo = !a.ativo; salvarAcao(); renderizar(); return true; }
+  if (b.id === "acaoReset") { resetarAcao(); return true; }
   if (b.dataset.tsel) { selecionarTok(b.dataset.tsel); desenharAcaoMestre(); return true; }
   if (b.dataset.cenir) { cenSel = parseInt(b.dataset.cenir, 10); location.hash = "#cenarios"; return true; }
   /* --- tokens --- */

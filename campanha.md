@@ -32,7 +32,7 @@
 - **Mana:** 10, mais 1 a cada 2 pontos de Inteligência
 - **Defesa:** 10 + Destreza
 - **Redução de dano:** igual ao Poder (dano mínimo sempre 1)
-- **Deslocamento:** 6 casas por turno, mais 1 a cada 2 pontos de Destreza (regra definida na aba Ação do site)
+- **Deslocamento:** 6 casas por turno, mais 1 a cada 2 pontos de Destreza (regra definida na aba Ação do site). O movimento é só na horizontal e na vertical, e cada passo reto custa 1 casa; a diagonal não serve para andar, só para alcançar um alvo no combate.
 
 ### Rolagens
 

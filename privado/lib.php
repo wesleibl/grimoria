@@ -484,6 +484,13 @@ function campoOpMestre(string $op, array $c): array
             case 'limpar_log':
                 $campo['eventos'] = [];
                 break;
+            case 'resetar':
+                /* Zera a ação do mapa atual: tira os tokens informados (e as armadilhas acionadas deles), encerra o combate
+                   e apaga o registro. Os tokens de outros mapas não são tocados. */
+                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id]);
+                $campo['combate'] = null;
+                $campo['eventos'] = [];
+                break;
             default:
                 erro('Operação desconhecida.', 404);
         }
@@ -528,7 +535,8 @@ function campoOpJogador(array $u, string $op, array $c): never
                 $x = (int)($c['x'] ?? -1);
                 $y = (int)($c['y'] ?? -1);
                 if ($x < 0 || $y < 0 || $x >= (int)($a['cols'] ?? 200) || $y >= (int)($a['rows'] ?? 200)) erro('Esse lugar fica fora do mapa.');
-                $casas = max(abs($x - $pos['x']), abs($y - $pos['y']));
+                /* Só horizontal e vertical: o custo é a soma das diferenças. A diagonal não serve para andar. */
+                $casas = abs($x - $pos['x']) + abs($y - $pos['y']);
                 if ($casas === 0) return;
                 if ($fase === 'turnos') {
                     if ($atual !== $meu) erro('Não é a sua vez.', 409);

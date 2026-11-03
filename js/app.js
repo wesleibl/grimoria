@@ -164,7 +164,7 @@ function viewRegras() {
 
   h += "<h2>Deslocamento</h2>" + panel("Com mapa e sem mapa",
     "<ul><li><b>Com mapa:</b> 6 casas por turno (1 casa = 1,5 m). Perder 2 de deslocamento deixa o alvo com 4. Dobrar deixa com 12.</li>" +
-    "<li><b>Teatro da mente:</b> use faixas de distância (corpo a corpo, perto, longe). “Perder deslocamento” vira gastar um movimento a mais para se aproximar.</li>" +
+    "<li><b>Sem diagonal:</b> o movimento é só na horizontal e na vertical, e cada passo reto custa 1 casa. A diagonal só vale para alcançar um alvo no combate, nunca para andar.</li><li><b>Teatro da mente:</b> use faixas de distância (corpo a corpo, perto, longe). “Perder deslocamento” vira gastar um movimento a mais para se aproximar.</li>" +
     "<li>Com deslocamento 0 o alvo fica imobilizado, mas ainda pode atacar e lançar feitiços.</li></ul>");
 
   h += "<h2>Dano contínuo</h2>" + panel(ic("ampulheta") + "Resistência a cada turno",
@@ -638,7 +638,11 @@ function agendarQuadro(fn) {
   else setTimeout(fn, 20);
 }
 
-/* Casas que o token alcança: distância até o que resta de movimento (a diagonal conta como 1 casa), sem as casas
+/* O movimento é só na horizontal e na vertical: cada passo reto custa 1 casa, então a distância é a SOMA das diferenças
+   (andar 3 para a direita e 2 para cima custa 5). A diagonal não serve para andar. */
+function distMov(x1, y1, x2, y2) { return Math.abs(x1 - x2) + Math.abs(y1 - y2); }
+
+/* Casas que o token alcança: distância até o que resta de movimento (só em linha reta, sem diagonal), sem as casas
    ocupadas. Armadilhas e tokens derrotados não bloqueiam. */
 function celulasAlcance(tokens, t, resta, cols, rows) {
   var out = [], ocup = {};
@@ -646,7 +650,8 @@ function celulasAlcance(tokens, t, resta, cols, rows) {
   for (var y = Math.max(0, t.y - resta); y <= Math.min(rows - 1, t.y + resta); y++) {
     for (var x = Math.max(0, t.x - resta); x <= Math.min(cols - 1, t.x + resta); x++) {
       if ((x === t.x && y === t.y) || ocup[x + "," + y]) continue;
-      out.push({ x: x, y: y, d: Math.max(Math.abs(x - t.x), Math.abs(y - t.y)) });
+      var d = distMov(x, y, t.x, t.y);
+      if (d <= resta) out.push({ x: x, y: y, d: d });
     }
   }
   return out;
@@ -678,14 +683,14 @@ function desenharTabuleiro(cfg) {
   var img = document.getElementById("tabImg"), svg = document.getElementById("tabSvg");
   if (!img || !svg) return null;
   if (!img.complete || !img.naturalWidth) {
-    img.onload = function () { desenharTabuleiro(cfg); if (cfg.depois) cfg.depois(); };
+    img.onload = function () { desenharTabuleiro(cfg); };
     img.onerror = function () { svg.outerHTML = '<p class="tab-erro">Não consegui carregar a imagem deste mapa.</p>'; };
     return null;
   }
   /* Em plena animação, o redesenho espera ela terminar (senão o token "pularia" para o fim). */
   if (Date.now() < tabAnimFim && tabGeo) {
     clearTimeout(tabAdiado);
-    tabAdiado = setTimeout(function () { desenharTabuleiro(cfg); if (cfg.depois) cfg.depois(); }, tabAnimFim - Date.now() + 30);
+    tabAdiado = setTimeout(function () { desenharTabuleiro(cfg); }, tabAnimFim - Date.now() + 30);
     return tabGeo;
   }
   var W = img.naturalWidth, H = img.naturalHeight;
@@ -747,6 +752,9 @@ function desenharTabuleiro(cfg) {
     });
   }
   tabGeo = { W: W, H: H, cols: cols, rows: rows, cw: cw, ch: ch };
+  /* Roda a cada desenho, não só no primeiro: com a imagem já no cache o desenho é imediato, e é aqui que os
+     controles (arrastar, clicar nas casas) são religados. */
+  if (cfg.depois) cfg.depois();
   return tabGeo;
 }
 
@@ -833,7 +841,7 @@ function viewAcaoJogador() {
     return "<h1>" + esc(a.titulo || "Cena atual") + '</h1><figure class="foto-cena"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt="' + esc(a.titulo || "Cenário") + '"></a></figure>' +
       (a.resumo ? '<p class="resumo lead">' + esc(a.resumo) + "</p>" : "");
   }
-  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + (a.resumo ? '<p class="resumo">' + esc(a.resumo) + "</p>" : "") + '<p class="mdica">Cada casa tem 1,5 m e a diagonal conta como 1 casa. O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
+  return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + (a.resumo ? '<p class="resumo">' + esc(a.resumo) + "</p>" : "") + '<p class="mdica">Cada casa tem 1,5 m. O movimento é só na horizontal e na vertical (sem diagonal). O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
     '<p id="acaoMsg" role="status" class="mdica' + (acaoMsgErro ? " tok-aviso" : "") + '">' + esc(acaoMsg) + "</p>" +
     '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
     listaTokensHTML(a.tokens || [], a.eu) + '<div id="acaoLog">' + acaoLogHTML() + "</div>";
@@ -858,7 +866,6 @@ function desenharAcaoJogador() {
   var cb = acaoPub.combate;
   if (selJog && !podeMover()) selJog = false;
   desenharTabuleiro({ cols: acaoPub.cols, rows: acaoPub.rows, tokens: acaoPub.tokens, meu: acaoPub.eu, atual: cb ? cb.atual : null, sel: selJog ? acaoPub.eu : null, alcance: alcanceJogador, depois: ligarCliqueJog });
-  ligarCliqueJog();
 }
 
 /* Mover = clicar no próprio token (aparecem as casas azuis) e depois clicar numa casa azul. Não precisa arrastar. */
@@ -886,7 +893,7 @@ function ligarCliqueJog() {
 function moverJogadorPara(x, y) {
   var t = meuTok();
   if (!t) return;
-  var casas = Math.max(Math.abs(x - t.x), Math.abs(y - t.y)), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
+  var casas = distMov(x, y, t.x, t.y), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
   var antes = { x: t.x, y: t.y, gasto: t.gasto };
   t.x = x; t.y = y;
   if (turnos) t.gasto = (t.gasto || 0) + casas;
