@@ -120,7 +120,15 @@ function iniciarSessao(): void
     session_name('grimoria');
     session_set_cookie_params(['lifetime' => 60 * 60 * 24 * 30, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => $https]);
     ini_set('session.gc_maxlifetime', (string)(60 * 60 * 24 * 30));
-    session_start();
+    /* Se a pasta de sessões padrão não for gravável (comum em hospedagem compartilhada), usa uma pasta própria fora do alcance público. */
+    $padrao = session_save_path() ?: sys_get_temp_dir();
+    if (!is_writable($padrao)) {
+        foreach ([PRIVADO . '/sessoes', sys_get_temp_dir() . '/grimoria_sessoes'] as $dir) {
+            if (!is_dir($dir)) @mkdir($dir, 0700, true);
+            if (is_dir($dir) && is_writable($dir)) { session_save_path($dir); break; }
+        }
+    }
+    if (!session_start()) erro('Não foi possível iniciar a sessão no servidor.', 500);
 }
 
 /* Lê a conta do banco a cada requisição, para a troca de papel feita no banco valer na hora. */
