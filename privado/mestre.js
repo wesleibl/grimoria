@@ -1449,7 +1449,9 @@ function viewJogadores() {
     '<div class="note"><p><b>Tudo fica salvo na sua conta.</b> As anotações, as observações e as imagens vão para o banco de dados. Os jogadores não veem nada desta aba.</p></div>' +
     '<div class="controls"><button type="button" class="primary" id="novoJog">Adicionar jogador</button>' +
     '<button type="button" id="importarJog">Importar do sorteio</button>' +
-    '<button type="button" id="copiarJogs"' + (jogs.length ? "" : " disabled") + ">Copiar anotações</button></div>" +
+    '<button type="button" id="copiarJogs"' + (jogs.length ? "" : " disabled") + ">Copiar anotações</button>" +
+    '<button type="button" id="expPerfis"' + (jogs.length ? "" : " disabled") + ' title="Descrição, sonho, medo e moralidade de todos, num texto só">Copiar perfis</button>' +
+    '<button type="button" id="expPerfisTxt"' + (jogs.length ? "" : " disabled") + ">Baixar perfis (.txt)</button></div>" +
     '<p id="jogMsg" role="status" class="mdica">' + esc(jogMsg) + "</p>";
   if (!jogs.length) {
     h += '<div class="empty">Nenhum jogador ainda. Adicione um por um, ou importe os nomes e vilarejos do sorteio.</div>';
@@ -1468,6 +1470,7 @@ function viewJogadores() {
 
 function viewJogador(j) {
   var h = '<div class="cer-topo"><button type="button" id="voltarJog">Voltar à lista</button>' +
+    '<button type="button" id="expPerfil" title="Descrição, sonho, medo e moralidade, num texto só">Copiar perfil</button><button type="button" id="expPerfilTxt">Baixar perfil (.txt)</button>' +
     '<button type="button" id="excluirJog">' + (confirmarExcluirJog ? "Clique de novo para excluir" : "Excluir jogador") + "</button></div>";
   h += "<h1>" + esc(j.personagem || j.nome || "Novo jogador") + "</h1>";
   h += '<p id="jogMsg" role="status" class="mdica">' + esc(jogMsg) + "</p>";
@@ -1480,7 +1483,7 @@ function viewJogador(j) {
     '<label>Nome do personagem<input class="sorteio-in" type="text" maxlength="60" data-jf="personagem" value="' + esc(j.personagem) + '"></label>' +
     '<label>Vilarejo<select class="sorteio-in" data-jf="vila"><option value="">Sem vilarejo</option>' + opcoes(VILAREJOS.map(function (v) { return v.nome; }), j.vila, false) + "</select></label>" +
     '<label>Altura<input class="sorteio-in" type="text" maxlength="20" placeholder="ex.: 1,72 m" data-jf="altura" value="' + esc(j.altura || "") + '"></label>' +
-    fichaJog(j) +
+    fichaJog(j) + questionarioJog(j) +
     '<label>Descrição<textarea class="sorteio-in" rows="4" data-jf="descricao">' + esc(j.descricao) + "</textarea></label>" +
     '<label>Sonho ou objetivo<textarea class="sorteio-in" rows="3" data-jf="sonho">' + esc(j.sonho) + "</textarea></label>" +
     '<label>Medo ou fraqueza<textarea class="sorteio-in" rows="3" data-jf="medo">' + esc(j.medo) + "</textarea></label>" +
@@ -1540,6 +1543,42 @@ function vincularConta(el) {
   /* Grava o perfil antes, para o vínculo achar o jogador no banco. */
   var antes = salvarJog(j, true, []) || Promise.resolve(true);
   antes.then(function (r) { if (r) gravar("jogador_vincular", { id: j.id, usuario: uid }); });
+}
+
+/* Texto único de cada personagem: vilarejo, descrição, sonho, medo e moralidade. */
+function textoPerfis(lista) {
+  var out = [];
+  lista.forEach(function (j) {
+    out.push("PERSONAGEM: " + (j.personagem || "Sem nome") + (j.nome ? " (jogador: " + j.nome + ")" : ""));
+    out.push("Vilarejo: " + (j.vila || "(não definido)"));
+    out.push("Descrição: " + (j.descricao || "(não preenchida)"));
+    out.push("Sonho ou objetivo: " + (j.sonho || "(não preenchido)"));
+    out.push("Medo ou fraqueza: " + (j.medo || "(não preenchido)"));
+    out.push("Moralidade: " + (j.etica && j.moral ? moralNome(j.etica, j.moral) : "(não definida)"));
+    out.push("");
+  });
+  return out.join("\n").replace(/\s+$/, "") + "\n";
+}
+function exportarPerfis(b) {
+  var um = b.id === "expPerfil" || b.id === "expPerfilTxt", baixar = /Txt$/.test(b.id);
+  var j = um && jogSel ? achaJog(jogSel) : null;
+  var lista = um ? (j ? [j] : []) : jogs;
+  var msg = document.getElementById("jogMsg");
+  if (!lista.length) { if (msg) msg.textContent = "Não há perfil para exportar."; return; }
+  var texto = textoPerfis(lista);
+  if (baixar) {
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([texto], { type: "text/plain;charset=utf-8" }));
+      a.download = um ? "perfil-" + String(j.personagem || "personagem").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".txt" : "perfis-dos-jogadores.txt";
+      document.body.appendChild(a); a.click(); a.remove();
+      if (msg) msg.textContent = "Arquivo gerado.";
+    } catch (e) { if (msg) msg.textContent = "Não consegui gerar o arquivo. Use o botão de copiar."; }
+    return;
+  }
+  var ok = function () { if (msg) msg.textContent = (um ? "Perfil" : lista.length + " perfis") + " copiado" + (um ? "" : "s") + "."; };
+  var falha = function () { if (msg) msg.textContent = "Não consegui copiar sozinho. Tente o botão de baixar o arquivo."; };
+  try { navigator.clipboard.writeText(texto).then(ok, falha); } catch (e) { falha(); }
 }
 
 function textoJogs() {
@@ -1603,7 +1642,7 @@ function importarImagem(input) {
 
 function acoesJog(b) {
   var id = b.id;
-  var lista = ["novoJog", "importarJog", "voltarJog", "excluirJog", "addObs", "removerImg", "copiarJogs"];
+  var lista = ["novoJog", "importarJog", "voltarJog", "excluirJog", "addObs", "removerImg", "copiarJogs", "expPerfis", "expPerfisTxt", "expPerfil", "expPerfilTxt"];
   var ehJog = lista.indexOf(id) !== -1 || b.dataset.jid !== undefined || b.dataset.delobs !== undefined || b.dataset.moral !== undefined;
   if (!ehJog) return false;
   garantirJogs();
@@ -1668,6 +1707,7 @@ function acoesJog(b) {
     salvarJog(j, true, ["obs"]); jogMsg = "Observação excluída.";
     renderizar(); return true;
   }
+  if (id === "expPerfis" || id === "expPerfisTxt" || id === "expPerfil" || id === "expPerfilTxt") { exportarPerfis(b); return true; }
   if (id === "copiarJogs") {
     var msg = document.getElementById("jogMsg");
     var texto2 = textoJogs();
@@ -3028,6 +3068,71 @@ var CAMINHO_NOTAS = {
   encantamento: "É o que liga os itens ao sistema: usa o campo de equipado do Inventário e o catálogo de armas. Imbuir combina com os estados (Molhado, Lento, Preso). Mantenha o limite de encantamentos ativos para não virar um buff permanente do grupo."
 };
 
+/* ============================ QUESTIONÁRIO DO GRIMÓRIO (resultado) ============================ */
+
+/* Cada resposta soma pontos aos grimórios do grupo dela (peso da pergunta: 3, 2, 2, 1, 1; máximo 9). Esta tabela SÓ existe aqui, no arquivo do
+   mestre: o jogador responde às perguntas (app.js) e nunca vê o que cada resposta vale nem o resultado. Só entram os grimórios do sorteio. */
+var QUESTIONARIO_PONTOS = [
+  { peso: 3, g: {
+    A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Lâminas", "Raios", "Veneno", "Gelo", "Som", "Ferrugem"],
+    B: ["Fortaleza", "Aço", "Espelho", "Névoa"],
+    C: ["Luz Curativa", "Raízes"],
+    D: ["Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Espíritos", "Terra", "Sorte", "Sombras", "Vento"] } },
+  { peso: 2, g: {
+    A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Fortaleza", "Aço"],
+    B: ["Lâminas", "Raios", "Veneno", "Gelo", "Espelho", "Névoa", "Sombras", "Vento"],
+    C: ["Som", "Ferrugem", "Luz Curativa", "Raízes", "Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Espíritos", "Terra", "Sorte"] } },
+  { peso: 2, g: {
+    A: ["Chamas", "Raios", "Luz Vingativa", "Luz Curativa"],
+    B: ["Reforço", "Sangue", "Aço", "Lâminas", "Fortaleza", "Ferrugem", "Correntes"],
+    C: ["Raízes", "Veneno", "Água", "Vento", "Gelo", "Névoa", "Terra"],
+    D: ["Ilusão", "Sombras", "Tempo", "Gravidade", "Som", "Espíritos", "Espelho", "Sorte"] } },
+  { peso: 1, g: {
+    A: ["Lâminas", "Reforço", "Sangue", "Fortaleza", "Aço", "Espelho"],
+    B: ["Chamas", "Raios", "Gelo", "Veneno", "Som", "Ferrugem", "Luz Vingativa", "Água"],
+    C: ["Sombras", "Vento", "Névoa", "Espelho", "Raios"],
+    D: ["Luz Curativa", "Raízes", "Tempo", "Correntes", "Gravidade", "Terra", "Espíritos", "Ilusão", "Sorte"] } },
+  { peso: 1, g: {
+    A: ["Sangue", "Sorte", "Raios", "Chamas", "Reforço"],
+    B: ["Ferrugem", "Tempo", "Gravidade", "Veneno", "Correntes", "Ilusão", "Terra"],
+    C: ["Luz Curativa", "Raízes", "Fortaleza", "Espelho", "Névoa", "Água", "Espíritos", "Aço"],
+    D: ["Sombras", "Vento", "Gelo", "Lâminas", "Som", "Luz Vingativa", "Sorte"] } }
+];
+/* Devolve os grimórios do sorteio ordenados por pontos (null se o jogador ainda não respondeu). */
+function questionarioResultado(j) {
+  var r = j && j.questionario && j.questionario.r;
+  if (!r || r.length !== QUESTIONARIO_PONTOS.length) return null;
+  var lista = GRIMORIOS.filter(function (g) { return !g.reservado; }).map(function (g) { return { nome: grimCurto(g.nome), grim: g.nome, pontos: 0 }; });
+  r.forEach(function (letra, i) {
+    var grupo = QUESTIONARIO_PONTOS[i].g[letra] || [];
+    lista.forEach(function (x) { if (grupo.indexOf(x.nome) !== -1) x.pontos += QUESTIONARIO_PONTOS[i].peso; });
+  });
+  return lista.sort(function (a, b) { return b.pontos - a.pontos || a.nome.localeCompare(b.nome, "pt"); });
+}
+function questionarioJog(j) {
+  var res = questionarioResultado(j);
+  var h = '<fieldset class="pj-acesso"><legend>Questionário do grimório</legend>';
+  if (!res) return h + '<p class="mdica">O jogador ainda não respondeu. Ele vê as 5 perguntas no Perfil, e só você vê o resultado.</p></fieldset>';
+  var topo = res[0].pontos, empatados = res.filter(function (x) { return x.pontos === topo; });
+  h += '<p class="mdica">Respostas: ' + j.questionario.r.map(function (l, i) { return (i + 1) + l; }).join(" · ") + " (máximo 9 pontos)." +
+    (empatados.length > 1 ? " <b>Empate no topo entre " + empatados.length + " grimórios:</b> o jogador escolhe, ou você sorteia." : "") + "</p>";
+  h += '<div class="scroll"><table><thead><tr><th>Grimório</th><th>Pontos</th><th></th></tr></thead><tbody>' + res.slice(0, Math.max(6, empatados.length)).map(function (x) {
+    var dono = (jogs || []).filter(function (q) { return q.grim === x.grim && q.id !== j.id; })[0];
+    return "<tr><td><b>" + esc(x.nome) + "</b>" + (x.grim === j.grim ? " (já é o dele)" : "") + (dono ? ' <small class="pena-txt">já está com ' + esc(dono.personagem || dono.nome || "outro jogador") + "</small>" : "") + "</td><td>" + x.pontos + '</td><td><button type="button" data-qgrim="' + esc(x.grim) + '"' + (x.grim === j.grim ? " disabled" : "") + ">Dar este grimório</button></td></tr>";
+  }).join("") + "</tbody></table></div>" +
+    '<p><button type="button" data-qreset="1">Apagar as respostas (o jogador responde de novo)</button></p>';
+  return h + "</fieldset>";
+}
+function acoesQuestionario(b) {
+  var d = b.dataset;
+  if (d.qgrim === undefined && d.qreset === undefined) return false;
+  var j = achaJog(jogSel);
+  if (!j) return true;
+  if (d.qgrim) { j.grim = d.qgrim; salvarJog(j, true, ["grim"]); renderizar(); return true; }
+  if (window.confirm("Apagar as respostas? O jogador poderá responder de novo.")) { j.questionario = null; salvarJog(j, true, ["questionario"]); renderizar(); }
+  return true;
+}
+
 /* ============================ ITENS ============================ */
 
 /* Catálogo do mestre (EST.itens). Os itens de Black Clover trazem uma descrição secreta e os grimórios com que combinam; isso só
@@ -3427,6 +3532,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (acoesQuestionario(b)) return true;
     if (acoesDrops(b)) return true;
     if (acoesItens(b)) return true;
     if (clickCenarios(b)) return true;

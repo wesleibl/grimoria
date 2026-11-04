@@ -571,6 +571,7 @@ function viewInicioJogador() {
   if (!j) {
     return h + criarPersonagemHTML() + atalhosJogador();
   }
+  if (!j.questionarioFeito) h += '<div class="note"><p><b>Falta responder o questionário do grimório.</b> São 5 perguntas rápidas, e o mestre usa as respostas na cerimônia. <a href="#perfil">Responder agora</a></p></div>';
   if (j.kit) h += '<div class="note"><p><b>Falta escolher o seu kit inicial.</b> Você monta a mochila do seu personagem uma única vez. <a href="#inventario">Escolher agora</a></p></div>';
   var url = j.img ? imgUrl(j.img) : "";
   h += '<div class="pj-form"><div class="pj-lado">' +
@@ -688,6 +689,54 @@ function statusHTML(j) {
     '<button type="button" class="primary" id="perfilSalvarBonus"' + (sujo && !salvandoBonus ? "" : " disabled") + ">" + (salvandoBonus ? "Salvando…" : "Salvar atributos") + "</button></div></section>";
 }
 
+/* ============================ QUESTIONÁRIO DO GRIMÓRIO ============================ */
+
+/* Só as PERGUNTAS ficam aqui. A tabela que liga as respostas aos grimórios está no arquivo do mestre: o jogador nunca a recebe. */
+var QUESTOES = [
+  { p: "Num combate, o que mais importa para você?", o: ["Derrubar os inimigos o mais rápido possível", "Segurar a linha e proteger quem está atrás", "Manter todo mundo de pé", "Decidir o que o inimigo consegue ou não fazer"] },
+  { p: "Diante de um problema, você confia em…", o: ["Força e resistência", "Reflexos e precisão", "Cabeça e conhecimento"] },
+  { p: "Qual cena chama mais a sua atenção?", o: ["Fogueira, trovão e luz do sol", "Uma forja ou um campo de batalha", "Floresta, chuva e mar", "Uma biblioteca à meia-noite"] },
+  { p: "Numa luta, onde você fica?", o: ["Colado no inimigo", "A uma distância segura", "Sempre me movendo", "No meio do grupo, controlando o campo"] },
+  { p: "Qual é o seu jeito de agir?", o: ["Tudo ou nada", "Planejo cada passo", "Cuido dos outros primeiro", "Me adapto na hora"] }
+];
+var qSel = [null, null, null, null, null], qMsg = "", qEnviando = false;
+function qHTML(j) {
+  if (!j || j.questionarioFeito) return "";
+  var h = '<section class="panel questionario" id="qPainel"><h3>' + ic("estrela") + "Questionário do grimório</h3>" +
+    "<p>Antes da cerimônia, responda com sinceridade, sem pensar no que seria mais forte: não existe resposta certa. O mestre usa o que você marcar para escolher o seu grimório. Você responde <b>uma vez</b>.</p>";
+  QUESTOES.forEach(function (q, i) {
+    h += '<fieldset class="pj-acesso"><legend>' + (i + 1) + ". " + esc(q.p) + "</legend><div class=\"q-ops\">";
+    q.o.forEach(function (t, k) {
+      var L = "ABCD".charAt(k), marcado = qSel[i] === L;
+      h += '<label class="q-op' + (marcado ? " sel" : "") + '"><input type="radio" name="q' + i + '" data-q="' + i + '" value="' + L + '"' + (marcado ? " checked" : "") + "><span>" + esc(t) + "</span></label>";
+    });
+    h += "</div></fieldset>";
+  });
+  var prontas = qSel.every(function (x) { return x; });
+  return h + '<p id="qMsg" role="status" class="mdica">' + esc(qMsg) + '</p><p><button type="button" class="primary" id="qEnviar"' + (prontas && !qEnviando ? "" : " disabled") + ">" + (qEnviando ? "Enviando…" : "Enviar respostas") + "</button></p></section>";
+}
+function qAtualizar() { var e = document.getElementById("qPainel"); if (e && PUB.jogador) e.outerHTML = qHTML(PUB.jogador); }
+function qChange(el) {
+  if (!el.dataset || el.dataset.q === undefined || !PUB.jogador || PUB.jogador.questionarioFeito) return false;
+  qSel[parseInt(el.dataset.q, 10)] = el.value;
+  qMsg = "";
+  qAtualizar();
+  return true;
+}
+function qClick(b) {
+  if (b.id !== "qEnviar") return false;
+  var j = PUB.jogador;
+  if (!j || j.questionarioFeito || qEnviando || !qSel.every(function (x) { return x; })) return true;
+  if (!window.confirm("Enviar as respostas? Você só responde uma vez.")) return true;
+  qEnviando = true; qAtualizar();
+  gravar("perfil_questionario", { respostas: qSel.slice() }).then(function (r) {
+    qEnviando = false;
+    if (r) { j.questionarioFeito = true; qMsg = ""; perfilMsg = "Respostas enviadas. O mestre vai usá-las na cerimônia do grimório."; renderizar(); }
+    else { qMsg = "Não foi possível enviar. Veja o aviso no topo e tente de novo."; qAtualizar(); }
+  });
+  return true;
+}
+
 var CAMPOS_PERFIL = [["personagem", "Nome do personagem", 60], ["altura", "Altura", 20], ["descricao", "Descrição", 2000], ["sonho", "Sonho ou objetivo", 2000], ["medo", "Medo ou fraqueza", 2000]];
 
 function viewPerfil() {
@@ -698,7 +747,7 @@ function viewPerfil() {
   rascunhos();
   var url = j.img ? imgUrl(j.img) : "";
   var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. O que você muda só vale depois de apertar o botão <b>Salvar</b> de cada parte (atributos e informações), e o mestre vê tudo.</p>' +
-    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + statusHTML(j) + "<h2>Personagem</h2>";
+    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + qHTML(j) + statusHTML(j) + "<h2>Personagem</h2>";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="perfilImg"><label class="btn" for="perfilImg">' + (url ? "Trocar retrato" : "Escolher retrato") + "</label>" +
@@ -1481,7 +1530,7 @@ function carregar(aposLogin) {
       });
     }
     PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [], vilaBonus: d.vilaBonus || "" };
-    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = ""; kitSel = {}; kitMsg = "";
+    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = ""; kitSel = {}; kitMsg = ""; qSel = [null, null, null, null, null]; qMsg = "";
     renderizar();
   }).catch(function (e) {
     app.innerHTML = '<div class="lock"><h1>Sem conexão</h1><p>' + esc(e.message) + '</p><p><button type="button" class="primary" id="tentarDeNovo">Tentar de novo</button></p></div>';
@@ -1638,7 +1687,7 @@ function invStats(d) {
   s.manaTotal = s.manaBase + s.mana;
   return s;
 }
-function grimCurto(n) { return String(n || "").replace(/^Grimório (de |do |da )?/, ""); }
+function grimCurto(n) { return String(n || "").replace(/^Grimório (de |do |da |das |dos )?/, ""); }
 function invDono() { return MESTRE ? (typeof achaJog === "function" ? achaJog(invJogId) : null) : PUB.jogador; }
 function invLista(d) { return (d && d.inv) || []; }
 function invAchar(id) { var r = null; invLista(invDono()).forEach(function (i) { if (i.id === id) r = i; }); return r; }
@@ -1897,6 +1946,14 @@ function invClick(b) {
     if (!it) return true;
     var q = Math.max(0, Math.min(9999, (parseInt(it.qtd, 10) || 0) + parseInt(d.d, 10)));
     if (q === (parseInt(it.qtd, 10) || 0)) return true;
+    if (q === 0) {
+      /* Acabou: o item sai do inventário (o servidor também remove quando a quantidade chega a 0). */
+      invOp("set", { id: it.id, campos: { qtd: 0 } }).then(function (r) {
+        if (invAplicar(r)) { invMsg = it.nome + ": acabou, saiu do inventário."; renderizar(); }
+        else invMsgSet("Não foi possível atualizar a quantidade. Veja o aviso no topo.");
+      });
+      return true;
+    }
     it.qtd = q;
     var qe = document.getElementById("q-" + d.iqtd);
     if (qe) qe.textContent = q;
@@ -2061,6 +2118,7 @@ window.addEventListener("hashchange", function () { renderizar(); window.scrollT
 /* ============================ EVENTOS ============================ */
 
 app.addEventListener("change", function (e) {
+  if (qChange(e.target)) return;
   if (invChange(e.target)) return;
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
@@ -2083,6 +2141,7 @@ app.addEventListener("click", function (e) {
   if (mk && mk.dataset && mk.dataset.id) { selecionarLocal(mk.dataset.id); return; }
   var b = e.target.closest("button");
   if (!b) return;
+  if (qClick(b)) return;
   if (invClick(b)) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }

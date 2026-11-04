@@ -405,6 +405,8 @@ function listarCenasEnviadas(): array
    grimório e vilarejo continuam nas mãos do mestre. */
 const CAMPOS_PERFIL = ['personagem' => 60, 'altura' => 20, 'descricao' => 2000, 'sonho' => 2000, 'medo' => 2000];
 const ATRIBUTOS = ['poder', 'destreza', 'inteligencia'];
+/* Questionário do grimório: quantas alternativas (A, B, C, D) cada uma das 5 perguntas tem. O servidor só guarda as respostas; a tabela de pontos fica no arquivo do mestre. */
+const QUESTIONARIO_OPCOES = [4, 3, 4, 4, 4];
 
 /* ============================ INVENTÁRIO ============================ */
 
@@ -447,11 +449,11 @@ function itemAplicar(array $item, array $campos, bool $mestre): array
 /* O jogador recebe o inventário sem os segredos do mestre. */
 function invVisivel(array $inv, bool $mestre): array
 {
+    /* Item com quantidade 0 não aparece (e sai do banco na próxima alteração). */
+    $inv = array_filter($inv, fn($i) => is_array($i) && (int)($i['qtd'] ?? 1) > 0);
     if ($mestre) return array_values($inv);
     $out = [];
-    foreach ($inv as $i) {
-        if (is_array($i)) $out[] = array_diff_key($i, array_flip(CAMPOS_ITEM_MESTRE));
-    }
+    foreach ($inv as $i) $out[] = array_diff_key($i, array_flip(CAMPOS_ITEM_MESTRE));
     return $out;
 }
 
@@ -490,7 +492,8 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             if ($op === 'del') { unset($inv[$k]); break; }
             $novo = itemAplicar($i, (array)($c['campos'] ?? []), $mestre);
             if ($novo['nome'] === '') $novo['nome'] = $i['nome'] ?? 'Item';
-            $inv[$k] = $novo;
+            /* Quantidade 0 = o item acabou: sai do inventário em vez de ficar como "×0". */
+            if ((int)($novo['qtd'] ?? 1) <= 0) unset($inv[$k]); else $inv[$k] = $novo;
             break;
         }
         if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
@@ -503,7 +506,8 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         erro('Operação inválida.');
     }
 
-    $dados['inv'] = array_values($inv);
+    /* Também limpa itens que ficaram com quantidade 0 de antes. */
+    $dados['inv'] = array_values(array_filter($inv, fn($i) => (int)($i['qtd'] ?? 1) > 0));
     $dados['moedas'] = $moedas;
     $json = json_encode((object)$dados, JSON_UNESCAPED_UNICODE);
     if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }

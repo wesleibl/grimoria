@@ -54,6 +54,7 @@ try {
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
         'POST inv_op' => acaoInvOp(),
         'POST perfil_kit' => acaoPerfilKit(),
+        'POST perfil_questionario' => acaoPerfilQuestionario(),
         default => erro('Ação desconhecida.', 404),
     };
 } catch (Throwable $e) {
@@ -159,7 +160,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -402,6 +403,24 @@ function acaoInvOp(): never
     $mestre = $u['papel'] === 'mestre';
     $id = $mestre ? idValido($c['jogador'] ?? '') : jogadorDaConta()['id'];
     responder(inventarioOp($id, (string)($c['op'] ?? ''), $c, $mestre));
+}
+
+/* O jogador responde uma vez. Guarda só as letras das respostas: ele nunca recebe a tabela de pontos nem o resultado. */
+function acaoPerfilQuestionario(): never
+{
+    $jog = jogadorDaConta();
+    if (!empty($jog['questionario'])) erro('Você já respondeu o questionário. Peça ao mestre para liberar de novo.', 409);
+    $in = array_values((array)(corpo()['respostas'] ?? []));
+    if (count($in) !== count(QUESTIONARIO_OPCOES)) erro('Responda as 5 perguntas.');
+    $r = [];
+    foreach ($in as $i => $v) {
+        $v = strtoupper((string)$v);
+        $pos = strlen($v) === 1 ? strpos('ABCD', $v) : false;
+        if ($pos === false || $pos >= QUESTIONARIO_OPCOES[$i]) erro('Resposta inválida na pergunta ' . ($i + 1) . '.');
+        $r[] = $v;
+    }
+    salvarCamposJogador($jog['id'], ['questionario' => ['r' => $r, 'em' => date('c')]], false);
+    responder(['ok' => true]);
 }
 
 function acaoPerfilKit(): never

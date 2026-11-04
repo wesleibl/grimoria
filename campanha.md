@@ -718,6 +718,23 @@ Nenhum feitiço melhora equipamento (arma ou armadura): o Reforço age só no co
 
 ---
 
+## 3.3 Questionário do grimório (para escolher o grimório de cada jogador)
+
+No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resposta vale nem o resultado. O servidor guarda só as letras. O **mestre** vê o resultado na ficha do jogador (aba Jogadores), com o ranking, os empates e um botão "Dar este grimório". Ele também pode apagar as respostas para o jogador responder de novo. Só entram os 26 grimórios do sorteio.
+
+**Perguntas** (as letras seguem a ordem abaixo):
+1. Num combate, o que mais importa para você? A) Derrubar os inimigos o mais rápido possível. B) Segurar a linha e proteger quem está atrás. C) Manter todo mundo de pé. D) Decidir o que o inimigo consegue ou não fazer.
+2. Diante de um problema, você confia em… A) Força e resistência. B) Reflexos e precisão. C) Cabeça e conhecimento.
+3. Qual cena chama mais a sua atenção? A) Fogueira, trovão e luz do sol. B) Uma forja ou um campo de batalha. C) Floresta, chuva e mar. D) Uma biblioteca à meia-noite.
+4. Numa luta, onde você fica? A) Colado no inimigo. B) A uma distância segura. C) Sempre me movendo. D) No meio do grupo, controlando o campo.
+5. Qual é o seu jeito de agir? A) Tudo ou nada. B) Planejo cada passo. C) Cuido dos outros primeiro. D) Me adapto na hora.
+
+**Pontos:** pergunta 1 vale 3, as perguntas 2 e 3 valem 2, as 4 e 5 valem 1 (máximo 9). Cada resposta soma ao seu grupo de grimórios (a tabela está em `QUESTIONARIO_PONTOS`, no `privado/mestre.js`, e não é enviada ao jogador). Em caso de empate no topo, o jogador escolhe entre os empatados, ou você sorteia.
+
+**Cuidados do grupo:** o sorteio pede um tank, um cura, um suporte e um dano, pelo menos 2 grimórios de cada atributo e nenhum elemento repetido. Se as respostas desequilibrarem o grupo, dê ao jogador outro grimório entre os mais pontuados dele. O botão "Dar este grimório" avisa quando o grimório já está com outro jogador.
+
+---
+
 ## 4. Bestiário
 
 > Gerado a partir da aba **Bestiário** (e dos inimigos secretos da aba Mestre). Números para 4 jogadores. Com 8 jogadores: capangas em dobro; normais e elites com o dobro de Vida; chefes com o dobro de Vida e uma ação menor extra.
