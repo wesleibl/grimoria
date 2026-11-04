@@ -100,10 +100,10 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Água", attr: "inteligencia", papel: "Suporte", sub: "controle e suporte", tier: "",
     spells: [
-      sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d4 e empurra o alvo 1 casa."),
-      sp("Maré Protetora", 2, "médio", "Um aliado ganha 1d6 de vida temporária."),
-      sp("Dilúvio", 4, "ultimate", "Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada).")
-    ], futuras: [], nota: "" },
+      sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d6 e empurra o alvo 1 casa."),
+      sp("Maré Protetora", 2, "médio", "Um aliado ganha 1d6 de vida temporária e remove um estado negativo. Se o aliado já estiver Molhado, ganha +1d4 de vida temporária. Depois, ele fica Molhado.", { aplica: ["Molhado"] }),
+      sp("Dilúvio", 4, "ultimate", "Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada).")
+    ], futuras: [], nota: "Prepara o Molhado para os outros: Raios (o choque se espalha), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. Atenção: a Bolha é controle sem teste de acerto (só o teste de respiração depois), então use com moderação em chefes." },
 
   { nome: "Grimório de Raios", attr: "destreza", papel: "Dano", sub: "dano e velocidade", tier: "",
     spells: [
@@ -194,9 +194,9 @@ var GRIMORIOS = [
   { nome: "Grimório da Luz Vingativa", attr: "poder", papel: "Dano", sub: "dano e retribuição", elem: "Luz", tier: "",
     spells: [
       sp("Lança Radiante", 1, "ataque simples", "d20 + Poder, dano 1d6."),
-      sp("Marca da Retribuição", 1, "básico", "Marca um inimigo. Na próxima vez que ele ferir um aliado, ele sofre 1d6 de dano radiante (uma vez).", { aplica: ["Marcado"] }),
+      sp("Marca da Retribuição", 1, "básico", "Marca um inimigo até o fim do combate (uma marca por vez). Na próxima vez que ele causar dano a um aliado, mesmo que a vida temporária absorva, ele sofre 1d6 de dano radiante (uma vez).", { aplica: ["Marcado"] }),
       sp("Julgamento", 2, "médio", "d20 + Poder, dano 1d8. Contra um inimigo que já feriu um aliado neste combate, o dano é 2d6."),
-      sp("Sol da Sentença", 4, "ultimate", "Todos os inimigos próximos sofrem 2d6. Cada aliado ferido neste combate recupera 1d4 de vida.")
+      sp("Sol da Sentença", 4, "ultimate", "Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 2d6; quem passar sofre metade. Cada aliado ferido neste combate recupera 1d4 de vida.")
     ], futuras: [], nota: "O oposto da Luz Curativa: em vez de curar, pune quem machuca o grupo." },
 
   { nome: "Grimório das Raízes", attr: "inteligencia", papel: "Suporte", sub: "cura e controle", elem: "Planta", tier: "",
@@ -392,7 +392,7 @@ var NIVEL3 = {
   "Grimório de Sombras": fu(2, "Fundir-se", 2, "médio", "Você entra na sombra de uma criatura e sai de outra sombra a até 6 casas, invisível até atacar."),
   "Grimório de Correntes": fu(2, "Elo de Aço", 2, "médio", "Liga você a um aliado por 2 turnos: o dano que ele sofrer é dividido entre vocês dois."),
   "Grimório de Reforço": fu(2, "Salto Demolidor", 3, "médio", "Salta até 6 casas e cai sobre um inimigo: d20 + Poder, dano 2d6. Os inimigos ao lado do alvo sofrem 1d6."),
-  "Grimório de Água": fu(2, "Bolha", 2, "médio", "Prende um alvo numa bolha por 1 turno. Um aliado dentro não sofre dano, mas não age. Um inimigo dentro não age e fica molhado.", { aplica: ["Molhado"] }),
+  "Grimório de Água": fu(2, "Bolha", 2, "médio", "Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo dentro não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano.", { aplica: ["Molhado"] }),
   "Grimório de Terra": fu(2, "Armadilha de Pedra", 2, "médio", "Esconde uma armadilha em uma casa. O primeiro inimigo que pisar nela sofre 2d6 e fica preso por 1 turno.", { aplica: ["Preso"] }),
   "Grimório de Ilusão": fu(2, "Pânico", 2, "médio", "Um inimigo faz teste de Inteligência contra 13. Se falhar, ele se afasta o máximo que puder dos jogadores até o fim do próximo turno dele."),
   "Grimório Antimagia": fu(2, "Zona Nula", 3, "médio", "Cria uma área por 2 turnos onde nenhum feitiço pode ser lançado e os estados mágicos são removidos de quem estiver dentro."),
@@ -1497,7 +1497,7 @@ function viewJogadores() {
     '<div class="controls"><button type="button" class="primary" id="novoJog">Adicionar jogador</button>' +
     '<button type="button" id="importarJog">Importar do sorteio</button>' +
     '<button type="button" id="copiarJogs"' + (jogs.length ? "" : " disabled") + ">Copiar anotações</button>" +
-    '<button type="button" id="expPerfis"' + (jogs.length ? "" : " disabled") + ' title="Descrição, sonho, medo e moralidade de todos, num texto só">Copiar perfis</button>' +
+    '<button type="button" id="expPerfis"' + (jogs.length ? "" : " disabled") + ' title="Descrição, sonho, medo, moralidade e respostas do questionário de todos, num texto só">Copiar perfis</button>' +
     '<button type="button" id="expPerfisTxt"' + (jogs.length ? "" : " disabled") + ">Baixar perfis (.txt)</button></div>" +
     '<p id="jogMsg" role="status" class="mdica">' + esc(jogMsg) + "</p>";
   if (!jogs.length) {
@@ -1517,7 +1517,7 @@ function viewJogadores() {
 
 function viewJogador(j) {
   var h = '<div class="cer-topo"><button type="button" id="voltarJog">Voltar à lista</button>' +
-    '<button type="button" id="expPerfil" title="Descrição, sonho, medo e moralidade, num texto só">Copiar perfil</button><button type="button" id="expPerfilTxt">Baixar perfil (.txt)</button>' +
+    '<button type="button" id="expPerfil" title="Descrição, sonho, medo, moralidade e respostas do questionário, num texto só">Copiar perfil</button><button type="button" id="expPerfilTxt">Baixar perfil (.txt)</button>' +
     '<button type="button" id="excluirJog">' + (confirmarExcluirJog ? "Clique de novo para excluir" : "Excluir jogador") + "</button></div>";
   h += "<h1>" + esc(j.personagem || j.nome || "Novo jogador") + "</h1>";
   h += '<p id="jogMsg" role="status" class="mdica">' + esc(jogMsg) + "</p>";
@@ -1595,6 +1595,18 @@ function vincularConta(el) {
   antes.then(function (r) { if (r) gravar("jogador_vincular", { id: j.id, usuario: uid }); });
 }
 
+/* Respostas do questionário do grimório, em linhas de texto (usado nos textos copiados). */
+function linhasQuestionario(j) {
+  var r = j.questionario && j.questionario.r;
+  if (!r || !r.length) return ["Questionário do grimório: (não respondido)"];
+  var out = ["Questionário do grimório:"];
+  r.forEach(function (letra, i) {
+    var q = typeof QUESTOES !== "undefined" ? QUESTOES[i] : null, k = "ABCD".indexOf(letra);
+    out.push((i + 1) + ". " + (q ? q.p : "Pergunta " + (i + 1)) + " " + letra + (q && q.o[k] ? ") " + q.o[k] : ""));
+  });
+  return out;
+}
+
 /* Texto único de cada personagem: vilarejo, descrição, sonho, medo e moralidade. */
 function textoPerfis(lista) {
   var out = [];
@@ -1605,6 +1617,7 @@ function textoPerfis(lista) {
     out.push("Sonho ou objetivo: " + (j.sonho || "(não preenchido)"));
     out.push("Medo ou fraqueza: " + (j.medo || "(não preenchido)"));
     out.push("Moralidade: " + (j.etica && j.moral ? moralNome(j.etica, j.moral) : "(não definida)"));
+    linhasQuestionario(j).forEach(function (l) { out.push(l); });
     out.push("");
   });
   return out.join("\n").replace(/\s+$/, "") + "\n";
@@ -1641,6 +1654,7 @@ function textoJogs() {
     if (j.descricao) out.push("Descrição: " + j.descricao);
     if (j.sonho) out.push("Sonho ou objetivo: " + j.sonho);
     if (j.medo) out.push("Medo ou fraqueza: " + j.medo);
+    if (j.questionario && j.questionario.r) linhasQuestionario(j).forEach(function (l) { out.push(l); });
     (j.obs || []).slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; }).forEach(function (o) {
       out.push("- " + dataBr(o.data) + (o.rotulo ? " [" + o.rotulo + "]" : "") + ": " + o.texto);
     });

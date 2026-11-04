@@ -333,10 +333,11 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Água (suporte, controle e suporte, usa Inteligência)
 *elemento: Água*
-- **Jato D’água (1 mana, básico):** d20 + Inteligência, dano 1d4 e empurra o alvo 1 casa. (aplica: Molhado)
-- **Maré Protetora (2 mana, médio):** Um aliado ganha 1d6 de vida temporária.
-- **Dilúvio (4 mana, ultimate):** Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada). (aplica: Molhado)
-- Marco 2, **Bolha (2 mana, médio):** Prende um alvo numa bolha por 1 turno. Um aliado dentro não sofre dano, mas não age. Um inimigo dentro não age e fica molhado. (aplica: Molhado)
+- **Jato D’água (1 mana, básico):** d20 + Inteligência, dano 1d6 e empurra o alvo 1 casa. (aplica: Molhado)
+- **Maré Protetora (2 mana, médio):** Um aliado ganha 1d6 de vida temporária e remove um estado negativo. Se o aliado já estiver Molhado, ganha +1d4 de vida temporária. Depois, ele fica Molhado. (aplica: Molhado)
+- **Dilúvio (4 mana, ultimate):** Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada). (aplica: Molhado)
+- Marco 2, **Bolha (2 mana, médio):** Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo dentro não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano. (aplica: Molhado)
+- *Nota do mestre:* Prepara o Molhado para os outros: Raios (o choque se espalha), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. Atenção: a Bolha é controle sem teste de acerto (só o teste de respiração depois), então use com moderação em chefes.
 
 ### Grimório de Raios (dano, dano e velocidade, usa Destreza)
 *elemento: Raio*
@@ -419,9 +420,9 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 ### Grimório da Luz Vingativa (dano, dano e retribuição, usa Poder)
 *elemento: Luz*
 - **Lança Radiante (1 mana, ataque simples):** d20 + Poder, dano 1d6.
-- **Marca da Retribuição (1 mana, básico):** Marca um inimigo. Na próxima vez que ele ferir um aliado, ele sofre 1d6 de dano radiante (uma vez). (aplica: Marcado)
+- **Marca da Retribuição (1 mana, básico):** Marca um inimigo até o fim do combate (uma marca por vez). Na próxima vez que ele causar dano a um aliado, mesmo que a vida temporária absorva, ele sofre 1d6 de dano radiante (uma vez). (aplica: Marcado)
 - **Julgamento (2 mana, médio):** d20 + Poder, dano 1d8. Contra um inimigo que já feriu um aliado neste combate, o dano é 2d6.
-- **Sol da Sentença (4 mana, ultimate):** Todos os inimigos próximos sofrem 2d6. Cada aliado ferido neste combate recupera 1d4 de vida.
+- **Sol da Sentença (4 mana, ultimate):** Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 2d6; quem passar sofre metade. Cada aliado ferido neste combate recupera 1d4 de vida.
 - Marco 2, **Escudo Penitente (2 mana, médio):** Um aliado ganha +2 de Defesa até o fim da próxima rodada. Quem o atacar sofre 1d4 de dano radiante.
 - *Nota do mestre:* O oposto da Luz Curativa: em vez de curar, pune quem machuca o grupo.
 
@@ -630,8 +631,8 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 |---|---|---|---|---|---|
 | 1 | Tempo | Suporte | 7,5 | 10 | **8,5** |
 | 2 | Ferrugem | Dano | 8 | 9 | **8,4** |
-| 3 | Luz Vingativa | Dano | 8 | 8 | **8** |
 | 3 | Gelo | Dano | 8 | 8 | **8** |
+| 4 | Luz Vingativa | Dano | 7,5 | 8 | **7,8** |
 | 5 | Correntes | Suporte | 7,5 | 8 | **7,7** |
 | 5 | Som | Dano | 7,5 | 8 | **7,7** |
 | 5 | Fortaleza | Tank | 7,5 | 8 | **7,7** |
@@ -640,14 +641,14 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 9 | Aço | Tank | 7,5 | 7,5 | **7,5** |
 | 9 | Luz Curativa | Suporte | 6,5 | 9 | **7,5** |
 | 12 | Espelho | Suporte | 7 | 8 | **7,4** |
-| 13 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
-| 13 | Sangue | Dano | 7,5 | 7 | **7,3** |
-| 13 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
-| 13 | Raios | Dano | 7,5 | 7 | **7,3** |
-| 17 | Lâminas | Dano | 7,5 | 6 | **6,9** |
-| 17 | Vento | Suporte | 6,5 | 7,5 | **6,9** |
-| 17 | Espíritos | Suporte | 6,5 | 7,5 | **6,9** |
-| 20 | Água | Suporte | 6,5 | 7 | **6,7** |
+| 12 | Água | Suporte | 7 | 8 | **7,4** |
+| 14 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
+| 14 | Sangue | Dano | 7,5 | 7 | **7,3** |
+| 14 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
+| 14 | Raios | Dano | 7,5 | 7 | **7,3** |
+| 18 | Lâminas | Dano | 7,5 | 6 | **6,9** |
+| 18 | Vento | Suporte | 6,5 | 7,5 | **6,9** |
+| 18 | Espíritos | Suporte | 6,5 | 7,5 | **6,9** |
 | 21 | Chamas | Dano | 7 | 6 | **6,6** |
 | 21 | Sombras | Suporte | 7 | 6 | **6,6** |
 | 23 | Terra | Suporte | 6,5 | 6,5 | **6,5** |
