@@ -1797,7 +1797,7 @@ function invFiltroHTML() {
     }).join("") + "</div></div>";
 }
 
-/* Formulários para adicionar: do equipamento básico (jogador e mestre), do catálogo do mestre (só mestre) e item manual. */
+/* Formulários para adicionar: do equipamento básico (jogador e mestre), do catálogo do mestre e item manual (os dois só do mestre). */
 function invAdicionarHTML(mestre) {
   var h = "<h2>Adicionar item</h2>";
   var grupos = CATS_ITEM.map(function (c) {
@@ -1815,15 +1815,17 @@ function invAdicionarHTML(mestre) {
         '<label>Quantidade<input class="sorteio-in num" type="number" min="1" max="999" value="1" id="invCatQtd"></label><button type="button" class="primary" id="invAddCat">Adicionar</button></div>'
         : '<p class="mdica">O catálogo está vazio. Abra a aba Catálogo e carregue os itens padrão.</p>') + "</section>";
   }
+  if (mestre) {
   h += '<section class="panel"><h3>' + ic("etiqueta") + "Criar item manualmente</h3>" +
-    '<div class="item-grade"><label>Nome<input class="sorteio-in" id="invNNome" type="text" maxlength="80"></label>' +
-    '<label>Categoria<select class="sorteio-in" id="invNCat">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + "</option>"; }).join("") + "</select></label>" +
-    '<label>Quantidade<input class="sorteio-in num" id="invNQtd" type="number" min="1" max="9999" value="1"></label>' +
-    '<label>Peso (kg, cada)<input class="sorteio-in num" id="invNPeso" type="number" min="0" step="0.05" value="0"></label>' +
-    '<label>Valor (ouro, cada)<input class="sorteio-in num" id="invNValor" type="number" min="0" step="0.01" value="0"></label></div>' +
-    '<label>Efeito ou dano (resumo)<input class="sorteio-in" id="invNEfeito" type="text" maxlength="200"></label>' +
-    '<label>Descrição<textarea class="sorteio-in" rows="3" id="invNDesc" maxlength="1500"></textarea></label>' +
-    '<p><button type="button" class="primary" id="invAddNovo">Criar e adicionar</button></p></section>';
+      '<div class="item-grade"><label>Nome<input class="sorteio-in" id="invNNome" type="text" maxlength="80"></label>' +
+      '<label>Categoria<select class="sorteio-in" id="invNCat">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + "</option>"; }).join("") + "</select></label>" +
+      '<label>Quantidade<input class="sorteio-in num" id="invNQtd" type="number" min="1" max="9999" value="1"></label>' +
+      '<label>Peso (kg, cada)<input class="sorteio-in num" id="invNPeso" type="number" min="0" step="0.05" value="0"></label>' +
+      '<label>Valor (ouro, cada)<input class="sorteio-in num" id="invNValor" type="number" min="0" step="0.01" value="0"></label></div>' +
+      '<label>Efeito ou dano (resumo)<input class="sorteio-in" id="invNEfeito" type="text" maxlength="200"></label>' +
+      '<label>Descrição<textarea class="sorteio-in" rows="3" id="invNDesc" maxlength="1500"></textarea></label>' +
+      '<p><button type="button" class="primary" id="invAddNovo">Criar e adicionar</button></p></section>';
+  }
   return h;
 }
 
@@ -1981,7 +1983,7 @@ function invClick(b) {
     if (tc) invAdicionar(invDeTemplate(tc, Math.max(1, Math.min(999, Math.round(num("invCatQtd", 1)))), true), tc.nome);
     return true;
   }
-  if (b.id === "invAddNovo") {
+  if (b.id === "invAddNovo" && MESTRE) {
     var nome = ((document.getElementById("invNNome") || {}).value || "").trim();
     if (!nome) { invMsgSet("Dê um nome ao item."); return true; }
     invAdicionar({ nome: nome, cat: (document.getElementById("invNCat") || {}).value, qtd: Math.max(1, Math.round(num("invNQtd", 1))), peso: Math.max(0, num("invNPeso", 0)),

@@ -306,12 +306,15 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - Marco 2, **Fundir-se (2 mana, médio):** Você entra na sombra de uma criatura e sai de outra sombra a até 6 casas, invisível até atacar.
 - *Nota do mestre:* Eclipse é forte para 4 de mana. Se virar problema, limite a 1 uso por combate.
 
-### Grimório de Vento (suporte, mobilidade e precisão, usa Destreza)
+### Grimório de Vento (suporte, mobilidade, posicionamento e dano leve, usa Destreza)
 *elemento: Vento*
-- **Rajada (1 mana, básico):** d20 + Destreza, dano 1d6, alcance longo.
+- **Rajada Cortante (1 mana, básico):** d20 + Destreza, dano 1d6, alcance longo. Quem for atingido é empurrado 1 casa.
 - **Passo do Vento (2 mana, médio):** Move até o dobro do deslocamento e ganha +2 de Defesa até a próxima rodada.
-- **Corrente Ascendente (4 mana, ultimate):** Por 2 turnos, você e os aliados próximos voam: ignoram o terreno e os inimigos corpo a corpo têm -3 para acertá-los.
+- **Cortina de Vento (2 mana, médio):** Por 2 turnos, os ataques à distância contra você e os aliados próximos têm -2.
+- **Corrente Ascendente (4 mana, ultimate):** Por 2 turnos, você e os aliados próximos voam: ignoram o terreno, ganham +2 de deslocamento e os inimigos têm -2 para acertá-los. Nesse tempo, a sua Rajada Cortante causa +1d4 de dano.
 - Marco 2, **Impulso (2 mana, médio):** Um aliado se move o dobro do deslocamento e o próximo ataque dele ganha +2 na rolagem.
+- Marco 3, **Ventania (3 mana, médio):** d20 + Destreza contra cada inimigo próximo, dano 1d6 em quem for atingido. Os atingidos são empurrados 2 casas e fazem teste de Poder contra 14: quem falhar cai.
+- *Nota do mestre:* híbrido: suporte de posicionamento com um pouco de dano. A Ventania faz menos dano que o Tornado de Quatro Folhas (Espírito Celeste) e a Cortina é menor que a do Redemoinho (-2 contra -3, mas protege o grupo), para o lendário continuar acima.
 
 ### Grimório de Correntes (suporte, controle, usa Inteligência)
 *elemento: Metal*
@@ -348,10 +351,14 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Raios (dano, dano e velocidade, usa Destreza)
 *elemento: Raio*
-- **Choque (1 mana, básico):** d20 + Destreza, dano 1d6. (aplica: Chocado)
-- **Relâmpago Veloz (2 mana, médio):** Age duas vezes neste turno, mas só pode usar feitiços de 1 mana. (limite: 1 uso por combate)
-- **Tempestade Trovejante (4 mana, ultimate):** d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. (aplica: Chocado)
-- Marco 2, **Corrente Elétrica (2 mana, médio):** d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano. (aplica: Chocado)
+*Regra do Eletrizado: um alvo Eletrizado que sofrer dano de raio faz um teste de Poder contra 13. Se falhar, fica Atordoado por 1 turno (perde a ação). O estado dura até o fim do combate ou até o alvo ser atordoado.*
+- **Choque (1 mana, básico):** d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado, faz o teste de resistência. (aplica: Eletrizado)
+- **Relâmpago Veloz (2 mana, médio):** Age duas vezes neste turno. O segundo feitiço custa +1 de mana. (limite: 1 uso por combate)
+- **Passo Relâmpago (2 mana, médio):** Teleporta até 4 casas em linha reta. O primeiro inimigo no caminho sofre 1d6 e fica Eletrizado. (aplica: Eletrizado)
+- **Tempestade Trovejante (4 mana, ultimate):** d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado faz o teste de resistência. (aplica: Eletrizado)
+- Marco 2, **Corrente Elétrica (2 mana, médio):** d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano. Cada alvo Eletrizado faz o teste de resistência; se algum ficar Atordoado, você ganha 1 de mana temporário (até o fim do combate). (aplica: Eletrizado)
+- Marco 3, **Reflexo Elétrico (1 mana, reação):** Quando um inimigo te atacar corpo a corpo, ele faz um teste de Destreza contra 13. Se falhar, sofre 1d4 e fica Eletrizado. (aplica: Eletrizado)
+- *Nota do mestre:* o estado Eletrizado é a base do grimório: o primeiro Choque prepara e o segundo pode atordoar. O atordoamento é por 1 turno para não virar controle sem teste.
 
 ### Grimório de Terra (suporte, defesa e controle, usa Inteligência)
 *elemento: Terra*
@@ -430,12 +437,14 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório das Raízes (suporte, cura e controle, usa Inteligência)
 *elemento: Planta*
+*Regra do Preso: "preso" prende o movimento. Só tira a ação se o feitiço disser o que foi preso (por exemplo, "prende os braços").*
 - **Espinho (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
-- **Semente Vital (1 mana, básico):** Um aliado recupera 1 de vida no início de cada turno dele, por 3 turnos.
-- **Raízes Prendedoras (2 mana, médio):** Teste de Inteligência contra a Defesa do alvo. Se acertar, ele fica preso por 2 turnos e sofre 1 de dano por turno enquanto preso. (aplica: Preso)
+- **Semente Vital (1 mana, básico):** Um aliado recupera 2 de vida no início de cada turno dele, por 2 turnos. Se o aliado estiver Molhado, recupera +1 por turno.
+- **Raízes Prendedoras (2 mana, médio):** Teste de Inteligência contra a Defesa do alvo. Se acertar, raízes prendem as pernas dele por 2 turnos: ele não pode se mover e sofre 1 de dano por turno. No início de cada turno dele, faz um teste de Poder contra 13 para se soltar. (aplica: Preso)
 - **Floresta Viva (4 mana, ultimate):** Por 3 turnos, uma floresta cobre a área: os aliados recuperam 1d4 de vida por turno e os inimigos dentro dela perdem 2 de deslocamento.
-- Marco 2, **Círculo de Espinhos (2 mana, médio):** Cria um círculo de espinhos ao seu redor por 2 turnos: os inimigos que entrarem sofrem 1d6 e perdem 2 de deslocamento.
-- *Nota do mestre:* Fogo queima as raízes. Água faz a Semente Vital curar mais (decisão do mestre).
+- Marco 2, **Círculo de Espinhos (2 mana, médio):** Cria um círculo de espinhos ao seu redor por 2 turnos: os inimigos que entrarem sofrem 1d6 e perdem 2 de deslocamento. Fogo queima o círculo.
+- Marco 3, **Florescer (3 mana, médio):** Cura 1d6 em até 2 aliados próximos e remove um estado negativo de cada um (Envenenado, Em chamas ou Lento).
+- *Nota do mestre:* Fogo queima as raízes: um alvo Em chamas se solta das Raízes Prendedoras, e o Círculo de Espinhos some. A cura é mais lenta que a da Luz Curativa e o controle depende de teste, para o lendário da Árvore-Mundo continuar acima.
 
 ### Grimório do Som (dano, dano e silêncio, usa Inteligência)
 *elemento: Som*
@@ -642,16 +651,16 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 11 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
 | 11 | Sangue | Dano | 7,5 | 7 | **7,3** |
 | 13 | Luz Curativa | Suporte | 6 | 9 | **7,2** |
-| 14 | Raízes | Suporte | 6,5 | 8 | **7,1** |
-| 15 | Raios | Dano | 7 | 7 | **7** |
+| 14 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
+| 15 | Raios | Dano | 7,5 | 7 | **7,3** |
 | 15 | Espelho | Tank | 7 | 7 | **7** |
 | 17 | Lâminas | Dano | 7,5 | 6 | **6,9** |
-| 18 | Água | Suporte | 6,5 | 7 | **6,7** |
-| 19 | Chamas | Dano | 7 | 6 | **6,6** |
-| 19 | Sombras | Suporte | 7 | 6 | **6,6** |
-| 21 | Terra | Suporte | 6,5 | 6,5 | **6,5** |
-| 21 | Espíritos | Suporte | 6,5 | 6,5 | **6,5** |
-| 23 | Vento | Suporte | 6 | 7 | **6,4** |
+| 17 | Vento | Suporte | 6,5 | 7,5 | **6,9** |
+| 19 | Água | Suporte | 6,5 | 7 | **6,7** |
+| 20 | Chamas | Dano | 7 | 6 | **6,6** |
+| 20 | Sombras | Suporte | 7 | 6 | **6,6** |
+| 22 | Terra | Suporte | 6,5 | 6,5 | **6,5** |
+| 22 | Espíritos | Suporte | 6,5 | 6,5 | **6,5** |
 | 24 | Veneno | Dano | 6 | 6 | **6** |
 | 25 | Reforço | Dano | 5,5 | 6 | **5,7** |
 | 26 | Sorte | Suporte | 5 | 5,5 | **5,2** |
@@ -698,7 +707,7 @@ Média dos reservados: PC 8,5 (contra 7,0 do sorteio). Isso é o esperado para l
 | Correntes ou Gravidade (Lento/Preso) + Gelo | Lança Gélida congela alvo lento; o controle empilha |
 | Gravidade (Singularidade) + Chamas ou Gelo (área) | Junta os inimigos e a Explosão Solar ou a Nevasca pega todos |
 | Som (Silêncio) + Antimagia | Dois jeitos de anular o inimigo mago da organização |
-| Corrente Ascendente (Vento) + grupo corpo a corpo | -3 para acertar os aliados por 2 turnos contra inimigos de perto |
+| Corrente Ascendente ou Cortina de Vento + grupo de combate | Os aliados ficam mais difíceis de acertar (-2) e ainda ganham deslocamento; Ventania abre espaço ao empurrar os inimigos |
 
 ### Problemas encontrados e o que foi feito
 
@@ -919,7 +928,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 #### Elemental Instável (normal, nível 4)
 - **Vida:** 30 | **Defesa:** 13 | **Ataque:** +5 | **Mana:** 8
 - **Dano:** 1d8 + 2 (média 6,5)
-- **Forma Instável (passiva, passiva):** No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (chocado), 4 gelo (lento).
+- **Forma Instável (passiva, passiva):** No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (eletrizado), 4 gelo (lento).
 - **Comportamento:** Ataca o mais próximo, trocando de forma a cada turno.
 - *Dica:* Perfeito para testar as combinações de magias.
 - **Possíveis drops:** Pedra de Mana (50%); Elixir de Mana (20%)
@@ -946,7 +955,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Dano:** 2d8 + 2 (média 11)
 - **Três cabeças (passiva, passiva):** Cada cabeça tem 20 de Vida e Defesa 14, e pode ser atacada à parte. Cada cabeça viva faz um ataque especial por turno. Uma cabeça derrotada para de atacar.
 - **Cabeça de Fogo (passiva, ataque):** Sopro em cone: 2d6 e o alvo fica em chamas (2 de dano por turno, 2 turnos). (aplica: Em chamas)
-- **Cabeça de Raio (passiva, ataque):** d20 + 6 contra um alvo, dano 2d6 e o alvo fica chocado. (aplica: Chocado)
+- **Cabeça de Raio (passiva, ataque):** d20 + 6 contra um alvo, dano 2d6 e o alvo fica eletrizado. (aplica: Eletrizado)
 - **Cabeça de Gelo (passiva, ataque):** Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada. (aplica: Lento)
 - **Comportamento:** Usa todas as cabeças vivas a cada turno.
 - *Dica:* Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (40 cada): todos têm algo para atacar.

@@ -56,12 +56,18 @@ var GRIMORIOS = [
       sp("Eclipse", 4, "ultimate", "Todos os inimigos próximos ficam cegos por 2 turnos (-3 nas rolagens de ataque).")
     ], futuras: [], nota: "Eclipse é forte para 4 de mana. Se virar problema, limite a 1 uso por combate." },
 
-  { nome: "Grimório de Vento", attr: "destreza", papel: "Suporte", sub: "mobilidade e precisão", tier: "",
+  { nome: "Grimório de Vento", attr: "destreza", papel: "Suporte", sub: "mobilidade, posicionamento e dano leve", tier: "",
     spells: [
-      sp("Rajada", 1, "básico", "d20 + Destreza, dano 1d6, alcance longo."),
+      sp("Rajada Cortante", 1, "básico", "d20 + Destreza, dano 1d6, alcance longo. Quem for atingido é empurrado 1 casa."),
       sp("Passo do Vento", 2, "médio", "Move até o dobro do deslocamento e ganha +2 de Defesa até a próxima rodada."),
-      sp("Corrente Ascendente", 4, "ultimate", "Por 2 turnos, você e os aliados próximos voam: ignoram o terreno e os inimigos corpo a corpo têm -3 para acertá-los.")
-    ], futuras: [], nota: "" },
+      sp("Cortina de Vento", 2, "médio", "Por 2 turnos, os ataques à distância contra você e os aliados próximos têm -2."),
+      sp("Corrente Ascendente", 4, "ultimate", "Por 2 turnos, você e os aliados próximos voam: ignoram o terreno, ganham +2 de deslocamento e os inimigos têm -2 para acertá-los. Nesse tempo, a sua Rajada Cortante causa +1d4 de dano.")
+    ],
+    futuras: [
+      fu(2, "Impulso", 2, "médio", "Um aliado se move o dobro do deslocamento e o próximo ataque dele ganha +2 na rolagem."),
+      fu(3, "Ventania", 3, "médio", "d20 + Destreza contra cada inimigo próximo, dano 1d6 em quem for atingido. Os atingidos são empurrados 2 casas e fazem teste de Poder contra 14: quem falhar cai.")
+    ],
+    nota: "Híbrido: suporte de posicionamento com um pouco de dano. A Ventania faz menos dano que o Tornado de Quatro Folhas (Espírito Celeste) e a Cortina é menor que a do Redemoinho, para o lendário continuar acima." },
 
   { nome: "Grimório de Correntes", attr: "inteligencia", papel: "Suporte", sub: "controle", tier: "",
     spells: [
@@ -96,10 +102,16 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Raios", attr: "destreza", papel: "Dano", sub: "dano e velocidade", tier: "",
     spells: [
-      sp("Choque", 1, "básico", "d20 + Destreza, dano 1d6."),
-      sp("Relâmpago Veloz", 2, "médio", "Age duas vezes neste turno, mas só pode usar feitiços de 1 mana.", { limite: "1 uso por combate" }),
-      sp("Tempestade Trovejante", 4, "ultimate", "d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido.")
-    ], futuras: [], nota: "" },
+      sp("Choque", 1, "básico", "d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado, faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno."),
+      sp("Relâmpago Veloz", 2, "médio", "Age duas vezes neste turno. O segundo feitiço custa +1 de mana.", { limite: "1 uso por combate" }),
+      sp("Passo Relâmpago", 2, "médio", "Teleporta até 4 casas em linha reta. O primeiro inimigo no caminho sofre 1d6 e fica Eletrizado.", { aplica: ["Eletrizado"] }),
+      sp("Tempestade Trovejante", 4, "ultimate", "d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno.")
+    ],
+    futuras: [
+      fu(2, "Corrente Elétrica", 2, "médio", "d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano. Cada alvo Eletrizado faz um teste de Poder contra 13; se algum ficar Atordoado, você ganha 1 de mana temporário (até o fim do combate).", { aplica: ["Eletrizado"] }),
+      fu(3, "Reflexo Elétrico", "reação", "reação", "Quando um inimigo te atacar corpo a corpo, ele faz um teste de Destreza contra 13. Se falhar, sofre 1d4 e fica Eletrizado.", { aplica: ["Eletrizado"] })
+    ],
+    nota: "Regra do Eletrizado: um alvo Eletrizado que sofrer dano de raio faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno. O atordoamento dura só 1 turno para não virar controle sem teste." },
 
   { nome: "Grimório de Terra", attr: "inteligencia", papel: "Suporte", sub: "defesa e controle", tier: "",
     spells: [
@@ -180,10 +192,15 @@ var GRIMORIOS = [
   { nome: "Grimório das Raízes", attr: "inteligencia", papel: "Suporte", sub: "cura e controle", elem: "Planta", tier: "",
     spells: [
       sp("Espinho", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
-      sp("Semente Vital", 1, "básico", "Um aliado recupera 1 de vida no início de cada turno dele, por 3 turnos."),
-      sp("Raízes Prendedoras", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, ele fica preso por 2 turnos e sofre 1 de dano por turno enquanto preso.", { aplica: ["Preso"], dot: dotRes("Poder", 12) }),
+      sp("Semente Vital", 1, "básico", "Um aliado recupera 2 de vida no início de cada turno dele, por 2 turnos. Se o aliado estiver Molhado, recupera +1 por turno."),
+      sp("Raízes Prendedoras", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, raízes prendem as pernas dele por 2 turnos: ele não pode se mover e sofre 1 de dano por turno. No início de cada turno dele, faz um teste de Poder contra 13 para se soltar.", { aplica: ["Preso"] }),
       sp("Floresta Viva", 4, "ultimate", "Por 3 turnos, uma floresta cobre a área: os aliados recuperam 1d4 de vida por turno e os inimigos dentro dela perdem 2 de deslocamento.")
-    ], futuras: [], nota: "Fogo queima as raízes. Água faz a Semente Vital curar mais (decisão do mestre)." },
+    ],
+    futuras: [
+      fu(2, "Círculo de Espinhos", 2, "médio", "Cria um círculo de espinhos ao seu redor por 2 turnos: os inimigos que entrarem sofrem 1d6 e perdem 2 de deslocamento. Fogo queima o círculo."),
+      fu(3, "Florescer", 3, "médio", "Cura 1d6 em até 2 aliados próximos e remove um estado negativo de cada um (Envenenado, Em chamas ou Lento).")
+    ],
+    nota: "Preso prende o movimento; só tira a ação se o feitiço disser o que foi preso. Fogo queima as raízes: um alvo Em chamas se solta das Raízes Prendedoras, e o Círculo de Espinhos some." },
 
   { nome: "Grimório do Som", attr: "inteligencia", papel: "Dano", sub: "dano e silêncio", elem: "Som", tier: "",
     spells: [
@@ -351,8 +368,8 @@ var EXTRAS_EXISTENTES = {
   "Antídoto Reverso": { aplica: ["Envenenado"], dot: dotRes("Poder", 12) },
   "Jato D’água": { aplica: ["Molhado"] },
   "Dilúvio": { aplica: ["Molhado"] },
-  "Choque": { aplica: ["Chocado"] },
-  "Tempestade Trovejante": { aplica: ["Chocado"] },
+  "Choque": { aplica: ["Eletrizado"] },
+  "Tempestade Trovejante": { aplica: ["Eletrizado"] },
   "Laço": { aplica: ["Lento"] },
   "Peso Morto": { aplica: ["Lento"] },
   "Prisão de Aço": { aplica: ["Preso"] },
@@ -364,11 +381,9 @@ var NIVEL3 = {
   "Grimório de Chamas": fu(2, "Lança Incandescente", 3, "médio", "d20 + Poder, dano 2d6 em todos os inimigos em uma linha de até 4 casas.", { aplica: ["Em chamas"] }),
   "Grimório de Luz Curativa": fu(2, "Segunda Chance", 3, "médio", "Um aliado que caiu a 0 de Vida volta com 1d6 de vida.", { limite: "1 uso por combate" }),
   "Grimório de Sombras": fu(2, "Fundir-se", 2, "médio", "Você entra na sombra de uma criatura e sai de outra sombra a até 6 casas, invisível até atacar."),
-  "Grimório de Vento": fu(2, "Impulso", 2, "médio", "Um aliado se move o dobro do deslocamento e o próximo ataque dele ganha +2 na rolagem."),
   "Grimório de Correntes": fu(2, "Elo de Aço", 2, "médio", "Liga você a um aliado por 2 turnos: o dano que ele sofrer é dividido entre vocês dois."),
   "Grimório de Reforço": fu(2, "Salto Demolidor", 3, "médio", "Salta até 6 casas e cai sobre um inimigo: d20 + Poder, dano 2d6. Os inimigos ao lado do alvo sofrem 1d6."),
   "Grimório de Água": fu(2, "Bolha", 2, "médio", "Prende um alvo numa bolha por 1 turno. Um aliado dentro não sofre dano, mas não age. Um inimigo dentro não age e fica molhado.", { aplica: ["Molhado"] }),
-  "Grimório de Raios": fu(2, "Corrente Elétrica", 2, "médio", "d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano.", { aplica: ["Chocado"] }),
   "Grimório de Terra": fu(2, "Armadilha de Pedra", 2, "médio", "Esconde uma armadilha em uma casa. O primeiro inimigo que pisar nela sofre 2d6 e fica preso por 1 turno.", { aplica: ["Preso"] }),
   "Grimório de Ilusão": fu(2, "Pânico", 2, "médio", "Um inimigo faz teste de Inteligência contra 13. Se falhar, ele se afasta o máximo que puder dos jogadores até o fim do próximo turno dele."),
   "Grimório Antimagia": fu(2, "Zona Nula", 3, "médio", "Cria uma área por 2 turnos onde nenhum feitiço pode ser lançado e os estados mágicos são removidos de quem estiver dentro."),
@@ -380,7 +395,6 @@ var NIVEL3 = {
   "Grimório de Sangue": fu(2, "Lâmina de Sangue", 2, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
   "Grimório do Gelo": fu(2, "Lança Gélida", 3, "médio", "d20 + Destreza, dano 2d6. Se o alvo estiver lento ou molhado, ele fica congelado por 1 turno.", { aplica: ["Congelado"] }),
   "Grimório da Luz Vingativa": fu(2, "Escudo Penitente", 2, "médio", "Um aliado ganha +2 de Defesa até o fim da próxima rodada. Quem o atacar sofre 1d4 de dano radiante."),
-  "Grimório das Raízes": fu(2, "Círculo de Espinhos", 2, "médio", "Cria um círculo de espinhos ao seu redor por 2 turnos: os inimigos que entrarem sofrem 1d6 e perdem 2 de deslocamento."),
   "Grimório do Som": fu(2, "Onda Sonora", 2, "médio", "Os inimigos em um cone de 3 casas sofrem 1d6 e são empurrados 1 casa."),
   "Grimório da Ferrugem": fu(2, "Podridão de Metal", 2, "médio", "Um inimigo perde a redução de dano e fica com -2 de Defesa por 2 turnos.", { aplica: ["Enferrujado"] }),
   "Grimório da Sorte": fu(2, "Moeda ao Ar", 2, "médio", "Jogue uma moeda. Cara: o seu próximo feitiço custa 1 de mana a menos. Coroa: custa 1 a mais.")
@@ -518,7 +532,7 @@ var INIMIGOS = [
 
   /* Arco 2 */
   mo("Elemental Instável", "Arco 2", "normal", "4", 30, 13, "+5", "1d8 + 2 (média 6,5)", "8", [
-    sp("Forma Instável", "passiva", "passiva", "No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (chocado), 4 gelo (lento).")
+    sp("Forma Instável", "passiva", "passiva", "No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (eletrizado), 4 gelo (lento).")
   ], "Ataca o mais próximo, trocando de forma a cada turno.",
     "Perfeito para testar as combinações de magias."),
   mo("Bandoleiro Veterano", "Arco 2", "normal", "4", 30, 14, "+5", "1d8 + 3 (média 7,5)", "-", [
@@ -533,7 +547,7 @@ var INIMIGOS = [
   mo("Quimera de Mana", "Arco 2", "chefe", "4", 60, 15, "+6", "2d8 + 2 (média 11)", "12", [
     sp("Três cabeças", "passiva", "passiva", "Cada cabeça tem 20 de Vida e Defesa 14, e pode ser atacada à parte. Cada cabeça viva faz um ataque especial por turno. Uma cabeça derrotada para de atacar."),
     sp("Cabeça de Fogo", "passiva", "ataque", "Sopro em cone: 2d6 e o alvo fica em chamas (2 de dano por turno, 2 turnos).", { aplica: ["Em chamas"], dot: dotRes("Destreza", 13) }),
-    sp("Cabeça de Raio", "passiva", "ataque", "d20 + 6 contra um alvo, dano 2d6 e o alvo fica chocado.", { aplica: ["Chocado"] }),
+    sp("Cabeça de Raio", "passiva", "ataque", "d20 + 6 contra um alvo, dano 2d6 e o alvo fica eletrizado.", { aplica: ["Eletrizado"] }),
     sp("Cabeça de Gelo", "passiva", "ataque", "Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada.", { aplica: ["Lento"] })
   ], "Usa todas as cabeças vivas a cada turno.",
     "Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (40 cada): todos têm algo para atacar."),
@@ -1869,9 +1883,9 @@ function regrasExtraMestre() {
 
   h += "<h2>Combinações de magias</h2>" +
     '<div class="note"><p><b>Decisão do mestre.</b> As magias podem se misturar, mas só você decide se e quando isso acontece. É uma opção para deixar o combate mais criativo, não uma regra fixa.</p></div>' +
-    panel(ic("etiqueta") + "Estados", "<p>Muitos feitiços deixam um estado no alvo, mostrado como etiqueta no card. Os estados são o ponto de partida das combinações.</p><p>Estados usados: Molhado, Chocado, Congelado, Lento, Em chamas, Envenenado, Sangrando, Preso, Cego, Atordoado, Silenciado, Enferrujado e Marcado.</p>") +
+    panel(ic("etiqueta") + "Estados", "<p>Muitos feitiços deixam um estado no alvo, mostrado como etiqueta no card. Os estados são o ponto de partida das combinações.</p><p>Estados usados: Molhado, Eletrizado, Congelado, Lento, Em chamas, Envenenado, Sangrando, Preso, Cego, Atordoado, Silenciado, Enferrujado e Marcado.</p>") +
     table(["Combinação", "O que o mestre pode permitir"], [
-      ["Molhado + choque", "Inimigos molhados também levam o choque quando outro inimigo próximo é atingido por um feitiço de raio. Exemplo: um inimigo molhado perto de um alvo chocado sofre metade do dano."],
+      ["Molhado + choque", "Inimigos molhados também levam o choque quando outro inimigo próximo é atingido por um feitiço de raio. Exemplo: um inimigo molhado perto de um alvo eletrizado sofre metade do dano."],
       ["Molhado + gelo", "O alvo congela com mais facilidade (a dificuldade da resistência sobe em 2)."],
       ["Em chamas + vento", "O fogo se espalha para os inimigos próximos."],
       ["Em chamas + água", "A água apaga as chamas e cria vapor: quem estiver perto fica com -1 nas rolagens por 1 turno."],

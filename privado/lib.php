@@ -480,6 +480,8 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
     if ($op === 'add') {
         if (count($inv) >= MAX_ITENS) { $pdo->rollBack(); erro('Inventário cheio (máximo ' . MAX_ITENS . ' itens).'); }
         $campos = (array)($c['item'] ?? []);
+        /* Só o mestre cria item do zero. O jogador só adiciona item da lista básica (que vem com "ref"). */
+        if (!$mestre && trim((string)($campos['ref'] ?? '')) === '') { $pdo->rollBack(); erro('Só o mestre pode criar itens manualmente.', 403); }
         $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
         if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
         $inv[] = $item;
