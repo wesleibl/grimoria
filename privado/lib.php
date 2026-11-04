@@ -159,7 +159,7 @@ function exigirMestre(): array
 /* ============================ ESTADO ============================ */
 
 /* Chaves que o mestre pode gravar. As que terminam em _pub são cópias filtradas que os jogadores leem. */
-const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens', 'cenarios_info', 'locais_cen'];
+const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens', 'cenarios_info', 'locais_cen', 'itens', 'progresso'];
 
 function lerEstado(string $chave): mixed
 {
@@ -405,6 +405,109 @@ function listarCenasEnviadas(): array
    grimório e vilarejo continuam nas mãos do mestre. */
 const CAMPOS_PERFIL = ['personagem' => 60, 'altura' => 20, 'descricao' => 2000, 'sonho' => 2000, 'medo' => 2000];
 const ATRIBUTOS = ['poder', 'destreza', 'inteligencia'];
+
+/* ============================ INVENTÁRIO ============================ */
+
+/* Cada jogador tem 'inv' (lista de itens) e 'moedas' dentro do próprio registro. As alterações chegam como operações pequenas
+   (adicionar, mudar campos de um item, remover, moedas), aplicadas aqui dentro de uma transação com bloqueio: jogador e mestre
+   podem mexer ao mesmo tempo sem apagar o trabalho um do outro. Os campos 'mestre', 'sinergia' e 'fase' são SEGREDO do mestre:
+   o jogador não os grava e nunca os recebe. */
+const CATS_ITEM = ['arma', 'armadura', 'aventura', 'ferramenta', 'consumivel', 'magico', 'tesouro', 'outro'];
+const RARID_ITEM = ['comum', 'incomum', 'raro', 'lendário'];
+const MAX_ITENS = 300;
+const CAMPOS_ITEM_MESTRE = ['mestre', 'sinergia', 'fase'];
+
+function itemAplicar(array $item, array $campos, bool $mestre): array
+{
+    $txt = ['nome' => 80, 'efeito' => 200, 'desc' => 1500, 'nota' => 1000, 'ref' => 40];
+    foreach ($campos as $k => $v) {
+        if (isset($txt[$k])) { $item[$k] = mb_substr(trim((string)$v), 0, $txt[$k]); continue; }
+        switch ($k) {
+            case 'cat': $item['cat'] = in_array($v, CATS_ITEM, true) ? $v : 'outro'; break;
+            case 'raridade': $item['raridade'] = in_array($v, RARID_ITEM, true) ? $v : 'comum'; break;
+            case 'qtd': $item['qtd'] = max(0, min(9999, (int)$v)); break;
+            case 'peso': $item['peso'] = round(max(0.0, min(9999.0, (float)$v)), 2); break;
+            case 'valor': $item['valor'] = max(0, min(100000000, (int)$v)); break;
+            case 'equip': $item['equip'] = (bool)$v; break;
+            case 'mestre': if ($mestre) $item['mestre'] = mb_substr(trim((string)$v), 0, 2000); break;
+            case 'fase': if ($mestre) $item['fase'] = mb_substr(trim((string)$v), 0, 60); break;
+            case 'sinergia':
+                if ($mestre) {
+                    $l = [];
+                    foreach ((array)$v as $g) { $g = mb_substr(trim((string)$g), 0, 40); if ($g !== '') $l[] = $g; }
+                    $item['sinergia'] = array_slice(array_values(array_unique($l)), 0, 20);
+                }
+                break;
+        }
+    }
+    return $item;
+}
+
+/* O jogador recebe o inventário sem os segredos do mestre. */
+function invVisivel(array $inv, bool $mestre): array
+{
+    if ($mestre) return array_values($inv);
+    $out = [];
+    foreach ($inv as $i) {
+        if (is_array($i)) $out[] = array_diff_key($i, array_flip(CAMPOS_ITEM_MESTRE));
+    }
+    return $out;
+}
+
+function moedasLimpas(mixed $m): array
+{
+    $m = is_array($m) ? $m : [];
+    $out = [];
+    foreach (['po', 'pp', 'pc'] as $k) $out[$k] = max(0, min(999999999, (int)($m[$k] ?? 0)));
+    return $out;
+}
+
+function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    $st = $pdo->prepare('SELECT dados FROM jogadores WHERE id = ? FOR UPDATE');
+    $st->execute([$jogId]);
+    $atual = $st->fetchColumn();
+    if ($atual === false) { $pdo->rollBack(); erro('Jogador não encontrado.', 404); }
+    $dados = json_decode($atual, true) ?: [];
+    $inv = array_values(array_filter((array)($dados['inv'] ?? []), 'is_array'));
+    $moedas = moedasLimpas($dados['moedas'] ?? []);
+
+    if ($op === 'add') {
+        if (count($inv) >= MAX_ITENS) { $pdo->rollBack(); erro('Inventário cheio (máximo ' . MAX_ITENS . ' itens).'); }
+        $campos = (array)($c['item'] ?? []);
+        $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
+        if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
+        $inv[] = $item;
+    } elseif ($op === 'set' || $op === 'del') {
+        $id = (string)($c['id'] ?? '');
+        $achou = false;
+        foreach ($inv as $k => $i) {
+            if (($i['id'] ?? '') !== $id) continue;
+            $achou = true;
+            if ($op === 'del') { unset($inv[$k]); break; }
+            $novo = itemAplicar($i, (array)($c['campos'] ?? []), $mestre);
+            if ($novo['nome'] === '') $novo['nome'] = $i['nome'] ?? 'Item';
+            $inv[$k] = $novo;
+            break;
+        }
+        if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
+    } elseif ($op === 'moedas') {
+        $moedas = moedasLimpas($c['moedas'] ?? []);
+    } else {
+        $pdo->rollBack();
+        erro('Operação inválida.');
+    }
+
+    $dados['inv'] = array_values($inv);
+    $dados['moedas'] = $moedas;
+    $json = json_encode((object)$dados, JSON_UNESCAPED_UNICODE);
+    if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
+    $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$json, $jogId]);
+    $pdo->commit();
+    return ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas];
+}
 
 /* ============================ CAMPO: POSIÇÕES E COMBATE ============================ */
 

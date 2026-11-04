@@ -52,6 +52,7 @@ try {
         'POST perfil_bonus' => acaoPerfilBonus(),
         'POST perfil_img' => acaoPerfilImg(),
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
+        'POST inv_op' => acaoInvOp(),
         default => erro('Ação desconhecida.', 404),
     };
 } catch (Throwable $e) {
@@ -81,9 +82,11 @@ function acaoRegistrar(): never
         if ($e->getCode() === '23000') erro('Já existe uma conta com esse e-mail.', 409);
         throw $e;
     }
+    /* Ler o id ANTES de anotarTentativa: ela faz outro INSERT (sem auto-incremento) e o lastInsertId() voltaria 0. */
+    $uid = (int)db()->lastInsertId();
     anotarTentativa('cadastro-ip', ipCliente(), 3600);
     session_regenerate_id(true);
-    $_SESSION['uid'] = (int)db()->lastInsertId();
+    $_SESSION['uid'] = $uid;
     session_write_close();
     responder(['ok' => true]);
 }
@@ -155,7 +158,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado'])) : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado'])) + ['inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -209,7 +212,7 @@ function acaoJogadorSalvar(): never
     $j = corpo()['jogador'] ?? null;
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
-    unset($j['id'], $j['usuario']);
+    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas']); /* o inventário só muda por inv_op */
     salvarCamposJogador($id, $j, true);
     responder(['ok' => true]);
 }
@@ -386,6 +389,18 @@ function acaoPerfilImgRemover(): never
     db()->prepare("DELETE FROM imagens WHERE tipo = 'avatar' AND ref = ?")->execute([$jog['id']]);
     salvarCamposJogador($jog['id'], ['img' => null], false);
     responder(['ok' => true]);
+}
+
+/* ============================ INVENTÁRIO ============================ */
+
+/* Jogador mexe no próprio inventário; o mestre, no de qualquer jogador (campo "jogador"). */
+function acaoInvOp(): never
+{
+    $u = exigirLogin();
+    $c = corpo();
+    $mestre = $u['papel'] === 'mestre';
+    $id = $mestre ? idValido($c['jogador'] ?? '') : jogadorDaConta()['id'];
+    responder(inventarioOp($id, (string)($c['op'] ?? ''), $c, $mestre));
 }
 
 /* ============================ AÇÃO (GRID) ============================ */

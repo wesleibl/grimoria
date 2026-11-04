@@ -642,6 +642,36 @@ button.perigo:hover { background: var(--poder); color: #fff; }
 }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+/* Inventário e itens */
+.item-lista { display: grid; gap: 12px; margin: 0 0 1.5rem; }
+.item { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 14px; }
+.item.equip { border-color: var(--accent); }
+.item-topo { display: flex; align-items: center; gap: 10px; }
+.item-eq { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; color: var(--muted); flex: none; }
+.item.equip .item-eq { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.item-eq input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.item-eq:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+.item-nome { flex: 1 1 auto; text-align: left; display: flex; flex-direction: column; gap: 2px; border: 0; background: none; padding: 6px 4px; min-height: 44px; line-height: 1.3; }
+.item-nome small { color: var(--muted); font-size: .9rem; }
+.item-qtd { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.item-qtd button { width: 44px; height: 44px; padding: 0; font-size: 1.3rem; touch-action: manipulation; }
+.item-qtd b { min-width: 2ch; text-align: center; font-size: 1.1rem; }
+.item-tags { margin: 4px 0 0 54px; }
+.item-corpo { margin-top: 12px; }
+.item-grade { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.item label { display: block; margin: 0 0 .7rem; }
+.item-segredo, .item-alerta { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; font-size: .95rem; line-height: 1.45; }
+.item-segredo { background: var(--surface2); border: 1px dashed var(--accent); }
+.item-alerta.aviso { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+.item-alerta.ok { border: 1px solid var(--line); color: var(--muted); }
+.item-segredo .ic, .item-alerta .ic, .item-mestre legend .ic { flex: none; margin-top: 3px; }
+.item-cat .controls { margin: .8rem 0 0; }
+.inv-moedas { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 12px; margin-top: .8rem; }
+.inv-sobre { color: var(--poder); font-weight: 700; }
+.inv-add { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-items: end; }
+.inv-add label { margin: 0; }
+.inv-add select { min-width: 0; }
+@media (max-width: 520px) { .item-tags { margin-left: 0; } .item-topo { flex-wrap: wrap; } .item-nome { flex-basis: calc(100% - 60px); } }
 </style>
 </head>
 <body>

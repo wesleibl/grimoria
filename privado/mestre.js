@@ -1387,6 +1387,7 @@ function viewJogador(j) {
     acessoJog(j) +
     '<div class="pj-moral"><p class="pj-rotulo">Moralidade' + (j.etica && j.moral ? ": <b>" + moralNome(j.etica, j.moral) + "</b>" : "") + "</p>" + moralGrid(j) +
     '<p class="mdica">Toque de novo na opção escolhida para limpar.</p></div></div></div>';
+  h += '<p><button type="button" data-invir="' + j.id + '">' + ic("mochila") + " Ver e editar o inventário (" + (j.inv || []).length + ")</button></p>";
   h += "<h2>Observações</h2>" +
     '<section class="panel"><label class="pj-obs-l">Contexto (opcional, por exemplo: Sessão 1)<input class="sorteio-in" type="text" maxlength="60" id="obsRotulo"></label>' +
     '<label class="pj-obs-l">Nova observação<textarea class="sorteio-in" rows="3" id="obsTexto"></textarea></label>' +
@@ -2819,8 +2820,250 @@ function atualizarJogadores() {
     if (jogSel || Object.keys(jogSujos).length || !d.jogadores) return;
     jogs = d.jogadores;
     CONTAS = d.usuarios || CONTAS;
-    if (rotaAtual() === "jogadores" && !jogSel) renderizar();
+    if ((rotaAtual() === "jogadores" && !jogSel) || rotaAtual() === "itens") renderizar();
   }, function () { /* sem conexão: fica com a lista que já tem */ });
+}
+
+/* ============================ ITENS ============================ */
+
+/* Catálogo do mestre (EST.itens). Os itens de Black Clover trazem uma descrição secreta e os grimórios com que combinam; isso só
+   existe aqui, no arquivo do mestre, e o servidor tira esses campos antes de entregar um inventário ao jogador. */
+function ibc(id, cat, nome, raridade, fase, efeito, desc, mestre, sinergia, peso, valor) {
+  return { id: "bc-" + id, origem: "bc", cat: cat, nome: nome, raridade: raridade, fase: fase || "", efeito: efeito, desc: desc, mestre: mestre, sinergia: sinergia || [], peso: peso || 0, valor: valor || 0 };
+}
+var ITENS_BC = [
+  ibc("pedra-mana", "consumivel", "Pedra de Mana", "incomum", "", "Restaura 2 de mana", "Cristal azul que se desfaz em luz quando é apertado. Usá-lo gasta uma ação.",
+    "Barato de dar, mas muda o ritmo do combate. Brilha com ultimates (4 mana): Gravidade, Tempo e Espíritos conseguem lançar o ultimate duas vezes em combates longos. Evite dar mais de 2 por sessão.", ["Gravidade", "Tempo", "Espíritos", "Água"], 0.1, ouro(25)),
+  ibc("elixir-mana", "consumivel", "Elixir de Mana", "raro", "Arco 2", "Restaura 4 de mana", "Frasco grosso e morno, com cheiro de ervas queimadas. Gasta uma ação.",
+    "Quase um ultimate de graça. Com Raios, dá para encadear Relâmpago Veloz (age duas vezes) e depois lançar Tempestade Trovejante no mesmo combate.", ["Raios", "Tempo", "Gravidade"], 0.3, ouro(120)),
+  ibc("erva-curativa", "consumivel", "Erva Curativa do Reino", "comum", "", "Cura 1d6 de vida", "Folha amarga, mascada ou posta sobre o ferimento. Vendida em qualquer vilarejo.",
+    "Item de reposição. Faz o grupo sem Luz Curativa continuar em pé; cuidado para não tirar a graça do suporte do grupo, se houver um.", ["Luz Curativa"], 0.05, ouro(5)),
+  ibc("tonico-forca", "consumivel", "Tônico de Força Bruta", "incomum", "", "+2 nas rolagens de Poder por uma cena", "Líquido espesso e avermelhado que aquece o corpo todo.",
+    "Soma com Fúria Titânica (Reforço) e com Frenesi (Sangue): fica forte demais. Se o jogador tiver um desses, peça que escolha um dos dois efeitos.", ["Reforço", "Sangue"], 0.3, ouro(30)),
+  ibc("antidoto-folha-azul", "consumivel", "Antídoto de Folha-Azul", "incomum", "", "Encerra um veneno ativo", "Pasta azulada feita pelos curandeiros de Pedra Velha.",
+    "Anula o veneno do Grimório de Veneno inimigo e dos bichos do bestiário. Contra Antídoto Reverso (Veneno), só funciona no alvo escolhido.", ["Veneno"], 0.1, ouro(20)),
+  ibc("frasco-nevoa", "consumivel", "Frasco de Névoa", "incomum", "", "Névoa por 2 turnos: quem está dentro não é visto de longe", "Vidro fino com fumaça cinzenta presa dentro. Quebrado no chão, a névoa se espalha.",
+    "Ferramenta de fuga. Com Sombras (Passo Sombrio) o personagem some sem teste; com Vento a névoa é espalhada de propósito. Ótimo para cenas de infiltração.", ["Sombras", "Ilusão", "Vento"], 0.2, ouro(25)),
+  ibc("anel-reserva", "magico", "Anel de Reserva de Mana", "raro", "Arco 1: Porto Salgado", "+2 de mana máxima", "Aro de prata fosca com uma pedra azul escura. Esquenta quando o dono está sem mana.",
+    "Máximo 1 por jogador. Forte com feitiços de 1 mana repetidos: Raios (Relâmpago Veloz), Lâminas (Corte Veloz / Lâmina Conjurada). Com Sangue vira combo com Pacto Rubro: mana sobrando para ultimates.", ["Raios", "Lâminas", "Sangue"], 0.1, ouro(250)),
+  ibc("luva-conducao", "magico", "Luva de Condução", "raro", "Arco 2", "+1 nas rolagens de ataque de feitiço (d20 + atributo)", "Luva de couro com fios de metal bordados no dorso, que conduzem a mana até os dedos.",
+    "Muito boa em feitiços com vários alvos: Chuva de Lâminas, Tempestade Cortante (Vento) e Tempestade Trovejante (Raios) rolam um ataque por alvo, então o +1 vale várias vezes. Não deixe empilhar com outro bônus de ataque.", ["Lâminas", "Vento", "Raios"], 0.3, ouro(300)),
+  ibc("espada-condutora", "arma", "Espada Condutora de Mana", "raro", "Arco 2", "Dano 1d8 cortante · +1 de dano se gastar 1 mana antes do golpe", "Lâmina escura com veios azuis. Responde à mana do dono.",
+    "O +1 soma com Lâmina Conjurada, então o corpo a corpo de Lâminas fica pesado: considere que não empilha. Corte Perfurante (Lâminas) e Punho Pesado (Reforço) funcionam bem com ela.", ["Lâminas", "Reforço"], lb(3), ouro(400)),
+  ibc("botas-leves", "magico", "Botas de Passo Leve", "incomum", "Arco 1: Floresta dos Cedros", "+1 de deslocamento", "Botas finas, silenciosas, feitas por caçadores da Floresta dos Cedros.",
+    "Para quem já anda muito, combina com Passo do Vento (dobra o deslocamento) e Relâmpago Veloz (age duas vezes). Dá vantagem em testes de furtividade em terreno de floresta se quiser.", ["Vento", "Raios", "Sombras"], 0.6, ouro(80)),
+  ibc("manto-cinzento", "magico", "Manto Cinzento", "incomum", "Arco 1: Porto Salgado", "Vantagem em furtividade quando há pouca luz", "Capa que absorve a luz ao redor e confunde o olhar.",
+    "Dá o bônus de cenário a quem já é furtivo. Com Passo Sombrio e Lâmina Oculta (o dano dobra se o alvo não viu) o jogador vira um assassino; deixe isso para cenas de infiltração, não para qualquer combate.", ["Sombras", "Ilusão"], 0.8, ouro(150)),
+  ibc("escudo-cristal", "armadura", "Escudo de Cristal Rúnico", "raro", "Arco 2", "Defesa +1 · uma vez por combate, anula um feitiço de 1 mana dirigido ao dono", "Escudo de cristal liso, com runas apagadas na borda.",
+    "Funciona bem com tanks (Terra, Reforço). Não conta como Barreira Anulante (Antimagia): não cancele feitiços de 2 ou 4 mana.", ["Terra", "Reforço", "Antimagia"], lb(8), ouro(350)),
+  ibc("cinto-grimorio", "armadura", "Cinto Porta-Grimório", "incomum", "", "Protege o grimório: roubá-lo exige Destreza 15", "Cinto de couro grosso com um estojo trancado para o grimório.",
+    "Gancho: a organização infiltrada pode tentar tomar grimórios. Dá ao jogador uma chance de reagir. Antimagia (Corte Nulo) pode abrir o estojo à força.", ["Antimagia"], 0.5, ouro(60)),
+  ibc("vassoura", "magico", "Vassoura de Viagem", "raro", "Arco 1: Floresta dos Cedros", "Voa sobre obstáculos e vazios · 1 mana por cena", "Vassoura de cabo escuro, comum entre os cavaleiros mágicos.",
+    "Com Vento (Passo do Vento) o alcance dobra e vira o transporte do grupo; com Gravidade, inimigos no ar sofrem Inversão. Cuidado: ignora terreno e pode pular o cenário que você montou.", ["Vento", "Gravidade", "Raios"], 2, ouro(500)),
+  ibc("bolsa-sem-fundo", "magico", "Bolsa Sem Fundo", "raro", "Arco 2", "Guarda até 50 kg sem pesar na carga", "Bolsa discreta, mais funda por dentro do que por fora.",
+    "Zera o controle de peso do inventário. Use com moderação; se o jogador a perder, o conteúdo some junto.", [], 1, ouro(450)),
+  ibc("algema-anulante", "ferramenta", "Algema Anuladora", "raro", "Arco 2", "Quem a veste não consegue lançar feitiços · romper exige Poder 18", "Algemas de ferro negro gravadas com marcas antigas.",
+    "Usada para prender magos. Corte Nulo (Antimagia) cancela o efeito por 1 turno. Pode ser mais uma pista sobre a organização, que sabe fabricá-las.", ["Antimagia"], lb(5), ouro(300)),
+  ibc("pedra-comunicacao", "magico", "Pedras Gêmeas de Comunicação", "incomum", "Arco 1: Pedra Velha", "Permite falar com quem tem a pedra gêmea, a qualquer distância no reino", "Duas pedras lisas que vibram quando uma delas é segurada.",
+    "Boa para dividir o grupo e criar tensão. Se uma pedra for tomada, o inimigo ouve tudo.", [], 0.2, ouro(180)),
+  ibc("pingente-purificador", "magico", "Pingente Purificador", "lendário", "Arco final", "+2 em testes para resistir a controle mental", "Pingente de cristal puro que fica quente perto de magia que corrompe.",
+    "Reduz em 3 a dificuldade de quebrar a marca de um aliado (ver 6.3 da campanha). Melhor combinação: Antimagia (Corte Nulo) para quebrar e Luz Curativa para cuidar do estágio avançado. Entregar só perto do arco final.", ["Antimagia", "Luz Curativa"], 0.1, ouro(900)),
+  ibc("pagina-grimorio", "tesouro", "Página de Grimório Perdida", "lendário", "Arco final", "Pode se tornar um feitiço novo", "Folha antiga, com símbolos que mudam quando se olha por muito tempo.",
+    "Recompensa para o “Despertar do grimório” (aba Níveis): o jogador cria com você um feitiço de 4 mana ligado ao tema do grimório dele. Aprove o efeito para não quebrar o equilíbrio.", [], 0.05, 0),
+  ibc("presa-lobo", "tesouro", "Presa de Lobo de Mana", "comum", "Sessão 1", "Material de criatura", "Dente longo que ainda guarda um pouco de brilho azul.",
+    "Dropa do Lobo de Mana (bestiário). Gancho: um artesão de Pedra Velha troca 3 presas por um amuleto simples (+1 de deslocamento).", [], 0.1, ouro(8)),
+  ibc("emblema-vila", "tesouro", "Emblema do Vilarejo", "comum", "Sessão 1", "Prova de origem", "Pingente de madeira com o símbolo do vilarejo do personagem.",
+    "Ligue à Origem do personagem (aba Vilarejos): NPCs do vilarejo ajudam quem mostra o emblema. Também é um bom gancho de roubo ou perda.", [], 0.05, 0)
+];
+function catalogoPadrao() {
+  return ITENS_BASE.concat(ITENS_BC).map(function (i) { return JSON.parse(JSON.stringify(i)); });
+}
+
+var itensAba = "catalogo", itFiltro = { q: "", cat: "todas", origem: "todas", soFase: false }, itEdit = null, itMsg = "", itDel = "";
+function listaItens() { return EST.itens || (EST.itens = []); }
+function salvarItens() { salvarEstado("itens"); }
+function achaItem(id) { var r = null; listaItens().forEach(function (i) { if (i.id === id) r = i; }); return r; }
+function idxFase(f) { return FASES.indexOf(f); }
+function itemNaFase(i) { return !EST.progresso || !i.fase || idxFase(i.fase) <= idxFase(EST.progresso); }
+function itemIdNovo() { return "c" + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36); }
+
+function mesclarPadrao() {
+  var tem = {};
+  listaItens().forEach(function (i) { tem[i.id] = true; });
+  var novos = catalogoPadrao().filter(function (i) { return !tem[i.id]; });
+  novos.forEach(function (i) { listaItens().push(i); });
+  salvarItens();
+  itMsg = novos.length ? novos.length + " itens adicionados ao catálogo." : "O catálogo já tem todos os itens padrão.";
+}
+
+function itensFiltrados() {
+  var q = itFiltro.q.trim().toLowerCase();
+  return listaItens().filter(function (i) {
+    if (itFiltro.cat !== "todas" && i.cat !== itFiltro.cat) return false;
+    if (itFiltro.origem !== "todas" && (i.origem || "custom") !== itFiltro.origem) return false;
+    if (itFiltro.soFase && !itemNaFase(i)) return false;
+    return !q || (i.nome + " " + (i.efeito || "") + " " + (i.desc || "") + " " + (i.mestre || "")).toLowerCase().indexOf(q) !== -1;
+  });
+}
+
+function origemNome(o) { return { dnd: "D&D 5e", bc: "Black Clover", custom: "Seu" }[o || "custom"] || "Seu"; }
+
+function itCampo(rot, f, id, v, tipo, extra) {
+  return "<label>" + rot + '<input class="sorteio-in" type="' + tipo + '" data-itf="' + f + '" data-itid="' + id + '" value="' + esc(v) + '"' + (extra || "") + "></label>";
+}
+
+function itemCatalogoHTML(i) {
+  var edit = itEdit === i.id;
+  var tags = '<span class="tag role">' + esc(catNome(i.cat)) + '</span><span class="tag role">' + origemNome(i.origem) + "</span>";
+  if (i.raridade && i.raridade !== "comum") tags += '<span class="tag leg">' + esc(i.raridade) + "</span>";
+  if (i.fase) tags += '<span class="tag role">' + ic("ampulheta") + esc(i.fase) + "</span>";
+  tags += '<span class="tag role">' + pesoTxt(i.peso) + " · " + valorTxt(i.valor) + "</span>";
+  var h = '<article class="panel item-cat"><h3>' + esc(i.nome) + '</h3><div class="meta item-tags">' + tags + "</div>";
+  if (!itemNaFase(i)) h += '<p class="item-alerta aviso">' + ic("alerta") + "<span>Adiantado: a campanha está em " + esc(EST.progresso) + ".</span></p>";
+  if (i.efeito) h += "<p><b>" + esc(i.efeito) + "</b></p>";
+  if (i.desc) h += "<p>" + esc(i.desc) + "</p>";
+  if (i.mestre) h += '<p class="item-segredo">' + ic("cadeado") + "<span><b>Só mestre:</b> " + esc(i.mestre) + "</span></p>";
+  if ((i.sinergia || []).length) h += '<p class="mdica">Sinergia: ' + esc(i.sinergia.join(", ")) + "</p>";
+  if (edit) {
+    h += '<div class="item-grade">' + itCampo("Nome", "nome", i.id, i.nome, "text", ' maxlength="80"') +
+      '<label>Categoria<select class="sorteio-in" data-itf="cat" data-itid="' + i.id + '">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === i.cat ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select></label>" +
+      '<label>Raridade<select class="sorteio-in" data-itf="raridade" data-itid="' + i.id + '">' + RARID_ITEM.map(function (c) { return '<option value="' + c + '"' + (c === (i.raridade || "comum") ? " selected" : "") + ">" + c + "</option>"; }).join("") + "</select></label>" +
+      itCampo("Peso (kg)", "peso", i.id, i.peso || 0, "number", ' min="0" step="0.05"') + itCampo("Valor (ouro)", "valor", i.id, (i.valor || 0) / 100, "number", ' min="0" step="0.01"') + "</div>" +
+      itCampo("Efeito ou dano (resumo)", "efeito", i.id, i.efeito || "", "text", ' maxlength="200"') +
+      '<label>Descrição (o jogador vê)<textarea class="sorteio-in" rows="3" data-itf="desc" data-itid="' + i.id + '">' + esc(i.desc || "") + "</textarea></label>" +
+      '<fieldset class="pj-acesso item-mestre"><legend>' + ic("cadeado") + 'Só o mestre vê</legend><label>Descrição secreta (ex.: forte quando usado com tal magia)<textarea class="sorteio-in" rows="4" data-itf="mestre" data-itid="' + i.id + '">' + esc(i.mestre || "") + "</textarea></label>" +
+      itCampo("Grimórios com sinergia (vírgula)", "sinergia", i.id, (i.sinergia || []).join(", "), "text", ' list="listaGrim"') +
+      '<label>Fase da campanha<select class="sorteio-in" data-itf="fase" data-itid="' + i.id + '"><option value="">Qualquer fase</option>' + opcoes(FASES, i.fase || "", false) + "</select></label></fieldset>" +
+      '<p><button type="button" class="primary" data-itfim="1">Concluir edição</button></p>';
+  } else {
+    var jogadores = (jogs || []);
+    h += '<div class="controls"><button type="button" data-itedit="' + i.id + '">Editar</button>' +
+      (jogadores.length ? '<select class="sorteio-in" data-itdarsel="' + i.id + '" aria-label="Dar a qual jogador">' + jogadores.map(function (j) { return '<option value="' + j.id + '">' + esc(j.personagem || j.nome || "Sem nome") + "</option>"; }).join("") + '</select><button type="button" class="primary" data-itdar="' + i.id + '">Dar ao jogador</button>' : '<span class="mdica">Cadastre jogadores para entregar.</span>') +
+      '<button type="button" data-itdel="' + i.id + '">' + (itDel === i.id ? "Clique de novo para excluir" : "Excluir") + "</button></div>";
+  }
+  return h + "</article>";
+}
+
+function itCatalogoListaHTML() {
+  var l = itensFiltrados();
+  if (!listaItens().length) return '<div class="empty">O catálogo está vazio. Carregue os itens padrão (D&amp;D 5e e Black Clover) ou crie o seu.</div>';
+  if (!l.length) return '<div class="empty">Nenhum item com esse filtro.</div>';
+  return '<p id="itConta" role="status" class="mdica">' + l.length + " de " + listaItens().length + ' itens.</p><div class="cols">' + l.map(itemCatalogoHTML).join("") + "</div>";
+}
+
+function itCatalogoHTML() {
+  var h = '<div class="controls"><button type="button" class="primary" id="itNovo">Novo item</button><button type="button" id="itPadrao">Carregar itens padrão</button></div>' +
+    '<p id="itMsg" role="status" class="mdica">' + esc(itMsg) + "</p>" +
+    '<div class="controls"><input type="search" id="itBusca" placeholder="Buscar por nome, efeito ou nota" aria-label="Buscar itens" value="' + esc(itFiltro.q) + '">' +
+    '<div class="fgroup"><span>Categoria</span><div class="chips" id="itCats">' + [["todas", "Todas"]].concat(CATS_ITEM).map(function (c) {
+      return '<button type="button" class="chip" data-itcat="' + c[0] + '" aria-pressed="' + (itFiltro.cat === c[0]) + '">' + c[1] + "</button>";
+    }).join("") + '</div></div><div class="fgroup"><span>Origem</span><div class="chips" id="itOrig">' + [["todas", "Todas"], ["dnd", "D&D 5e"], ["bc", "Black Clover"], ["custom", "Seus"]].map(function (c) {
+      return '<button type="button" class="chip" data-itorig="' + c[0] + '" aria-pressed="' + (itFiltro.origem === c[0]) + '">' + c[1] + "</button>";
+    }).join("") + '</div></div><label class="rev-label"><input type="checkbox" id="itSoFase"' + (itFiltro.soFase ? " checked" : "") + "> Só o que já faz sentido na fase atual</label></div>";
+  return h + '<div id="itLista">' + itCatalogoListaHTML() + "</div>";
+}
+
+function itJogadoresHTML() {
+  if (!jogs || !jogs.length) return '<div class="empty">Nenhum jogador cadastrado ainda.</div>';
+  if (!invJogId || !achaJog(invJogId)) invJogId = jogs[0].id;
+  var d = achaJog(invJogId);
+  var h = '<div class="controls"><div class="fgroup"><span>Jogador</span><div class="chips" id="itJogs">' + jogs.map(function (j) {
+    return '<button type="button" class="chip" data-itjog="' + j.id + '" aria-pressed="' + (j.id === invJogId) + '">' + esc(j.personagem || j.nome || "Sem nome") + "</button>";
+  }).join("") + "</div></div></div>";
+  h += '<p class="mdica">' + esc(d.personagem || d.nome || "") + (d.grim ? " · Grimório: " + esc(d.grim) : " · sem grimório") + ". O jogador vê os mesmos itens, menos o que está marcado “Só mestre”.</p>";
+  return h + invCorpoHTML(d, true);
+}
+
+function viewItens() {
+  if (!mestreAberto) {
+    return '<div class="lock"><h1>Itens</h1><p>Esta aba tem as notas secretas dos itens e o inventário de cada jogador. Abra só quando nenhum jogador estiver olhando a tela.</p>' +
+      '<p><button type="button" class="primary" id="abrirMestre">Abrir os itens</button></p></div>';
+  }
+  garantirJogs();
+  var h = "<h1>Itens</h1>" + '<p class="lead">O catálogo é só seu: itens de D&amp;D 5e e de Black Clover, cada um com uma descrição secreta. O jogador só vê o que entrar no inventário dele, sem as suas notas, e pode mexer no próprio inventário. Você também pode mexer no de qualquer um.</p>' +
+    '<datalist id="listaGrim">' + GRIMORIOS.map(function (g) { return '<option value="' + esc(grimCurto(g.nome)) + '">'; }).join("") + "</datalist>" +
+    '<section class="panel"><h3>' + ic("ampulheta") + "Progresso da campanha</h3>" +
+    '<label>Fase atual<select class="sorteio-in" id="itProgresso"><option value="">Não definida</option>' + opcoes(FASES, EST.progresso || "", false) + "</select></label>" +
+    '<p class="mdica">Os itens que pedem uma fase mais adiantada ganham um aviso, no catálogo e no inventário do jogador. Assim você nota quando algo forte demais chegou cedo.</p>' + itProgressoResumo() + "</section>" +
+    '<div class="controls"><div class="chips" id="itAbas"><button type="button" class="chip" data-itaba="catalogo" aria-pressed="' + (itensAba === "catalogo") + '">Catálogo</button>' +
+    '<button type="button" class="chip" data-itaba="jogadores" aria-pressed="' + (itensAba === "jogadores") + '">Inventário dos jogadores</button></div></div>';
+  return h + (itensAba === "catalogo" ? itCatalogoHTML() : itJogadoresHTML());
+}
+
+/* Conferência geral: itens adiantados e jogadores sobrecarregados, em todos os inventários. */
+function itProgressoResumo() {
+  if (!EST.progresso || !jogs) return "";
+  var av = [];
+  jogs.forEach(function (j) {
+    var nome = j.personagem || j.nome || "Sem nome";
+    (j.inv || []).forEach(function (i) { if (i.fase && idxFase(i.fase) > idxFase(EST.progresso)) av.push(nome + " tem " + i.nome + " (pensado para " + i.fase + ")."); });
+    if (invPeso(j) > invCapacidade(j)) av.push(nome + " está acima da carga sugerida (" + pesoTxt(invPeso(j)) + " de " + pesoTxt(invCapacidade(j)) + ").");
+  });
+  if (!av.length) return '<p class="item-alerta ok">' + ic("certo") + "<span>Tudo certo: nenhum jogador tem item adiantado para " + esc(EST.progresso) + ".</span></p>";
+  return '<div class="item-alerta aviso">' + ic("alerta") + "<span><b>Para conferir:</b><br>" + av.map(esc).join("<br>") + "</span></div>";
+}
+
+function acoesItens(b) {
+  var d = b.dataset;
+  if (b.id === "itNovo") {
+    var n = { id: itemIdNovo(), origem: "custom", cat: "outro", nome: "Novo item", raridade: "comum", fase: "", efeito: "", desc: "", mestre: "", sinergia: [], peso: 0, valor: 0 };
+    listaItens().unshift(n);
+    itEdit = n.id; itensAba = "catalogo"; itFiltro = { q: "", cat: "todas", origem: "todas", soFase: false };
+    salvarItens(); renderizar();
+    return true;
+  }
+  if (b.id === "itPadrao") { mesclarPadrao(); renderizar(); return true; }
+  if (d.itaba) { itensAba = d.itaba; renderizar(); return true; }
+  if (d.itjog) { invJogId = d.itjog; invCat = "todas"; invQ = ""; renderizar(); return true; }
+  if (d.itcat) { itFiltro.cat = d.itcat; renderizar(); return true; }
+  if (d.itorig) { itFiltro.origem = d.itorig; renderizar(); return true; }
+  if (d.itedit) { itEdit = d.itedit; renderizar(); return true; }
+  if (d.itfim !== undefined) { itEdit = null; renderizar(); return true; }
+  if (d.itdel) {
+    if (itDel !== d.itdel) { itDel = d.itdel; renderizar(); return true; }
+    EST.itens = listaItens().filter(function (i) { return i.id !== d.itdel; });
+    itDel = ""; itEdit = null; salvarItens(); renderizar();
+    return true;
+  }
+  if (d.itdar) {
+    var item = achaItem(d.itdar), sel = document.querySelector('[data-itdarsel="' + d.itdar + '"]');
+    var jog = sel ? achaJog(sel.value) : null;
+    if (!item || !jog) return true;
+    b.disabled = true;
+    invJogId = jog.id;
+    invOp("add", { item: invDeTemplate(item, 1, true) }).then(function (r) {
+      b.disabled = false;
+      if (r) { jog.inv = r.inv; jog.moedas = r.moedas; itMsg = item.nome + " foi para o inventário de " + (jog.personagem || jog.nome || "jogador") + "."; }
+      else itMsg = "Não foi possível entregar. Veja o aviso no topo.";
+      var m = document.getElementById("itMsg"); if (m) m.textContent = itMsg;
+    });
+    return true;
+  }
+  if (d.invir) { invJogId = d.invir; itensAba = "jogadores"; location.hash = "#itens"; renderizar(); return true; }
+  return false;
+}
+
+function changeItens(el) {
+  var d = el.dataset || {};
+  if (el.id === "itProgresso") { EST.progresso = el.value; salvarEstado("progresso"); renderizar(); return true; }
+  if (el.id === "itSoFase") { itFiltro.soFase = el.checked; renderizar(); return true; }
+  if (d.itf) {
+    var i = achaItem(d.itid);
+    if (!i) return true;
+    var v = el.value;
+    if (d.itf === "peso") v = Math.max(0, Number(v) || 0);
+    else if (d.itf === "valor") v = Math.max(0, Math.round((Number(v) || 0) * 100));
+    else if (d.itf === "sinergia") v = v.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+    else if (d.itf === "nome" && !v.trim()) { el.value = i.nome; return true; }
+    i[d.itf] = v;
+    salvarItens();
+    return true;
+  }
+  return false;
+}
+function inputItens(el) {
+  if (el.id === "itBusca") { itFiltro.q = el.value; var l = document.getElementById("itLista"); if (l) l.innerHTML = itCatalogoListaHTML(); return true; }
+  return false;
 }
 
 /* ============================ LIGAÇÃO COM O APP ============================ */
@@ -2833,11 +3076,12 @@ VIEWFN.jogadores = viewJogadores;
 VIEWFN["sessao-zero"] = viewSessaoZero;
 VIEWFN.mestre = viewMestre;
 VIEWFN.acao = viewAcaoMestre;
+VIEWFN.itens = viewItens;
 VIEWFN.cenarios = viewCenarios;
 
 MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
-  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
@@ -2846,7 +3090,7 @@ MESTRE = {
   vilaRodape: vilaRodapeMestre,
   views: [
     ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"],
-    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
+    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
   iniciar: function (d) {
@@ -2862,7 +3106,7 @@ MESTRE = {
 
   antes: function (r) {
     if (r !== "sorteio") cer.ativa = false;
-    if (r === "jogadores" && ultimaRota !== "jogadores") atualizarJogadores();
+    if ((r === "jogadores" || r === "itens") && ultimaRota !== r) atualizarJogadores();
     if (r !== "acao" && campoRodando) pararCampoPoll();
     ultimaRota = r;
   },
@@ -2876,6 +3120,7 @@ MESTRE = {
 
   change: function (el) {
     var d = el.dataset || {};
+    if (changeItens(el)) return;
     if (el.id === "cenaUp") { enviarCenario(el); return; }
     if (el.id === "cenaTroca") { trocarFotoCenario(el); return; }
     if (el.id === "gridUp") { enviarGrid(el); return; }
@@ -2931,6 +3176,7 @@ MESTRE = {
 
   input: function (el) {
     var d = el.dataset || {};
+    if (inputItens(el)) return;
     if (inputCenarios(el)) return;
     if (inputAcao(el)) return;
     if (el.id === "busca") { filtro.q = el.value; desenharGrimorios(); }
@@ -2942,6 +3188,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (acoesItens(b)) return true;
     if (clickCenarios(b)) return true;
     if (clickAcao(b)) return true;
     if (acoesSorteio(b)) return true;
