@@ -66,6 +66,7 @@ var ICON_PATHS = {
   martelo: '<path d="M14 4l6 6-3 3-6-6z"/><path d="M12.500 9.500L4 18l2 2 8.500-8.500"/>',
   vento: '<path d="M3 9h11a3 3 0 10-3-3"/><path d="M3 15h15a3 3 0 11-3 3"/>',
   livro: '<path d="M4 5a2 2 0 012-2h14v16H6a2 2 0 00-2 2z"/><path d="M4 19v1a2 2 0 002 2h14"/>',
+  tesouro: '<path d="M4 10h16v10H4z"/><path d="M4 10a8 5 0 0116 0"/><path d="M12 13v3"/>',
   corrente: '<path d="M10 14a4 4 0 005.600 0l3-3a4 4 0 00-5.600-5.600l-1 1"/><path d="M14 10a4 4 0 00-5.600 0l-3 3a4 4 0 005.600 5.600l1-1"/>',
   bussola: '<circle cx="12" cy="12" r="9"/><path d="M15.500 8.500l-2 5-5 2 2-5z"/>',
   casa: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
@@ -116,6 +117,7 @@ function bookCard(g, paraJogador, libHTML) {
     '<span class="tag role">' + ic(PAPEL_ICON[g.papel]) + g.papel + "</span>" +
     '<span class="tag role">' + g.elem + "</span>" +
     (g.tier ? '<span class="tag leg">' + g.tier + "</span>" : "") +
+    (g.reservado && !paraJogador ? '<span class="tag role" title="Fora do sorteio: o mestre entrega à mão">Reservado</span>' : "") +
     "<span>" + g.sub + "</span></div></header>";
   h += '<ul class="spells">' + g.spells.map(function (s) { return spellItem(s, s.marco, libHTML ? libHTML(s) : ""); }).join("") + "</ul>";
   if (!paraJogador && g.futuras && g.futuras.length) {
@@ -134,19 +136,20 @@ function viewRegras() {
   h += "<h2>Atributos</h2>" + table(["Atributo", "Para que serve"], [
     ["<b>Poder</b>", "Ataque físico, fortalecimento, magias de dano, saltos, empurrar, aguentar pancada."],
     ["<b>Destreza</b>", "Furtividade, precisão, esquiva, mobilidade."],
-    ["<b>Inteligência</b>", "Suporte, cura, controle, conhecimento, percepção."]
+    ["<b>Inteligência</b>", "Suporte, cura, controle, conhecimento, percepção e manter feitiços de efeito contínuo (barreiras, auras, invocações)."]
   ]);
 
   h += "<h2>Criar o personagem</h2>" + panel("Números", "<ul>" +
     "<li><b>Treino prévio:</b> distribua +5 pontos entre os atributos, no máximo +3 em um. Isso é feito antes de ver o grimório.</li>" +
     "<li><b>Vida:</b> 20.</li><li><b>Mana:</b> 10, mais 1 a cada 2 pontos de Inteligência.</li>" +
     "<li><b>Defesa:</b> 10 + Destreza.</li>" +
-    "<li><b>Redução de dano:</b> igual ao Poder (o dano mínimo é sempre 1).</li>" +
+    "<li><b>Redução de dano:</b> 1 para cada 2 pontos de Poder (Poder 2 = 1, Poder 4 = 2; o dano mínimo é sempre 1).</li>" +
     "<li><b>Deslocamento:</b> 6 casas por turno, mais 1 a cada 2 pontos de Destreza.</li>" +
     '<li>Ao subir de nível, veja a aba <a href="#niveis">Níveis</a>.</li></ul>');
 
   h += "<h2>Rolagens</h2>" + panel("Teste", "<p>Role d20 + atributo contra a dificuldade que o mestre define. Exemplo: um salto usa Poder, não Atletismo.</p>" +
-    table(["Dificuldade", "Valor"], [["Fácil", "10"], ["Média", "15"], ["Difícil", "20"]]));
+    table(["Dificuldade", "Valor"], [["Fácil", "10"], ["Média", "15"], ["Difícil", "20"]]) +
+    "<p><b>Vantagem e desvantagem:</b> com vantagem, role dois d20 e fique com o maior. Com desvantagem, role dois e fique com o menor. Vantagens e desvantagens não se acumulam: se houver das duas, uma anula a outra.</p>");
 
   h += "<h2>Combate</h2>" + panel("Como começar",
     "<ol><li>O mestre anuncia o combate e descreve a cena.</li>" +
@@ -156,17 +159,34 @@ function viewRegras() {
   h += panel("Acertar e causar dano", "<p>São dois passos separados. Primeiro se verifica se acertou. Só depois se calcula o dano.</p>" +
     table(["Momento", "Rolagem", "Compara com"], [
       ["Acertou?", "d20 + ataque", "Defesa do alvo (jogador: 10 + Destreza; bandido: 10)"],
-      ["Quanto de dano?", "dado de dano", "Nada. Se o alvo é jogador, subtrai o Poder dele (mínimo 1)."]
+      ["Quanto de dano?", "dado de dano", "Nada. Se o alvo é jogador, subtrai a redução de dano dele (1 para cada 2 de Poder; mínimo 1)."]
     ]) +
-    "<p><b>Exemplo:</b> a Lia (Destreza +3, Poder +1) tem Defesa 13. O bandido rola 12 + 2 = 14 e acerta. Rola o dano: 1d6 + 1 = 5. Ela subtrai o Poder (1) e perde 4 de vida.</p>" +
+    "<p><b>Exemplo:</b> a Lia (Destreza +3, Poder +2) tem Defesa 13. O bandido rola 12 + 2 = 14 e acerta. Rola o dano: 1d6 + 1 = 5. Ela subtrai a redução de dano (Poder 2 = 1) e perde 4 de vida.</p>" +
     "");
 
-  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Mana máxima: 10, mais 1 a cada 2 pontos de Inteligência.</li><li>Custos: 1 (básico), 2 (médio) e 4 (ultimate).</li><li>Recupera 1 por turno, ou tudo em um descanso.</li></ul>");
+  h += panel("Ataque com arma", "<p>Atacar com uma arma não gasta mana e usa a sua ação. Role d20 + <b>Poder</b> (arma corpo a corpo, pesada ou de duas mãos) ou d20 + <b>Destreza</b> (arma à distância, leve, de acuidade ou de arremesso) contra a Defesa do alvo. Se acertar, role o dado da arma (sem somar atributo, como nos feitiços). Você escolhe qual dos dois usar quando a arma for leve ou de acuidade.</p>");
+
+  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Mana máxima: 10, mais 1 a cada 2 pontos de Inteligência.</li><li>Custo: cada feitiço mostra o próprio custo no card. Eles variam: alguns custam mais, outros menos.</li><li>Recupera 1 por turno em combate, ou tudo em um descanso.</li></ul>");
+
+  h += "<h2>Vida, queda e descanso</h2>" + panel(ic("coracao") + "Cair a 0 de Vida",
+    "<ol><li>Ao chegar a <b>0 de Vida</b>, o personagem <b>cai</b>: fica inconsciente, não age e não se move.</li>" +
+    "<li>Ele tem <b>3 salvaguardas</b>. No início de cada turno dele, role um d20 (sem somar atributo): <b>10 ou mais</b> é um sucesso, <b>9 ou menos</b> é uma falha.</li>" +
+    "<li><b>3 sucessos:</b> ele estabiliza. Continua caído, mas fora de perigo, e volta com 1 de Vida quando o combate acabar. <b>3 falhas:</b> o personagem morre.</li>" +
+    "<li>Um <b>20</b> no d20 levanta o personagem na hora, com 1 de Vida. Um <b>1</b> conta como 2 falhas.</li>" +
+    "<li>Sofrer dano enquanto está caído conta como 1 falha.</li>" +
+    "<li>Qualquer cura (feitiço, poção, erva) levanta o personagem e zera as salvaguardas. O Kit de curandeiro estabiliza um aliado caído sem precisar de salvaguarda.</li></ol>") +
+    panel(ic("ampulheta") + "Descanso",
+      "<p>Um descanso é uma pausa longa fora de combate (uma noite no acampamento, numa estalagem ou em casa). Quem descansa recupera <b>toda a Vida e toda a Mana</b>. O mestre decide quando a situação permite descansar.</p>");
 
   h += "<h2>Deslocamento</h2>" + panel("Com mapa e sem mapa",
     "<ul><li><b>Com mapa:</b> 6 casas por turno (1 casa = 1,5 m). Perder 2 de deslocamento deixa o alvo com 4. Dobrar deixa com 12.</li>" +
     "<li><b>Sem diagonal:</b> o movimento é só na horizontal e na vertical, e cada passo reto custa 1 casa. A diagonal só vale para alcançar um alvo no combate, nunca para andar.</li><li><b>Teatro da mente:</b> use faixas de distância (corpo a corpo, perto, longe). “Perder deslocamento” vira gastar um movimento a mais para se aproximar.</li>" +
     "<li>Com deslocamento 0 o alvo fica imobilizado, mas ainda pode atacar e lançar feitiços.</li></ul>");
+
+  h += "<h2>Itens e carga</h2>" + panel(ic("mochila") + "Inventário",
+    "<ul><li><b>Capacidade:</b> 20 kg + 5 kg por ponto de Poder. Acima disso, você fica sobrecarregado: -1 de deslocamento a cada 5 kg a mais.</li>" +
+    "<li><b>Equipado:</b> só os itens marcados como equipados dão bônus (Defesa, deslocamento, mana). Conta <b>uma</b> armadura e <b>um</b> escudo, o de maior Defesa.</li>" +
+    "<li>Armaduras pesadas atrapalham o movimento (-1 de deslocamento).</li></ul>");
 
   h += "<h2>Dano contínuo</h2>" + panel(ic("ampulheta") + "Resistência a cada turno",
     "<p>Feitiços com dano contínuo (veneno, queimadura, sangramento) têm um aviso no card. A cada turno do alvo:</p>" +
@@ -178,6 +198,65 @@ function viewRegras() {
   if (MESTRE) h += MESTRE.regrasExtra();
 
   return h + "</div>";
+}
+
+/* ============================ CAMINHOS DE MANA ============================ */
+
+/* Técnicas de mana: independentes do grimório (como o reforço do corpo e o encantamento de armas em Black Clover). O personagem aprende
+   um caminho quando a história permitir, com a aprovação do mestre. Cada técnica ocupa a vaga do crescimento do grimório naquele nível. */
+var CAMINHOS = [
+  { id: "reforco", nome: "Reforço de Mana", attr: "poder", ideia: "Mana espalhada pelo corpo: mais resistência e mais força nos golpes. Quem confia no físico.",
+    combina: "Fortaleza, Reforço, Aço, Ira do Leão, Lâminas",
+    tecnicas: [
+      { nome: "Pele de Mana", custo: 1, tipo: "básico", texto: "Até o fim do seu próximo turno, +1 de redução de dano e +1 de Defesa." },
+      { nome: "Punho de Mana", custo: 2, tipo: "médio", texto: "O seu próximo ataque (com arma ou sem) causa +1d6 de dano e empurra o alvo 1 casa." },
+      { nome: "Corpo de Mana Pleno", custo: 4, tipo: "ultimate", texto: "Por 3 turnos, +2 de redução de dano e +2 de dano nos ataques corpo a corpo. Você não pode ser derrubado nem empurrado." }
+    ]
+  },
+  { id: "zona", nome: "Zona de Mana", attr: "destreza", ideia: "Sentir a mana ao redor: criaturas, feitiços, armadilhas, golpes antes de acontecerem. Quem confia na percepção.",
+    combina: "Sombras, Vento, Névoa, Espelho, Raios",
+    tecnicas: [
+      { nome: "Sentir Mana", custo: 1, tipo: "básico", texto: "Por 2 turnos, você percebe criaturas e feitiços ativos, mesmo escondidos ou invisíveis, até longe. Ninguém surpreende você." },
+      { nome: "Antecipação", custo: 2, tipo: "médio", texto: "Por 2 turnos, os ataques à distância contra você têm -2 e você ganha +2 nos testes para evitar armadilhas e efeitos de área." },
+      { nome: "Zona de Mana", custo: 4, tipo: "ultimate", texto: "Por 3 turnos, uma zona de 3 casas em volta de você: você e os aliados dentro dela ganham +2 de Defesa. Invisíveis e ilusões dentro da zona são revelados." }
+    ]
+  },
+  { id: "encantamento", nome: "Encantamento", attr: "inteligencia", ideia: "Pôr mana nas armas e nas armaduras, as suas ou as dos aliados. Efeito que dura exige muito controle, por isso é de Inteligência.",
+    combina: "Lâminas, Aço, Mercúrio, Fogo Régio, Gelo, qualquer grimório que aplique um estado",
+    regra: "Só um encantamento ativo por vez (dois, se a Inteligência for 4 ou mais). Só vale em item equipado (marcado no Inventário).",
+    tecnicas: [
+      { nome: "Afiar com Mana", custo: 1, tipo: "básico", texto: "Por 3 turnos, a arma equipada (sua ou de um aliado perto) causa +1d4 de dano e conta como mágica." },
+      { nome: "Reforçar Armadura", custo: 2, tipo: "médio", texto: "Por 3 turnos, a armadura ou o escudo equipado (seu ou de um aliado perto) dá +1 de Defesa e +1 de redução de dano." },
+      { nome: "Imbuir", custo: 4, tipo: "ultimate", texto: "Por 3 turnos, uma arma equipada ganha o elemento do seu grimório: os ataques com ela causam +1d6 de dano e aplicam o estado que o grimório aplica (como Em chamas ou Molhado). O alvo faz teste de Inteligência contra 13 para evitar o estado." }
+    ]
+  }
+];
+function caminhoPorId(id) { var r = null; CAMINHOS.forEach(function (c) { if (c.id === id) r = c; }); return r; }
+function caminhoCardHTML(c, qtd, mestre) {
+  var a = ATTR[c.attr];
+  var h = '<article class="book" style="--attr:' + a.cor + '"><header><h3>' + c.nome + '</h3><div class="meta"><span class="tag" style="--attr:' + a.cor + '">' + ic(ATTR_ICON[c.attr]) + a.nome + "</span><span>Caminho de mana</span></div></header><p>" + c.ideia + "</p>";
+  var lista = typeof qtd === "number" ? c.tecnicas.slice(0, qtd) : c.tecnicas;
+  h += '<ul class="spells">' + lista.map(function (t, i) { return spellItem(t, i + 1); }).join("") + "</ul>";
+  if (c.regra && (typeof qtd !== "number" || qtd > 0)) h += '<p class="mdica"><b>Regra:</b> ' + c.regra + "</p>";
+  if (typeof qtd !== "number") h += '<p class="mdica"><b>Combina com:</b> ' + c.combina + ".</p>";
+  if (mestre && typeof CAMINHO_NOTAS !== "undefined" && CAMINHO_NOTAS[c.id]) h += '<p class="bnote">' + CAMINHO_NOTAS[c.id] + "</p>";
+  return h + "</article>";
+}
+/* Texto de regra, igual para o jogador e para o mestre. */
+function caminhosHTML(mestre) {
+  var h = "<h2>Caminhos de mana</h2>" + panel(ic("brilho") + "Aprender uma técnica de mana",
+    "<p>Além do grimório, um personagem pode aprender um <b>caminho de mana</b>: técnicas que não dependem do grimório (como reforçar o corpo ou encantar uma arma). Isso <b>não é sorteado</b>: acontece quando a história faz sentido (um mentor, um treino, ruínas antigas, um item raro) e o mestre aprova.</p>" +
+    "<ul><li><b>Um caminho só</b> por personagem, a partir do nível 3.</li>" +
+    "<li><b>Cada técnica ocupa a vaga do crescimento do grimório naquele nível:</b> a 1ª no lugar da Nova habilidade (nível 3), a 2ª no lugar do Aprimorar (nível 4) e a 3ª no lugar do Despertar (nível 5). Você escolhe nível a nível, sempre na ordem.</li>" +
+    "<li>As técnicas gastam a mesma mana dos feitiços e funcionam mesmo sem usar o atributo do grimório.</li></ul>");
+  return h + '<div class="grid">' + CAMINHOS.map(function (c) { return caminhoCardHTML(c, null, mestre); }).join("") + "</div>";
+}
+/* No Meu grimório, o jogador vê só as técnicas que já aprendeu. */
+function meuCaminhoHTML(j) {
+  var c = j && j.caminho ? caminhoPorId(j.caminho) : null;
+  var q = Math.max(0, Math.min(3, parseInt(j && j.caminhoTec, 10) || 0));
+  if (!c || !q) return "";
+  return "<h2>Meu caminho de mana</h2>" + '<div class="cer-card">' + caminhoCardHTML(c, q, false) + "</div>";
 }
 
 function viewNiveis() {
@@ -196,7 +275,7 @@ function viewNiveis() {
     panel(ic("estrela") + "Despertar do grimório",
       "<p>Em algum momento, você cria com o mestre um feitiço novo, ligado ao tema do seu grimório.</p>" +
       "<ul><li>Custa 4 de mana e só pode ser usado uma vez por combate.</li><li>Tem um efeito de impacto, na altura de um ultimate.</li><li>O mestre aprova o efeito para não quebrar o equilíbrio.</li></ul>");
-  return h;
+  return h + caminhosHTML(false);
 }
 
 /* O jogador só vê o bônus depois de ter um personagem ligado à conta, e só o do próprio vilarejo. */
@@ -498,6 +577,7 @@ function viewInicioJogador() {
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Imagem de ' + esc(j.personagem || j.nome || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '</div><div class="pj-campos"><h2 style="margin-top:0">' + esc(j.personagem || "Personagem sem nome") + "</h2>";
   var campos = [["Jogador", j.nome], ["Vilarejo", j.vila], ["Altura", j.altura], ["Descrição", j.descricao], ["Sonho ou objetivo", j.sonho], ["Medo ou fraqueza", j.medo]];
+  if (j.caminho && caminhoPorId(j.caminho)) campos.push(["Caminho de mana", caminhoPorId(j.caminho).nome + " (" + Math.max(0, Math.min(3, parseInt(j.caminhoTec, 10) || 0)) + " de 3 técnicas)"]);
   if (j.atrTravado) campos.push(["Atributos", ATRS.map(function (a) { return a[1] + " " + sinal(atrTotal(j, a[0])); }).join(", ")]);
   campos.forEach(function (c) { if (c[1]) h += '<p><b>' + c[0] + ":</b> " + esc(c[1]) + "</p>"; });
   if (PUB.vilaBonus) h += "<p><b>Bônus de origem:</b> " + esc(PUB.vilaBonus) + "</p>";
@@ -516,13 +596,13 @@ function atalhosJogador() {
 function viewMeuGrimorio() {
   var g = PUB.grimorio;
   if (!g) {
-    return '<div class="lock"><h1>Meu grimório</h1><p>Seu grimório ainda não foi revelado. Ele aparece aqui depois da cerimônia, com as magias que o mestre for liberando.</p></div>';
+    return '<div class="lock"><h1>Meu grimório</h1><p>Seu grimório ainda não foi revelado. Ele aparece aqui depois da cerimônia, com as magias que o mestre for liberando.</p></div>' + meuCaminhoHTML(PUB.jogador);
   }
   var h = "<h1>Meu grimório</h1>" +
     '<p class="lead">As magias aparecem aqui conforme você as desbloqueia. Passe o mouse (ou toque) sobre a descrição de um feitiço para ver os valores mínimo e máximo dos dados.</p>' + legenda();
   h += '<div class="cer-card">' + bookCard(g, true) + "</div>";
   if (!g.spells.length) h += '<div class="empty">Nenhuma magia liberada ainda.</div>';
-  return h;
+  return h + meuCaminhoHTML(PUB.jogador);
 }
 
 /* ============================ PERFIL ============================ */
@@ -533,6 +613,8 @@ var perfilMsg = "", perfilRasc = null, bonusRasc = null, salvandoInfo = false, s
 var ATRS = [["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]];
 var VIDA_NIVEL = [20, 24, 28, 32, 36], LIM_NIVEL = [3, 3, 4, 4, 5];
 var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
+/* 1 de redução de dano para cada 2 pontos de Poder (arredonda para baixo). */
+function reducaoDano(j) { return Math.max(0, Math.floor(atrTotal(j, "poder") / 2)); }
 function nivelJog(j) { return Math.max(1, Math.min(5, parseInt(j.nivel, 10) || 1)); }
 function atrBase(j, k) { return parseInt(j.atr && j.atr[k], 10) || 0; }
 function atrBonus(j, k) { return parseInt(j.bonus && j.bonus[k], 10) || 0; }
@@ -543,7 +625,7 @@ function sinal(n) { return (n >= 0 ? "+" : "") + n; }
 
 function statCaixa(rot, v) { return '<div class="stat"><b>' + v + "</b>" + rot + "</div>"; }
 
-/* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder,
+/* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder / 2,
    deslocamento 6 + 1 a cada 2 de Destreza, mana 10 + 1 a cada 2 de Inteligência, Vida pelo nível). */
 /* O que cada atributo faz (resumo das Regras, que são públicas). */
 var ATR_DESC = {
@@ -557,14 +639,14 @@ function atrIcone(k) { return ic(ATTR_ICON[k]); }
 function statsHTML(ref) {
   var n = nivelJog(ref), dex = atrTotal(ref, "destreza");
   return '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(ref)) +
-    statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", atrTotal(ref, "poder")) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
+    statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", reducaoDano(ref)) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
 }
 
 function atrCabeca(a) {
   return '<div class="atr-topo"><span class="atr-ic" aria-hidden="true">' + atrIcone(a[0]) + "</span><div><h4>" + a[1] + '</h4><p class="mdica">' + ATR_DESC[a[0]] + "</p></div></div>";
 }
 
-/* Status do personagem. Os números seguem as regras (Defesa 10 + Destreza, redução de dano = Poder, deslocamento 6 + 1 a cada 2 de
+/* Status do personagem. Os números seguem as regras (Defesa 10 + Destreza, redução de dano = Poder / 2, deslocamento 6 + 1 a cada 2 de
    Destreza, mana 10 + 1 a cada 2 de Inteligência, Vida pelo nível). Feito para o celular: cartões grandes, botões de toque
    confortáveis e a barra de salvar sempre à vista. */
 function statusHTML(j) {
@@ -1418,8 +1500,8 @@ function catNome(c) { var r = "Outro"; CATS_ITEM.forEach(function (x) { if (x[0]
 function ouro(n) { return Math.round(n * 100); }
 function prata(n) { return Math.round(n * 10); }
 function lb(n) { return Math.round(n * 0.45 * 100) / 100; }
-function ib(id, cat, nome, efeito, peso, valor, desc) {
-  return { id: "dnd-" + id, origem: "dnd", cat: cat, nome: nome, efeito: efeito || "", peso: peso || 0, valor: valor || 0, raridade: "comum", desc: desc || "", fase: "", mestre: "", sinergia: [] };
+function ib(id, cat, nome, efeito, peso, valor, desc, x) {
+  return extras({ id: "dnd-" + id, origem: "dnd", cat: cat, nome: nome, efeito: efeito || "", peso: peso || 0, valor: valor || 0, raridade: "comum", desc: desc || "", fase: "", mestre: "", sinergia: [] }, x);
 }
 var ADAPT_ARM = " Adaptação do 5e: aqui a Defesa é 10 + Destreza, então a armadura soma um bônus fixo. O mestre pode ajustar.";
 /* Equipamento básico do D&D 5e (SRD), em português e adaptado ao sistema da campanha. */
@@ -1448,15 +1530,15 @@ var ITENS_BASE = [
   ib("besta-pesada", "arma", "Besta pesada", "Dano 1d10 perfurante · à distância, pesada", lb(18), ouro(50)),
   ib("flechas", "arma", "Flechas (20)", "Munição para arco", lb(1), ouro(1)),
   ib("virotes", "arma", "Virotes (20)", "Munição para besta", lb(1.5), ouro(1)),
-  ib("acolchoada", "armadura", "Armadura acolchoada", "Defesa +1 (leve)", lb(8), ouro(5), "Tecido grosso e acolchoado." + ADAPT_ARM),
-  ib("couro", "armadura", "Armadura de couro", "Defesa +1 (leve)", lb(10), ouro(10), "Couro curtido e endurecido." + ADAPT_ARM),
-  ib("couro-batido", "armadura", "Couro batido", "Defesa +1 (leve)", lb(13), ouro(45), "Couro reforçado com rebites." + ADAPT_ARM),
-  ib("gibao-peles", "armadura", "Gibão de peles", "Defesa +2 (média)", lb(12), ouro(10), "Peles e couro grosso." + ADAPT_ARM),
-  ib("camisa-malha", "armadura", "Camisa de malha", "Defesa +2 (média)", lb(20), ouro(50), "Anéis de metal sob a roupa." + ADAPT_ARM),
-  ib("peitoral", "armadura", "Peitoral", "Defesa +2 (média)", lb(20), ouro(400), "Placa de metal só no tronco." + ADAPT_ARM),
-  ib("cota-malha", "armadura", "Cota de malha", "Defesa +3 (pesada)", lb(55), ouro(75), "Malha completa. Pesada e barulhenta." + ADAPT_ARM),
-  ib("placas", "armadura", "Armadura de placas", "Defesa +3 (pesada)", lb(65), ouro(1500), "Placas de aço articuladas." + ADAPT_ARM),
-  ib("escudo", "armadura", "Escudo", "Defesa +1", lb(6), ouro(10), "Segurado numa das mãos." + ADAPT_ARM),
+  ib("acolchoada", "armadura", "Armadura acolchoada", "Defesa +1 (leve)", lb(8), ouro(5), "Tecido grosso e acolchoado." + ADAPT_ARM, { def: 1 }),
+  ib("couro", "armadura", "Armadura de couro", "Defesa +1 (leve)", lb(10), ouro(10), "Couro curtido e endurecido." + ADAPT_ARM, { def: 1 }),
+  ib("couro-batido", "armadura", "Couro batido", "Defesa +1 (leve)", lb(13), ouro(45), "Couro reforçado com rebites." + ADAPT_ARM, { def: 1 }),
+  ib("gibao-peles", "armadura", "Gibão de peles", "Defesa +2 (média)", lb(12), ouro(10), "Peles e couro grosso." + ADAPT_ARM, { def: 2 }),
+  ib("camisa-malha", "armadura", "Camisa de malha", "Defesa +2 (média)", lb(20), ouro(50), "Anéis de metal sob a roupa." + ADAPT_ARM, { def: 2 }),
+  ib("peitoral", "armadura", "Peitoral", "Defesa +2 (média)", lb(20), ouro(400), "Placa de metal só no tronco." + ADAPT_ARM, { def: 2 }),
+  ib("cota-malha", "armadura", "Cota de malha", "Defesa +3 (pesada) · atrapalha o movimento", lb(55), ouro(75), "Malha completa. Pesada e barulhenta." + ADAPT_ARM, { def: 3, desl: -1 }),
+  ib("placas", "armadura", "Armadura de placas", "Defesa +3 (pesada) · atrapalha o movimento", lb(65), ouro(1500), "Placas de aço articuladas." + ADAPT_ARM, { def: 3, desl: -1 }),
+  ib("escudo", "armadura", "Escudo", "Defesa +1", lb(6), ouro(10), "Segurado numa das mãos." + ADAPT_ARM, { def: 1 }),
   ib("mochila", "aventura", "Mochila", "Carrega pequenos itens", lb(5), ouro(2)),
   ib("saco-dormir", "aventura", "Saco de dormir", "", lb(7), ouro(1)),
   ib("corda", "aventura", "Corda de cânhamo (15 m)", "Aguenta uma pessoa; rompe com Poder 17", lb(10), ouro(1)),
@@ -1511,12 +1593,57 @@ function valorTxt(c) {
   return c + " pc";
 }
 function pesoTxt(p) { p = Number(p) || 0; return (Math.round(p * 100) / 100).toString().replace(".", ",") + " kg"; }
+/* Efeitos de um item enquanto equipado: Defesa, Deslocamento e Mana (positivo é bônus, negativo atrapalha). */
+function modsItem(i) { return { def: parseInt(i.def, 10) || 0, desl: parseInt(i.desl, 10) || 0, mana: parseInt(i.mana, 10) || 0 }; }
+function modsTags(i) {
+  var m = modsItem(i), h = "";
+  [["def", "Defesa"], ["desl", "Deslocamento"], ["mana", "Mana"]].forEach(function (c) {
+    if (m[c[0]]) h += '<span class="tag ' + (m[c[0]] > 0 ? "buff" : "pena") + '">' + (m[c[0]] > 0 ? "▲ " : "▼ ") + c[1] + " " + sinal(m[c[0]]) + "</span>";
+  });
+  return h;
+}
+function pesoItemTxt(i) {
+  var q = parseInt(i.qtd, 10) || 0, p = Number(i.peso) || 0;
+  return p ? pesoTxt(p) + (q > 1 ? " cada · " + pesoTxt(p * q) + " no total" : "") : "sem peso";
+}
+/* Números do personagem com o que está equipado e a carga. Sobrecarga (sugerida): -1 de deslocamento a cada 5 kg acima da capacidade. */
+function invStats(d) {
+  var dex = d ? atrTotal(d, "destreza") : 0;
+  var s = { defBase: 10 + dex, deslBase: 6 + Math.floor(dex / 2), manaBase: d ? manaJog(d) : 10, def: 0, desl: 0, mana: 0, peso: invPeso(d), cap: invCapacidade(d), pen: 0, fontes: [] };
+  /* Só vale UMA armadura de corpo e UM escudo (o de maior Defesa). O resto equipado não soma, para não empilhar proteção. */
+  var corpo = null, escudo = null, ignorados = [];
+  invLista(d).forEach(function (i) {
+    if (!i.equip) return;
+    var m = modsItem(i);
+    if (i.cat === "armadura") {
+      var ehEscudo = /escudo|broquel/i.test(i.nome || "");
+      var atual = ehEscudo ? escudo : corpo;
+      if (!atual) { if (ehEscudo) escudo = i; else corpo = i; }
+      else if (m.def > modsItem(atual).def) { ignorados.push(atual.nome); if (ehEscudo) escudo = i; else corpo = i; }
+      else ignorados.push(i.nome);
+      return;
+    }
+    if (m.def || m.desl || m.mana) { s.def += m.def; s.desl += m.desl; s.mana += m.mana; s.fontes.push(i.nome); }
+  });
+  [corpo, escudo].forEach(function (i) {
+    if (!i) return;
+    var m = modsItem(i);
+    s.def += m.def; s.desl += m.desl; s.mana += m.mana;
+    if (m.def || m.desl || m.mana) s.fontes.push(i.nome);
+  });
+  s.ignorados = ignorados;
+  if (s.peso > s.cap) s.pen = Math.ceil((s.peso - s.cap) / 5);
+  s.defTotal = s.defBase + s.def;
+  s.deslTotal = Math.max(0, s.deslBase + s.desl - s.pen);
+  s.manaTotal = s.manaBase + s.mana;
+  return s;
+}
 function grimCurto(n) { return String(n || "").replace(/^Grimório (de |do |da )?/, ""); }
 function invDono() { return MESTRE ? (typeof achaJog === "function" ? achaJog(invJogId) : null) : PUB.jogador; }
 function invLista(d) { return (d && d.inv) || []; }
 function invAchar(id) { var r = null; invLista(invDono()).forEach(function (i) { if (i.id === id) r = i; }); return r; }
 function invPeso(d) { var t = 0; invLista(d).forEach(function (i) { t += (Number(i.peso) || 0) * (parseInt(i.qtd, 10) || 0); }); return t; }
-function invCapacidade(d) { return d ? 10 + 5 * Math.max(0, atrTotal(d, "poder")) : 10; }
+function invCapacidade(d) { return 20 + 5 * Math.max(0, d ? atrTotal(d, "poder") : 0); }
 function invOp(op, dados) {
   var corpo = extras({ op: op }, dados || {});
   if (MESTRE) corpo.jogador = invJogId;
@@ -1537,7 +1664,8 @@ function itemHTML(it, mestre, dono) {
     '<label class="item-eq" title="Marcar como equipado/em uso"><input type="checkbox" data-ieq="' + id + '"' + (it.equip ? " checked" : "") + '><span class="vh">Equipado</span><span aria-hidden="true">' + ic("escudo") + "</span></label>" +
     '<button type="button" class="item-nome" data-itog="' + id + '" aria-expanded="' + aberto + '"><b>' + esc(it.nome) + "</b>" + (it.efeito ? "<small>" + esc(it.efeito) + "</small>" : "") + "</button>" +
     '<span class="item-qtd"><button type="button" data-iqtd="' + id + '" data-d="-1" aria-label="Diminuir quantidade">−</button><b id="q-' + id + '">' + q + '</b><button type="button" data-iqtd="' + id + '" data-d="1" aria-label="Aumentar quantidade">+</button></span></div>';
-  h += '<div class="meta item-tags">' + tags + "</div>";
+  tags += '<span class="tag role">' + ic("mochila") + pesoItemTxt(it) + "</span>" + modsTags(it);
+  h += '<div class="meta item-tags" id="it-tags-' + id + '">' + tags + "</div>";
   if (mestre && it.mestre) h += '<p class="item-segredo">' + ic("cadeado") + "<span><b>Só mestre:</b> " + esc(it.mestre) + "</span></p>";
   if (mestre) {
     var alertas = invAlertasItem(it, dono);
@@ -1549,6 +1677,9 @@ function itemHTML(it, mestre, dono) {
     '<label>Categoria<select class="sorteio-in" data-ifld="cat" data-iid="' + id + '">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === it.cat ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select></label>" +
     campoItem("Peso (kg, cada)", "peso", id, it.peso || 0, "number", ' min="0" step="0.05"') +
     campoItem("Valor (ouro, cada)", "valor", id, (it.valor || 0) / 100, "number", ' min="0" step="0.01"') +
+    campoItem("Defesa (equipado)", "def", id, it.def || 0, "number", ' min="-10" max="10"') +
+    campoItem("Deslocamento (equipado)", "desl", id, it.desl || 0, "number", ' min="-10" max="10"') +
+    campoItem("Mana máxima (equipado)", "mana", id, it.mana || 0, "number", ' min="-10" max="10"') +
     "</div>" +
     campoItem("Efeito ou dano (resumo)", "efeito", id, it.efeito || "", "text", ' maxlength="200"') +
     '<label>Descrição<textarea class="sorteio-in" rows="3" maxlength="1500" data-ifld="desc" data-iid="' + id + '">' + esc(it.desc || "") + "</textarea></label>" +
@@ -1577,15 +1708,23 @@ function invAlertasItem(it, dono) {
 }
 
 function invResumoHTML(d, mestre) {
-  var peso = invPeso(d), cap = invCapacidade(d), n = invLista(d).length, m = d.moedas || {};
-  var sobre = peso > cap;
+  var st = invStats(d), n = invLista(d).length, m = d.moedas || {};
+  var pct = Math.min(100, Math.round(st.peso / st.cap * 100)), sobre = st.peso > st.cap;
   var h = '<section class="panel inv-resumo" id="invResumo"><h3>' + ic("mochila") + "Resumo</h3>" +
-    '<div class="stat-line"><span><b>Itens:</b> ' + n + '</span><span class="' + (sobre ? "inv-sobre" : "") + '"><b>Carga:</b> ' + pesoTxt(peso) + " de " + pesoTxt(cap) + ' <small>(sugerido: 10 kg + 5 kg por ponto de Poder)</small></span></div>' +
-    (sobre ? '<p class="item-alerta aviso">' + ic("alerta") + "<span>Acima da carga sugerida. Combine com o mestre se isso atrapalha o deslocamento.</span></p>" : "") +
+    '<div class="carga"><div class="carga-topo"><span><b>Carga atual:</b> <span class="' + (sobre ? "inv-sobre" : "") + '">' + pesoTxt(st.peso) + "</span> de " + pesoTxt(st.cap) + " <small>(capacidade: 20 kg + 5 kg por ponto de Poder)</small></span><span>" + n + (n === 1 ? " item" : " itens") + "</span></div>" +
+    '<div class="carga-barra" role="img" aria-label="Carga ' + pct + ' por cento da capacidade"><span class="' + (sobre ? "sobre" : (pct >= 80 ? "quase" : "")) + '" style="width:' + pct + '%"></span></div></div>' +
+    (st.ignorados.length ? '<p class="item-alerta aviso">' + ic("alerta") + "<span>Só conta uma armadura e um escudo. Não estão somando: " + esc(st.ignorados.join(", ")) + ".</span></p>" : "") +
+    (sobre ? '<p class="item-alerta aviso">' + ic("alerta") + "<span>Sobrecarregado: " + pesoTxt(st.peso - st.cap) + " acima da capacidade. Regra sugerida: −" + st.pen + " de deslocamento (−1 a cada 5 kg acima). O mestre decide.</span></p>" : "") +
+    '<h4 class="inv-sub">Equipado agora</h4><div class="stats inv-stats">' +
+    statEquip("Defesa", st.defTotal, st.def, "") + statEquip("Deslocamento", st.deslTotal, st.desl - st.pen, " casas") + statEquip("Mana máxima", st.manaTotal, st.mana, "") + "</div>" +
+    '<p class="mdica">' + (st.fontes.length ? "Efeitos vindos de: " + esc(st.fontes.join(", ")) + "." : "Nenhum item equipado altera os seus números. Marque o escudo ao lado de um item para equipá-lo.") + " A base usa a sua ficha (Defesa 10 + Destreza, deslocamento 6 + 1 a cada 2 de Destreza).</p>" +
     '<div class="inv-moedas"><label>Ouro<input class="sorteio-in num" type="number" min="0" data-imoeda="po" value="' + (m.po || 0) + '"></label>' +
     '<label>Prata<input class="sorteio-in num" type="number" min="0" data-imoeda="pp" value="' + (m.pp || 0) + '"></label>' +
     '<label>Cobre<input class="sorteio-in num" type="number" min="0" data-imoeda="pc" value="' + (m.pc || 0) + '"></label></div></section>';
   return h;
+}
+function statEquip(rot, total, delta, un) {
+  return '<div class="stat"><b>' + total + (un || "") + '</b>' + rot + (delta ? ' <small class="' + (delta > 0 ? "buff-txt" : "pena-txt") + '">' + (delta > 0 ? "▲ " : "▼ ") + sinal(delta) + "</small>" : "") + "</div>";
 }
 
 function invListaHTML(d, mestre) {
@@ -1647,7 +1786,17 @@ function invCorpoHTML(d, mestre) {
 var kitSel = {}, kitMsg = "", kitSalvando = false;
 function kitContagem(g) { var n = 0; g.itens.forEach(function (i) { if (kitSel[i.id]) n++; }); return n; }
 function kitPronto(j) { return j.kit.grupos.every(function (g) { var n = kitContagem(g); return n >= g.min && n <= g.max; }); }
-function kitItemTxt(i) { return "<b>" + esc(i.nome) + (i.qtd > 1 ? " ×" + i.qtd : "") + "</b>" + (i.efeito ? "<small>" + esc(i.efeito) + "</small>" : ""); }
+function kitItemTxt(i) {
+  var q = i.qtd || 1, p = (Number(i.peso) || 0) * q;
+  return "<b>" + esc(i.nome) + (q > 1 ? " ×" + q : "") + "</b>" + (i.efeito ? "<small>" + esc(i.efeito) + "</small>" : "") +
+    '<small class="kit-peso">' + (p ? pesoTxt(p) : "sem peso") + "</small>" + (modsTags(i) ? '<span class="meta">' + modsTags(i) + "</span>" : "");
+}
+function kitCarga(j) {
+  var t = 0;
+  j.kit.fixos.forEach(function (i) { t += (Number(i.peso) || 0) * (i.qtd || 1); });
+  j.kit.grupos.forEach(function (g) { g.itens.forEach(function (i) { if (kitSel[i.id]) t += (Number(i.peso) || 0) * (i.qtd || 1); }); });
+  return t;
+}
 function kitHTML(j) {
   if (!j || !j.kit) return "";
   var k = j.kit;
@@ -1663,6 +1812,8 @@ function kitHTML(j) {
     });
     h += "</div></fieldset>";
   });
+  var kc = kitCarga(j), kcap = invCapacidade(j);
+  h += '<p class="kit-carga' + (kc > kcap ? " inv-sobre" : "") + '"><b>Carga do kit:</b> ' + pesoTxt(kc) + " de " + pesoTxt(kcap) + " de capacidade" + (kc > kcap ? ". Acima do limite: você ficaria sobrecarregado." : ".") + "</p>";
   return h + '<p id="kitMsg" role="status" class="mdica">' + esc(kitMsg) + '</p><p><button type="button" class="primary" id="kitConfirmar"' + (kitPronto(j) && !kitSalvando ? "" : " disabled") + ">" + (kitSalvando ? "Salvando…" : "Confirmar kit") + "</button></p></section>";
 }
 function kitAtualizar() { var e = document.getElementById("kitPainel"); if (e && PUB.jogador) e.outerHTML = kitHTML(PUB.jogador); }
@@ -1699,6 +1850,13 @@ function invRedesenharLista() {
   if (el) el.innerHTML = invListaHTML(d, !!MESTRE);
   if (r) r.outerHTML = invResumoHTML(d, !!MESTRE);
 }
+function invAtualizarTags(it) {
+  var t = document.getElementById("it-tags-" + it.id);
+  if (!t) return;
+  var tags = '<span class="tag role">' + esc(catNome(it.cat)) + "</span>";
+  if (it.raridade && it.raridade !== "comum") tags += '<span class="tag leg">' + esc(it.raridade) + "</span>";
+  t.innerHTML = tags + '<span class="tag role">' + ic("mochila") + pesoItemTxt(it) + "</span>" + modsTags(it);
+}
 function invAtualizarResumo() {
   var r = document.getElementById("invResumo");
   if (r) r.outerHTML = invResumoHTML(invDono(), !!MESTRE);
@@ -1717,7 +1875,7 @@ function invAdicionar(item, nomeMsg) {
   });
 }
 function invDeTemplate(t, qtd, mestre) {
-  var item = { nome: t.nome, cat: t.cat, efeito: t.efeito || "", desc: t.desc || "", peso: t.peso || 0, valor: t.valor || 0, raridade: t.raridade || "comum", ref: String(t.id || "").slice(0, 40), qtd: qtd };
+  var item = { nome: t.nome, cat: t.cat, efeito: t.efeito || "", desc: t.desc || "", peso: t.peso || 0, valor: t.valor || 0, raridade: t.raridade || "comum", ref: String(t.id || "").slice(0, 40), qtd: qtd, def: t.def || 0, desl: t.desl || 0, mana: t.mana || 0 };
   if (mestre) { item.mestre = t.mestre || ""; item.sinergia = t.sinergia || []; item.fase = t.fase || ""; }
   return item;
 }
@@ -1742,7 +1900,7 @@ function invClick(b) {
     it.qtd = q;
     var qe = document.getElementById("q-" + d.iqtd);
     if (qe) qe.textContent = q;
-    invAtualizarResumo();
+    invAtualizarResumo(); invAtualizarTags(it);
     invOp("set", { id: it.id, campos: { qtd: q } });
     return true;
   }
@@ -1784,6 +1942,7 @@ function invChange(el) {
     if (!it) return true;
     it.equip = el.checked;
     invOp("set", { id: it.id, campos: { equip: el.checked } });
+    invAtualizarResumo();
     var card = el.closest(".item");
     if (card) card.classList.toggle("equip", el.checked);
     return true;
@@ -1803,13 +1962,14 @@ function invChange(el) {
     var campo = d.ifld, v = el.value, envio;
     if (campo === "peso") { v = Math.max(0, Number(v) || 0); }
     else if (campo === "valor") { v = Math.max(0, Math.round((Number(v) || 0) * 100)); }
+    else if (campo === "def" || campo === "desl" || campo === "mana") { v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0)); el.value = v; }
     else if (campo === "nome" && !String(v).trim()) { el.value = item.nome; return true; }
     else if (campo === "sinergia") { v = String(v).split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
     item[campo] = v;
     envio = v;
     invOp("set", { id: item.id, campos: (function () { var o = {}; o[campo] = envio; return o; })() });
     if (campo === "nome") { var nb = document.querySelector('.item[data-iid="' + item.id + '"] .item-nome b'); if (nb) nb.textContent = v; }
-    if (campo === "peso") invAtualizarResumo();
+    if (campo === "peso" || campo === "def" || campo === "desl" || campo === "mana" || campo === "cat") { invAtualizarResumo(); invAtualizarTags(item); }
     if (campo === "cat" || campo === "efeito" || campo === "mestre" || campo === "sinergia" || campo === "fase") { /* atualiza o cabeçalho na próxima vez que a lista for desenhada */ }
     return true;
   }

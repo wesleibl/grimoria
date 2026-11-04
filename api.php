@@ -159,7 +159,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito'])) + ['kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */

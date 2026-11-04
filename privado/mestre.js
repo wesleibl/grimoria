@@ -10,7 +10,7 @@ var GRIMORIOS = [
       sp("Bastião Inabalável", 4, "ultimate", "Por 3 turnos, você ganha +3 de redução de dano e os aliados próximos ganham +2.")
     ],
     futuras: [
-      fu(1, "Interpor-se", 1, "reação", "Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pelo Poder +1. Uma vez por rodada."),
+      fu(1, "Interpor-se", 1, "reação", "Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada."),
       fu(2, "Pele de Ferro", 2, "médio", "Por 2 turnos, +2 de redução de dano e você não pode ser empurrado nem derrubado."),
       fu(3, "Descarga", 2, "médio", "Gasta todas as Cargas. d20 + Poder, dano 1d6 mais 1d4 por Carga gasta."),
       fu(4, "Última Muralha", "passiva", "passiva", "Uma vez por combate, ao cair a 0 de Vida, você fica com 1, ganha 2 Cargas e os aliados próximos ganham +1 nas rolagens por 1 rodada.")
@@ -68,8 +68,8 @@ var GRIMORIOS = [
       sp("Chicote de Corrente", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
       sp("Laço", 1, "básico", "Teste de Inteligência contra a Defesa do inimigo. Se acertar, o alvo perde 3 de deslocamento."),
       sp("Prisão de Aço", 2, "médio", "Prende um inimigo por 1 turno (ele não age). Teste de Inteligência contra a Defesa dele."),
-      sp("Jaula Total", 4, "ultimate", "Prende até 3 inimigos por 1 turno.")
-    ], futuras: [], nota: "Jaula Total é muito forte. Se virar problema, limite a 1 uso por combate." },
+      sp("Jaula Total", 4, "ultimate", "Prende até 3 inimigos por 1 turno.", { limite: "1 uso por combate" })
+    ], futuras: [], nota: "Jaula Total é muito forte, por isso já vale 1 uso por combate." },
 
   { nome: "Grimório de Reforço", attr: "poder", papel: "Dano", sub: "fortalecimento", tier: "",
     spells: [
@@ -97,13 +97,13 @@ var GRIMORIOS = [
   { nome: "Grimório de Raios", attr: "destreza", papel: "Dano", sub: "dano e velocidade", tier: "",
     spells: [
       sp("Choque", 1, "básico", "d20 + Destreza, dano 1d6."),
-      sp("Relâmpago Veloz", 3, "médio", "Age duas vezes neste turno, mas só pode usar feitiços de 1 mana.", { limite: "1 uso por combate" }),
+      sp("Relâmpago Veloz", 2, "médio", "Age duas vezes neste turno, mas só pode usar feitiços de 1 mana.", { limite: "1 uso por combate" }),
       sp("Tempestade Trovejante", 4, "ultimate", "d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido.")
     ], futuras: [], nota: "" },
 
-  { nome: "Grimório de Terra", attr: "poder", papel: "Suporte", sub: "defesa e controle", tier: "",
+  { nome: "Grimório de Terra", attr: "inteligencia", papel: "Suporte", sub: "defesa e controle", tier: "",
     spells: [
-      sp("Estaca de Pedra", 1, "básico", "d20 + Poder, dano 1d6."),
+      sp("Estaca de Pedra", 1, "básico", "d20 + Inteligência, dano 1d6."),
       sp("Muro de Terra", 2, "médio", "Cria uma barreira que bloqueia a passagem por 2 turnos (Vida 10)."),
       sp("Terremoto", 4, "ultimate", "Os inimigos próximos sofrem 1d6. Quem falhar em um teste de Destreza contra 12 fica caído: deslocamento 0 e -2 de Defesa até o fim da próxima rodada.")
     ], futuras: [], nota: "" },
@@ -113,10 +113,10 @@ var GRIMORIOS = [
       sp("Lâmina Ilusória", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
       sp("Miragem", 1, "básico", "Cria uma cópia falsa. O primeiro ataque do inimigo vai nela."),
       sp("Voz Enganosa", 2, "médio", "Um inimigo faz teste de Inteligência contra 13. Se falhar, ataca outro inimigo ou perde o turno."),
-      sp("Mundo Falso", 4, "ultimate", "Todos os inimigos próximos erram automaticamente o próximo ataque.")
-    ], futuras: [], nota: "Mundo Falso é forte demais. Limite a 1 uso por combate, ou faça só até 2 inimigos errarem." },
+      sp("Mundo Falso", 4, "ultimate", "Todos os inimigos próximos erram automaticamente o próximo ataque.", { limite: "1 uso por combate" })
+    ], futuras: [], nota: "Mundo Falso é forte demais, por isso já vale 1 uso por combate. Se ainda assim pesar, faça só até 2 inimigos errarem." },
 
-  { nome: "Grimório Antimagia", attr: "poder", papel: "Suporte", sub: "lendário", tier: "lendário",
+  { nome: "Grimório Antimagia", attr: "poder", papel: "Suporte", sub: "lendário", tier: "lendário", reservado: true,
     spells: [
       sp("Corte Nulo", 1, "básico", "d20 + Poder, dano 1d6. Cancela um efeito mágico ativo no alvo."),
       sp("Barreira Anulante", 2, "médio", "O próximo feitiço inimigo contra você ou um aliado é cancelado."),
@@ -143,8 +143,8 @@ var GRIMORIOS = [
       sp("Pulso Temporal", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
       sp("Pausa", 1, "básico", "Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior)."),
       sp("Retrocesso", 2, "médio", "Um aliado refaz a última rolagem dele."),
-      sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima rodada inteira.")
-    ], futuras: [], nota: "" },
+      sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima rodada inteira.", { limite: "1 uso por combate" })
+    ], futuras: [], nota: "Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, Refletir ou Aparar." },
 
   { nome: "Grimório de Espíritos", attr: "inteligencia", papel: "Suporte", sub: "conjuração", tier: "",
     spells: [
@@ -206,7 +206,7 @@ var GRIMORIOS = [
       sp("Moeda Giratória", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Role um d6 extra: com 6, o dano dobra."),
       sp("Dado do Destino", 1, "básico", "Role d6 e aplique em um alvo: 1 a 2, -1 no próximo teste dele; 3 a 4, nada acontece; 5 a 6, +1 no próximo teste dele."),
       sp("Aposta Alta", 2, "médio", "Role d6. Com 1 a 3, você perde 1 de mana. Com 4 a 6, o grupo ganha +2 em todas as rolagens até o fim da rodada."),
-      sp("Jackpot", 4, "ultimate", "Role 2d6. Com 2 a 4, nada acontece e você perde 2 de mana. Com 5 a 9, os aliados recuperam 2 de mana. Com 10 a 12, os aliados recuperam 4 de mana e os inimigos próximos perdem a próxima ação.")
+      sp("Jackpot", 4, "ultimate", "Role 2d6. Com 2 a 4, nada acontece e você perde 1 de mana. Com 5 a 9, os aliados recuperam 2 de mana. Com 10 a 12, os aliados recuperam 4 de mana e os inimigos próximos perdem a próxima ação.")
     ], futuras: [], nota: "Divertido e arriscado. Ótimo para quem gosta de torcer pelo dado." },
 
   { nome: "Grimório do Aço", attr: "poder", papel: "Tank", sub: "tank Muralha", elem: "Metal", tier: "",
@@ -235,7 +235,107 @@ var GRIMORIOS = [
       fu(2, "Chuva Fina", 2, "médio", "Apaga o fogo sobre você e os aliados próximos e dá +1 de redução de dano a todos até o fim da rodada.", { aplica: ["Molhado"] }),
       fu(3, "Oceano Calmo", 4, "ultimate", "Os aliados recuperam 1d6 de vida e ganham +2 de Defesa por 2 turnos.", { limite: "1 uso por combate" })
     ],
-    nota: "Evita golpes sem precisar parar de agir. Molhado combina com Raios (decisão do mestre)." }
+    nota: "Evita golpes sem precisar parar de agir. Molhado combina com Raios (decisão do mestre)." },
+
+  /* ===== Grimórios lendários de referência (base nos capitães e membros mais fortes dos esquadrões do anime). Reservados: o mestre entrega à mão, não entram no sorteio. ===== */
+  { nome: "Grimório do Breu", attr: "poder", papel: "Dano", sub: "escuridão que consome magia", elem: "Escuridão", tier: "lendário", reservado: true,
+    spells: [
+      sp("Corte Escuro", 1, "ataque simples", "d20 + Poder, dano 1d8. O alvo perde 1 de mana, se tiver."),
+      sp("Manto de Breu", 2, "médio", "Por 2 turnos, seus ataques causam +1d4 de dano e ignoram 1 de redução de dano."),
+      sp("Fenda Dimensional", 3, "médio", "d20 + Poder, dano 2d8 em uma linha de 6 casas. O corte atravessa barreiras e as destrói."),
+      sp("Noite Sem Fim", 5, "ultimate", "Os inimigos próximos sofrem 3d6. Por 2 turnos, o campo fica em breu: os feitiços dos inimigos custam +1 de mana e os seus ataques causam +1d6.")
+    ], futuras: [],
+    nota: "Base: Yami Sukehiro, capitão do Black Bull (magia da escuridão). Referência: o capitão que luta com escuridão e corta magia. Não anula feitiço como a Antimagia: consome mana e quebra barreira." },
+
+  { nome: "Grimório da Árvore-Mundo", attr: "inteligencia", papel: "Suporte", sub: "floresta ancestral que protege e prende", elem: "Floresta", tier: "lendário", reservado: true,
+    spells: [
+      sp("Broto Guardião", 1, "ataque simples", "d20 + Inteligência, dano 1d6. Um broto prende o alvo: -2 de deslocamento."),
+      sp("Muralha de Raízes", 2, "médio", "Uma barreira de raízes bloqueia a passagem por 3 turnos (Vida 15)."),
+      sp("Copa Protetora", 3, "médio", "Por 2 turnos, os aliados próximos ganham +2 de Defesa e 1d6 de vida temporária."),
+      sp("Árvore-Mundo", 5, "ultimate", "Por 3 turnos, uma árvore gigante cobre o campo: os aliados recuperam 1d6 de vida por turno e ganham +2 de Defesa. Os inimigos próximos ficam presos por raízes por 1 turno (teste de Poder contra 15).")
+    ], futuras: [],
+    nota: "Base: William Vangeance, capitão do Golden Dawn (magia da Árvore-Mundo). Efeito contínuo e poderoso: exige muito controle, por isso é de Inteligência." },
+
+  { nome: "Grimório do Espírito Celeste", attr: "destreza", papel: "Dano", sub: "espírito do vento em pacto", elem: "Espírito do Vento", tier: "lendário", reservado: true,
+    spells: [
+      sp("Lâmina Celeste", 1, "ataque simples", "d20 + Destreza, dano 1d8, alcance longo."),
+      sp("Passo do Espírito", 2, "médio", "Por 2 turnos, +2 de Defesa e +2 de deslocamento."),
+      sp("Tornado de Quatro Folhas", 3, "médio", "d20 + Destreza contra cada inimigo próximo, dano 2d6 em quem for atingido. Os atingidos são empurrados 2 casas."),
+      sp("Armadura do Espírito", 5, "ultimate", "Por 3 turnos, você voa, ganha +2 nas rolagens de ataque e +1d8 de dano em todos os ataques.")
+    ], futuras: [],
+    nota: "Base: Yuno, do Golden Dawn (espírito do vento). O mais forte da Alvorada: um pacto com um espírito do vento. Mais ofensivo que o Grimório de Vento." },
+
+  { nome: "Grimório do Fogo Régio", attr: "poder", papel: "Dano", sub: "chama nobre e armadura de brasas", elem: "Fogo Régio", tier: "lendário", reservado: true,
+    spells: [
+      sp("Chama Régia", 1, "ataque simples", "d20 + Poder, dano 1d8. O alvo fica em chamas.", { aplica: ["Em chamas"] }),
+      sp("Armadura de Brasas", 2, "médio", "Por 2 turnos, +2 de redução de dano. Quem acerta você corpo a corpo sofre 1d4 de fogo."),
+      sp("Lança de Fogo Real", 3, "médio", "d20 + Poder, dano 2d8 em todos os inimigos em uma linha de até 6 casas.", { aplica: ["Em chamas"] }),
+      sp("Coroa Solar", 5, "ultimate", "Os inimigos próximos sofrem 3d8 e ficam em chamas.", { aplica: ["Em chamas"] })
+    ], futuras: [],
+    nota: "Base: Fuegoleon Vermillion, capitão do Crimson Lion (magia de fogo). A versão nobre do Grimório de Chamas: mais defesa e mais área." },
+
+  { nome: "Grimório da Ira do Leão", attr: "poder", papel: "Dano", sub: "mana no corpo, sem feitiço de longe", elem: "Fúria", tier: "lendário", reservado: true,
+    spells: [
+      sp("Garras de Mana", 1, "ataque simples", "d20 + Poder, dano 1d8, corpo a corpo."),
+      sp("Corpo Transbordante", 2, "médio", "Por 2 turnos, +1d6 de dano nos ataques corpo a corpo e +2 de redução de dano."),
+      sp("Salto do Leão", 3, "médio", "Salta até 8 casas e cai sobre um inimigo: d20 + Poder, dano 2d8. Os inimigos ao lado sofrem 1d6."),
+      sp("Fúria Absoluta", 5, "ultimate", "Por 3 turnos, +2d4 de dano e você não pode ser derrubado, empurrado nem controlado.")
+    ], futuras: [],
+    nota: "Base: Mereoleona Vermillion, do Crimson Lion (fogo e mana no corpo). Quase sem magia à distância: usa a mana no próprio corpo. Imbatível de perto." },
+
+  { nome: "Grimório dos Espinhos", attr: "destreza", papel: "Dano", sub: "espinhos que ferem e prendem", elem: "Espinhos", tier: "lendário", reservado: true,
+    spells: [
+      sp("Espinho", 1, "ataque simples", "d20 + Destreza, dano 1d6. O alvo sangra (1 de dano no próximo turno dele)."),
+      sp("Chicote de Espinhos", 2, "médio", "d20 + Destreza, dano 1d6. Se acertar, o alvo fica preso por 1 turno.", { aplica: ["Preso"] }),
+      sp("Jardim de Espinhos", 3, "médio", "Uma área de 3 × 3 casas fica coberta de espinhos por 2 turnos: quem entrar ou começar ali o turno sofre 1d6 e perde 2 de deslocamento."),
+      sp("Coroa de Rosas", 5, "ultimate", "d20 + Destreza contra cada inimigo próximo, dano 2d8 em quem for atingido. Quem for atingido fica preso por 1 turno.", { aplica: ["Preso"] })
+    ], futuras: [],
+    nota: "Base: Charlotte Roselei, capitã do Blue Rose (magia de espinhos). Controle de área e dano ao longo do tempo." },
+
+  { nome: "Grimório do Corte Irrestrito", attr: "destreza", papel: "Dano", sub: "cortes que não respeitam defesa", elem: "Corte", tier: "lendário", reservado: true,
+    spells: [
+      sp("Corte Fino", 1, "ataque simples", "d20 + Destreza, dano 1d8."),
+      sp("Dança do Louva-a-Deus", 2, "médio", "d20 + Destreza contra até 2 inimigos, dano 1d8 em cada um."),
+      sp("Corte Sem Defesa", 3, "médio", "d20 + Destreza contra metade da Defesa do alvo (arredondada para baixo), dano 2d8."),
+      sp("Mil Cortes", 5, "ultimate", "d20 + Destreza contra todos os inimigos próximos, dano 2d8 em quem for atingido, mais 1 de dano por inimigo atingido.")
+    ], futuras: [],
+    nota: "Base: Jack the Ripper, capitão do Green Mantis (magia de corte). Só ataque: nenhuma defesa, nenhum suporte. Frágil se for pego." },
+
+  { nome: "Grimório dos Sonhos", attr: "inteligencia", papel: "Suporte", sub: "sono, pesadelo e mundo onírico", elem: "Sonho", tier: "lendário", reservado: true,
+    spells: [
+      sp("Cochilo", 1, "ataque simples", "d20 + Inteligência, dano 1d6 psíquico. O alvo perde 3 de deslocamento."),
+      sp("Pesadelo", 2, "médio", "Um inimigo faz teste de Inteligência contra 14. Se falhar, ataca um aliado dele ou perde o turno."),
+      sp("Refúgio Onírico", 3, "médio", "Um aliado some para o mundo dos sonhos até o início do seu próximo turno: nenhum ataque o alcança. Ao voltar, recupera 1d6 de vida."),
+      sp("Sono Profundo", 5, "ultimate", "Os inimigos próximos fazem teste de Inteligência contra 14. Quem falhar dorme por 1 turno (acorda se sofrer dano).")
+    ], futuras: [],
+    nota: "Base: Dorothy Unsworth, capitã do Coral Peacock (magia dos sonhos). Controle poderoso, mas nenhum dano alto. Tem 'resistência por sonho' contra o seu próprio feitiço de sono." },
+
+  { nome: "Grimório do Redemoinho", attr: "poder", papel: "Tank", sub: "vórtice que protege e puxa", elem: "Vórtice", tier: "lendário", reservado: true,
+    spells: [
+      sp("Giro Defensivo", 1, "ataque simples", "d20 + Poder, dano 1d6. Empurra o alvo 1 casa."),
+      sp("Escudo de Vórtice", 2, "provocar", "Até o início do seu próximo turno, os inimigos próximos precisam atacar você, e ataques à distância contra você são desviados (-3)."),
+      sp("Vórtice Devorador", 3, "médio", "Puxa todos os inimigos próximos para junto de você. Eles sofrem 1d6 e perdem 2 de deslocamento."),
+      sp("Muralha de Vórtice", 5, "ultimate", "Por 3 turnos, feitiços e ataques à distância contra você ou contra aliados próximos são desviados, e você ganha +4 de redução de dano.")
+    ], futuras: [],
+    nota: "Base: Kaiser Granvorka, capitão do Purple Orca (magia de vórtice). O 'escudo definitivo': a melhor proteção contra ataques à distância e magia de projétil." },
+
+  { nome: "Grimório da Pintura", attr: "inteligencia", papel: "Suporte", sub: "cria o que desenha", elem: "Pintura", tier: "lendário", reservado: true,
+    spells: [
+      sp("Traço Rápido", 1, "ataque simples", "d20 + Inteligência, dano 1d6."),
+      sp("Tela Viva", 2, "médio", "Desenha uma barreira ou um objeto simples que dura 3 turnos (Vida 8)."),
+      sp("Cópia Pintada", 3, "médio", "Cria uma cópia desenhada de um aliado ou de você: Vida 8, Defesa 12, ataca com +3 e dano 1d6. Dura até ser derrotada."),
+      sp("Galeria de Obras", 5, "ultimate", "Por 3 turnos, você mantém até 3 criações ao mesmo tempo (barreiras ou cópias), e cada uma age no seu turno.")
+    ], futuras: [],
+    nota: "Base: Rill Boismortier, capitão do Aqua Deer (magia da pintura). Muita coisa para controlar ao mesmo tempo: depende de Inteligência alta." },
+
+  { nome: "Grimório do Mercúrio", attr: "poder", papel: "Dano", sub: "metal líquido que corta e protege", elem: "Metal líquido", tier: "lendário", reservado: true,
+    spells: [
+      sp("Gota de Mercúrio", 1, "ataque simples", "d20 + Poder, dano 1d8."),
+      sp("Lâmina Líquida", 2, "médio", "d20 + Poder, dano 1d8. O golpe ignora a redução de dano do alvo."),
+      sp("Escudo de Mercúrio", 3, "médio", "Cria um escudo (Vida 12) por 2 turnos. O primeiro feitiço ou ataque à distância que o atingir é refletido ao atacante."),
+      sp("Rei Prateado", 5, "ultimate", "d20 + Poder contra todos os inimigos em uma linha de 8 casas, dano 2d10 em quem for atingido. Quem for atingido perde 2 de deslocamento.")
+    ], futuras: [],
+    nota: "Base: Nozel Silva, capitão do Silver Eagle (magia de mercúrio). Equilibra ataque e defesa. A elite da nobreza usa." }
 ];
 
 var ELEM_EXISTENTES = {
@@ -638,7 +738,7 @@ function viewGrimorios() {
   var papeis = ["todos", "Dano", "Tank", "Suporte"];
   var h = "<h1>Grimórios</h1>" +
     '<div class="note"><p><b>Liberação.</b> Cada jogador vê só o próprio grimório, depois que você marcar “Revelar o grimório” no perfil dele (aba Jogadores). Dentro do grimório, ele vê só os feitiços marcados como <b>Liberada</b>.</p></div>' +
-    '<p class="lead">Cada grimório tem um papel (Dano, Tank ou Suporte, que inclui cura, controle e utilidade) e feitiços de 1, 2 e 4 de mana. Cada grimório ganha uma nova habilidade no nível 3, e os tanks ganham uma a cada nível (veja a aba Níveis). Passe o mouse (ou toque) sobre a descrição de um feitiço para ver os valores mínimo e máximo dos dados.</p>' +
+    '<p class="lead">Cada grimório tem um papel (Dano, Tank ou Suporte, que inclui cura, controle e utilidade) e feitiços com custos de mana variados. Cada grimório ganha uma nova habilidade no nível 3, e os tanks ganham uma a cada nível (veja a aba Níveis). Passe o mouse (ou toque) sobre a descrição de um feitiço para ver os valores mínimo e máximo dos dados.</p>' +
     legenda() + '<div class="controls"><input type="search" id="busca" placeholder="Buscar por nome ou feitiço" aria-label="Buscar grimório" value="' + filtro.q.replace(/"/g, "&quot;") + '"></div>' +
     '<div class="controls">' +
     '<div class="fgroup"><span>Atributo</span><div class="chips" id="fAttr">' +
@@ -736,7 +836,7 @@ function monstroCard(m) {
   if (m.habs.length) h += '<ul class="spells">' + m.habs.map(function (x) { return spellItem(x); }).join("") + "</ul>";
   if (m.comp) h += "<p><b>Comportamento:</b> " + m.comp + "</p>";
   if (m.dica) h += '<p class="bnote">' + m.dica + "</p>";
-  return h + "</article>";
+  return h + dropsHTML(m) + "</article>";
 }
 
 function viewBestiario() {
@@ -750,9 +850,9 @@ function viewBestiario() {
     ["todos"].concat(FASES).map(function (f) {
       return '<button type="button" class="chip" data-fase="' + f + '" aria-pressed="' + (filtroBest === f) + '">' + (f === "todos" ? "Todos" : f) + "</button>";
     }).join("") + "</div></div></div>" +
-    '<p id="contaBest" role="status">' + publicos + " inimigos neste bestiário.</p>" +
+    dropSeletorHTML() + '<p id="contaBest" role="status">' + publicos + " inimigos neste bestiário.</p>" +
     '<div id="listaMonstros"></div>' +
-    panel("Notas", "<ul><li>Como o jogador subtrai o Poder do dano, os inimigos precisam de dano um pouco mais alto do que parece. Se ninguém perde vida, suba o dado de dano um degrau.</li><li>Se o combate estiver fácil demais, aumente a Vida ou o Ataque. Se estiver difícil, reduza a Defesa.</li><li>Alguns inimigos têm redução de dano. Ela se aplica antes de tirar a Vida, e o dano mínimo continua sendo 1.</li><li>Para outros níveis, veja a tabela de referência na aba Níveis.</li></ul>");
+    panel("Notas", "<ul><li>Como o jogador subtrai a redução de dano (1 para cada 2 de Poder) do dano, os inimigos precisam de dano um pouco mais alto do que parece. Se ninguém perde vida, suba o dado de dano um degrau.</li><li>Se o combate estiver fácil demais, aumente a Vida ou o Ataque. Se estiver difícil, reduza a Defesa.</li><li>Alguns inimigos têm redução de dano. Ela se aplica antes de tirar a Vida, e o dano mínimo continua sendo 1.</li><li>Para outros níveis, veja a tabela de referência na aba Níveis.</li></ul>");
 }
 
 function desenharBestiario() {
@@ -775,7 +875,7 @@ function viewSessaoZero() {
     panel("Boas-vindas e tom (5 min)", "<ul><li>Explique a ideia: Black Clover, com magia e aventura, todos plebeus de vilarejo.</li><li>Combine o tom: aventura com momentos sérios e leves, sem terror pesado.</li><li>Diga que é sua primeira vez mestrando e que você vai ajustar regras no caminho.</li></ul>") +
     panel("O sistema em 5 minutos", "<ul><li>Três atributos: Poder, Destreza, Inteligência.</li><li>Rolagem: d20 + atributo contra uma dificuldade (fácil 10, média 15, difícil 20).</li><li>O inimigo acerta se rolar a sua Defesa (10 + Destreza) ou mais. O Poder reduz o dano.</li><li>Mana 10, mais 1 a cada 2 pontos de Inteligência. Feitiços custam 1, 2 ou 4.</li><li>Regra de ouro: se algo travar, o mestre decide rápido e ajusta depois.</li></ul>") +
     panel("Acordos de mesa (10 min)", "<ul><li><b>Linhas e véus:</b> o que não pode aparecer, e o que acontece só “fora da cena”.</li><li><b>Segurança:</b> qualquer pessoa pode pedir uma pausa, sem explicar.</li><li><b>Drama de personagem:</b> diga “durante a campanha, algum personagem pode ser tentado, enganado, ferido ou perder o controle por um tempo. Isso é parte da história, não punição. Vocês topam?”</li><li><b>Cooperativo:</b> sem jogador contra jogador de verdade.</li><li>Celular guardado durante as cenas.</li><li>Como lidar com ausências.</li><li>Ninguém lê material do mestre.</li></ul>") +
-    panel("Criar o personagem (30 min)", "<p>Com 8 jogadores, deixe 2 por vilarejo: eles criam juntos e já nascem com um laço.</p><ol><li>Escolher o vilarejo e anotar o bônus.</li><li>Nome, idade, um sonho e um medo.</li><li>Distribuir +5 pontos (máximo +3 em um), <b>antes de ver o grimório</b>.</li><li>Anotar Vida 20, Mana 10 + 1 a cada 2 de Inteligência, Defesa 10 + Destreza e redução de dano igual ao Poder.</li><li>Deixar o grimório em branco para a revelação.</li></ol>") +
+    panel("Criar o personagem (30 min)", "<p>Com 8 jogadores, deixe 2 por vilarejo: eles criam juntos e já nascem com um laço.</p><ol><li>Escolher o vilarejo e anotar o bônus.</li><li>Nome, idade, um sonho e um medo.</li><li>Distribuir +5 pontos (máximo +3 em um), <b>antes de ver o grimório</b>.</li><li>Anotar Vida 20, Mana 10 + 1 a cada 2 de Inteligência, Defesa 10 + Destreza e redução de dano = Poder ÷ 2 (arredondado para baixo).</li><li>Deixar o grimório em branco para a revelação.</li></ol>") +
     panel("Laços entre os personagens (5 min)", "<ul><li>Quem do grupo você já conhecia de passagem?</li><li>Do que você mais se orgulha no seu vilarejo?</li><li>Do que você tem medo na cerimônia do grimório?</li></ul><p>Use as respostas como ganchos na Sessão 1.</p>") +
     panel("Expectativas e perguntas (5 min)", "<ul><li>O que cada um espera: ação, mistério, humor?</li><li>Alguma dúvida de regra?</li><li>Regra de ouro: se algo incomodar, fale na hora.</li></ul>") +
     "</div>" +
@@ -844,7 +944,7 @@ function viewMestre() {
     panel("Libertar um controlado", "<ol><li>Combate para enfraquecer (reduzir a vida pela metade, sem matar).</li><li>Quebrar o elo por um dos métodos acima durante o combate.</li><li>Cena de reencontro: o personagem acorda sem lembrar parte do que fez.</li></ol>") +
     panel("Se falhar", "<ul><li>O estágio avança, ou a marca “se alimenta” e causa 1d4 de dano ao portador.</li><li>Se o grupo falhar várias vezes, ofereça um novo caminho (item, aliado, local) em vez de travar a história.</li></ul>");
 
-  h += "<h2>Inimigos secretos</h2>" + "<p>Os agentes e os controlados pela organização. Os números são para 4 jogadores (veja a regra para 8 no Bestiário).</p>" + '<div class="cols">' + INIMIGOS.filter(function (m) { return m.segredo; }).map(monstroCard).join("") + "</div>";
+  h += "<h2>Inimigos secretos</h2>" + dropSeletorHTML() + "<p>Os agentes e os controlados pela organização. Os números são para 4 jogadores (veja a regra para 8 no Bestiário).</p>" + '<div class="cols">' + INIMIGOS.filter(function (m) { return m.segredo; }).map(monstroCard).join("") + "</div>";
 
   h += "<h2>Decisões em aberto</h2>" + panel("A definir", "<ul><li>Nome e símbolo da organização, e a aparência da marca (discreta ou chamativa).</li><li>Qual é a vantagem real da marca.</li><li>Quem é o líder e o que ele quer, além de controlar os magos.</li><li>Quem se redime, se alguém.</li><li>Nome da ordem, quem a comanda e quem nomeia os esquadrões.</li><li>Os grimórios dos infiltrados (usar os já criados).</li></ul>");
   return h;
@@ -991,7 +1091,7 @@ function sorteioFeito() { return sorteio.jog.every(function (p) { return p.grim;
 
 function poolDaVaga(vaga) {
   return GRIMORIOS.filter(function (g) {
-    if (g.nome === "Grimório Antimagia") return false;
+    if (g.nome === "Grimório Antimagia" || g.reservado) return false;
     var cura = NOMES_CURA.indexOf(g.nome) !== -1;
     if (vaga === "tank") return g.papel === "Tank";
     if (vaga === "cura") return cura;
@@ -1411,8 +1511,10 @@ function fichaJog(j) {
       return "<tr><td>" + a[1] + '</td><td><input class="sorteio-in num" type="number" min="0" max="10" data-jatr="' + a[0] + '" value="' + atrBase(j, a[0]) + '"></td>' +
         '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
     }).join("") + "</tbody></table></div>" +
+    '<label>Caminho de mana<select class="sorteio-in" data-jf="caminho"><option value="">Nenhum</option>' + CAMINHOS.map(function (c) { return '<option value="' + c.id + '"' + (j.caminho === c.id ? " selected" : "") + ">" + c.nome + "</option>"; }).join("") + "</select></label>" +
+    '<label>Técnicas aprendidas<select class="sorteio-in" data-jf="caminhoTec">' + [0, 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + (String(j.caminhoTec || 0) === String(v) ? " selected" : "") + ">" + v + " de 3</option>"; }).join("") + "</select></label>" +
     '<label class="rev-label"><input type="checkbox" data-jtrav="1"' + (j.atrTravado ? " checked" : "") + '> Atributos travados (o jogador não altera mais a base)</label>' +
-    '<p class="mdica">Defesa ' + (10 + atrTotal(j, "destreza")) + ", redução de dano " + atrTotal(j, "poder") + ", deslocamento " + (6 + Math.floor(atrTotal(j, "destreza") / 2)) + ", vida " + VIDA_NIVEL[n - 1] + ", mana " + manaJog(j) + '. Desmarque “travados” para o jogador redistribuir os 5 pontos, se precisar corrigir.</p></fieldset>';
+    '<p class="mdica">Defesa ' + (10 + atrTotal(j, "destreza")) + ", redução de dano " + reducaoDano(j) + ", deslocamento " + (6 + Math.floor(atrTotal(j, "destreza") / 2)) + ", vida " + VIDA_NIVEL[n - 1] + ", mana " + manaJog(j) + '. Desmarque “travados” para o jogador redistribuir os 5 pontos, se precisar corrigir.</p></fieldset>';
 }
 
 function acessoJog(j) {
@@ -1625,7 +1727,7 @@ function viewNiveisMestre() {
     ["3", "Meio do Arco 1", "28", "+1 ponto", "+4", "Nova habilidade"],
     ["4", "Fim do Arco 1", "32", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
     ["5", "Fim do Arco 2", "36", "+1 ponto", "+5", "Despertar do grimório"]
-  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
+  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder ÷ 2) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
@@ -1634,7 +1736,7 @@ function viewNiveisMestre() {
       "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
       "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. Você aprova cada escolha.</p>") +
     panel(ic("espada") + "Nova habilidade (nível 3)",
-      "<p>No nível 3, todo grimório ganha uma habilidade nova, já pronta. Ela aparece no card, marcada como Nível 3, e custa 2 ou 3 de mana.</p>" +
+      "<p>No nível 3, todo grimório ganha uma habilidade nova, já pronta. Ela aparece no card, marcada como Nível 3, com o custo indicado.</p>" +
       "<p>Os tanks ganham uma habilidade a cada nível (veja abaixo), então a do nível 3 deles é uma das que já estão na lista.</p>") +
     panel(ic("estrela") + "Despertar do grimório (nível 5)",
       "<p>Cada jogador cria com você um feitiço novo, ligado ao tema do grimório dele.</p>" +
@@ -1663,6 +1765,7 @@ function viewNiveisMestre() {
 
   h += "<h2>Dicas</h2>" + panel("Para a mesa",
     "<ul><li>Suba todos juntos, mesmo se alguém faltar a uma sessão.</li><li>Anuncie o marco no fim da sessão, para os jogadores escolherem o aprimoramento em casa.</li><li>Se o grupo estiver forte demais, não suba o nível: aumente a dificuldade dos desafios.</li><li>Os números desta tabela são um ponto de partida. Ajuste depois da Sessão 1.</li></ul>");
+  h += caminhosHTML(true);
   return h;
 }
 
@@ -2119,7 +2222,12 @@ function tokDex(t) {
   var v = parseInt(t.dex, 10);
   return isNaN(v) ? 0 : v;
 }
-function deslTok(t) { return Math.max(0, 6 + Math.floor(tokDex(t) / 2) + (parseInt(t.aj, 10) || 0)); }
+function deslTok(t) {
+  /* Jogador ligado a um perfil: soma o que está equipado no inventário e tira a sobrecarga (mesmos números da ficha dele). */
+  var j = t.jog ? achaJog(t.jog) : null, itens = 0;
+  if (j && j.atr) { var st = invStats(j); itens = st.desl - st.pen; }
+  return Math.max(0, 6 + Math.floor(tokDex(t) / 2) + itens + (parseInt(t.aj, 10) || 0));
+}
 function movel(t) { return t.tipo !== "armadilha"; }
 
 /* Grava a cena. O deslocamento vai calculado junto, para o jogador ver o do próprio personagem sem conhecer a Destreza. */
@@ -2293,11 +2401,11 @@ function atualizarDesl(t) {
   var d = deslTok(t), gasto = parseInt(t.gasto, 10) || 0;
   if (!emTurnos()) {
     s.className = "tok-desl";
-    s.innerHTML = "Deslocamento <b>" + d + "</b> casas por turno (6 + 1 a cada 2 de Destreza). Só conta durante os turnos do combate.";
+    s.innerHTML = "Deslocamento <b>" + d + "</b> casas por turno (6 + 1 a cada 2 de Destreza, mais itens equipados e carga). Só conta durante os turnos do combate.";
     return;
   }
   s.className = "tok-desl" + (gasto > d ? " excede" : "");
-  s.innerHTML = "Deslocamento <b>" + d + "</b> (6 + 1 a cada 2 de Destreza), restam <b>" + Math.max(0, d - gasto) + "</b>.";
+  s.innerHTML = "Deslocamento <b>" + d + "</b> (6 + 1 a cada 2 de Destreza, mais itens e carga), restam <b>" + Math.max(0, d - gasto) + "</b>.";
 }
 
 function combatentes() {
@@ -2821,15 +2929,111 @@ function atualizarJogadores() {
     jogs = d.jogadores;
     CONTAS = d.usuarios || CONTAS;
     if ((rotaAtual() === "jogadores" && !jogSel) || rotaAtual() === "itens") renderizar();
+    /* O deslocamento dos jogadores depende dos itens equipados: ao abrir a Ação, recalcula com os inventários atuais. */
+    if (rotaAtual() === "acao" && EST.acao) { salvarAcao(); renderAcaoUI(); }
   }, function () { /* sem conexão: fica com a lista que já tem */ });
 }
+
+/* ============================ DROPS DO BESTIÁRIO ============================ */
+
+/* Possíveis drops de cada inimigo. dr(id, %) aponta para um item do catálogo (D&D 5e ou Black Clover); dt(texto, %) é um drop livre.
+   A chance vem em múltiplos de 5%, e a tela mostra o d20 equivalente (as rolagens são feitas na mesa, com dados físicos). */
+function dr(id, pct) { return { id: id, pct: pct }; }
+function dt(txt, pct) { return { txt: txt, pct: pct }; }
+var DROPS = {
+  "Bandido do Reino": [dt("1d6 pratas", 100), dr("dnd-adaga", 30), dr("dnd-racao", 50)],
+  "Capitão Bandido": [dt("2d6 de ouro", 100), dr("dnd-espada-curta", 50), dr("dnd-pocao-cura", 20), dt("Chave do esconderijo dos bandidos (gancho)", 50)],
+  "Corvo de Mana": [dr("bc-pena-corvo", 50)],
+  "Lobo de Mana": [dr("bc-presa-lobo", 75), dr("bc-pele-lobo", 40)],
+  "Espantalho de Mana": [dr("bc-palha-mana", 50), dr("bc-pedra-mana", 15)],
+  "Javali de Mana": [dr("bc-couro-javali", 60), dr("dnd-racao", 80)],
+  "Devorador de Colheitas": [dr("bc-coracao-devorador", 100), dr("bc-pedra-mana", 100), dr("bc-erva-curativa", 75), dr("bc-tonico-forca", 50)],
+  "Marujo Afogado": [dt("1d6 cobres salgados", 100), dr("dnd-corda", 30), dr("bc-frasco-nevoa", 15)],
+  "Caranguejo Blindado": [dr("bc-carapaca", 60)],
+  "Polvo da Maré": [dr("bc-frasco-nevoa", 30), dr("bc-pedra-mana", 25)],
+  "Serpente das Marés": [dr("bc-escama-serpente", 100), dr("bc-pedra-mana", 60), dr("bc-anel-reserva", 25)],
+  "Aranha Tecelã": [dr("bc-seda-aranha", 75), dr("bc-antidoto-folha-azul", 25)],
+  "Raposa Sombria": [dr("bc-pelo-sombrio", 50), dr("bc-manto-cinzento", 10)],
+  "Árvore Desperta": [dr("bc-erva-curativa", 60), dr("bc-botas-leves", 15)],
+  "Cervo Ancestral": [dr("bc-galhada", 100), dr("bc-botas-leves", 40), dr("bc-vassoura", 20)],
+  "Morcego-Cristal": [dr("bc-cristal-fragmento", 60)],
+  "Verme das Rochas": [dt("Minério bruto (vale 5 po)", 60), dr("bc-pedra-mana", 25)],
+  "Golem de Entulho": [dr("bc-pedra-mana", 40), dr("bc-cristal-fragmento", 75), dr("bc-cinto-grimorio", 10)],
+  "Guardião das Ruínas": [dr("bc-nucleo-guardiao", 100), dr("bc-pedra-comunicacao", 40), dr("bc-cinto-grimorio", 30), dr("bc-anel-reserva", 20)],
+  "Elemental Instável": [dr("bc-pedra-mana", 50), dr("bc-elixir-mana", 20)],
+  "Bandoleiro Veterano": [dt("3d6 de ouro", 100), dr("dnd-espada-longa", 40), dr("bc-algema-anulante", 10)],
+  "Mago Renegado": [dr("bc-elixir-mana", 35), dr("bc-luva-conducao", 15), dr("bc-anel-reserva", 10), dt("Páginas rasgadas de um grimório (gancho)", 50)],
+  "Quimera de Mana": [dr("bc-elixir-mana", 100), dr("bc-luva-conducao", 30), dr("bc-espada-condutora", 25), dr("bc-bolsa-sem-fundo", 25)],
+  "Titã Corrompido": [dr("bc-elixir-mana", 100), dr("bc-pagina-grimorio", 50), dr("bc-pingente-purificador", 25)],
+  "Capanga Marcado": [dt("Pista: emblema da marca no pescoço", 100)],
+  "Fera Marcada": [dt("Pista: pelo com a marca queimada", 100)],
+  "Cavaleiro Controlado": [dr("bc-algema-anulante", 30), dt("Pista: insígnia de esquadrão alterada", 75)],
+  "Infiltrado (modelo de chefe)": [dr("bc-pagina-grimorio", 20), dt("Carta cifrada da organização (pista)", 75)],
+  "Grande Mago Dominado": [dr("bc-pingente-purificador", 40), dr("bc-elixir-mana", 60)]
+};
+var dropAlvo = "", dropMsg = "";
+function itemDoCatalogo(id) {
+  var r = null;
+  (EST.itens || []).forEach(function (i) { if (i.id === id) r = i; });
+  if (!r) catalogoPadrao().forEach(function (i) { if (i.id === id) r = i; });
+  return r;
+}
+function d20De(pct) { return pct >= 100 ? "sempre" : "d20 ≥ " + Math.max(2, 21 - Math.round(pct / 5)); }
+function dropsHTML(m) {
+  var l = DROPS[m.nome];
+  if (!l || !l.length) return "";
+  var podeDar = (jogs || []).length > 0;
+  var h = '<div class="drops"><p class="pj-rotulo">' + ic("tesouro") + "Possíveis drops</p><ul>";
+  l.forEach(function (d) {
+    var it = d.id ? itemDoCatalogo(d.id) : null;
+    if (d.id && !it) return;
+    var nome = it ? it.nome : d.txt;
+    h += "<li><span><b>" + esc(nome) + "</b>" + (it && it.raridade !== "comum" ? ' <span class="tag leg">' + esc(it.raridade) + "</span>" : "") +
+      (it && it.fase && !itemNaFase(it) ? ' <span class="tag role" title="Pensado para uma fase mais adiantada">adiantado</span>' : "") +
+      '</span> <small>' + d.pct + "% · " + d20De(d.pct) + "</small>" +
+      (it && podeDar ? ' <button type="button" class="mini" data-dropdar="' + esc(d.id) + '">Dar</button>' : "") + "</li>";
+  });
+  return h + "</ul></div>";
+}
+function dropSeletorHTML() {
+  var l = jogs || [];
+  if (!l.length) return "";
+  if (!dropAlvo || !achaJog(dropAlvo)) dropAlvo = l[0].id;
+  return '<div class="controls"><label>Entregar drops a <select class="sorteio-in" id="dropJog">' + l.map(function (j) {
+    return '<option value="' + j.id + '"' + (j.id === dropAlvo ? " selected" : "") + ">" + esc(j.personagem || j.nome || "Sem nome") + "</option>";
+  }).join("") + '</select></label><span id="dropMsg" role="status" class="mdica">' + esc(dropMsg) + "</span></div>";
+}
+function acoesDrops(b) {
+  var id = b.dataset.dropdar;
+  if (!id) return false;
+  var it = itemDoCatalogo(id), jog = achaJog(dropAlvo);
+  if (!it || !jog) return true;
+  b.disabled = true;
+  var antes = invJogId;
+  invJogId = jog.id;
+  invOp("add", { item: invDeTemplate(it, 1, true) }).then(function (r) {
+    invJogId = antes;
+    b.disabled = false;
+    if (r) { jog.inv = r.inv; jog.moedas = r.moedas; dropMsg = it.nome + " → " + (jog.personagem || jog.nome || "jogador") + "."; }
+    else dropMsg = "Não foi possível entregar. Veja o aviso no topo.";
+    var m = document.getElementById("dropMsg"); if (m) m.textContent = dropMsg;
+  });
+  return true;
+}
+
+/* Notas do mestre sobre os caminhos de mana. Ficam AQUI (arquivo que só o mestre recebe), nunca no app.js público. */
+var CAMINHO_NOTAS = {
+  reforco: "O Grimório de Reforço faz isto melhor e mais forte. Para quem não tem o grimório, é um jeito de não ficar para trás no corpo a corpo. Não deixe empilhar com Pele de Pedra ou Fúria Titânica: vale o maior bônus.",
+  zona: "Boa para cenas de infiltração e de armadilha: dá ao jogador o que o Mundo Falso e as Sombras tiram do inimigo. O último efeito não anula magia: só mostra o que está escondido.",
+  encantamento: "É o que liga os itens ao sistema: usa o campo de equipado do Inventário e o catálogo de armas. Imbuir combina com os estados (Molhado, Lento, Preso). Mantenha o limite de encantamentos ativos para não virar um buff permanente do grupo."
+};
 
 /* ============================ ITENS ============================ */
 
 /* Catálogo do mestre (EST.itens). Os itens de Black Clover trazem uma descrição secreta e os grimórios com que combinam; isso só
    existe aqui, no arquivo do mestre, e o servidor tira esses campos antes de entregar um inventário ao jogador. */
-function ibc(id, cat, nome, raridade, fase, efeito, desc, mestre, sinergia, peso, valor) {
-  return { id: "bc-" + id, origem: "bc", cat: cat, nome: nome, raridade: raridade, fase: fase || "", efeito: efeito, desc: desc, mestre: mestre, sinergia: sinergia || [], peso: peso || 0, valor: valor || 0 };
+function ibc(id, cat, nome, raridade, fase, efeito, desc, mestre, sinergia, peso, valor, x) {
+  return extras({ id: "bc-" + id, origem: "bc", cat: cat, nome: nome, raridade: raridade, fase: fase || "", efeito: efeito, desc: desc, mestre: mestre, sinergia: sinergia || [], peso: peso || 0, valor: valor || 0 }, x);
 }
 var ITENS_BC = [
   ibc("pedra-mana", "consumivel", "Pedra de Mana", "incomum", "", "Restaura 2 de mana", "Cristal azul que se desfaz em luz quando é apertado. Usá-lo gasta uma ação.",
@@ -2845,17 +3049,17 @@ var ITENS_BC = [
   ibc("frasco-nevoa", "consumivel", "Frasco de Névoa", "incomum", "", "Névoa por 2 turnos: quem está dentro não é visto de longe", "Vidro fino com fumaça cinzenta presa dentro. Quebrado no chão, a névoa se espalha.",
     "Ferramenta de fuga. Com Sombras (Passo Sombrio) o personagem some sem teste; com Vento a névoa é espalhada de propósito. Ótimo para cenas de infiltração.", ["Sombras", "Ilusão", "Vento"], 0.2, ouro(25)),
   ibc("anel-reserva", "magico", "Anel de Reserva de Mana", "raro", "Arco 1: Porto Salgado", "+2 de mana máxima", "Aro de prata fosca com uma pedra azul escura. Esquenta quando o dono está sem mana.",
-    "Máximo 1 por jogador. Forte com feitiços de 1 mana repetidos: Raios (Relâmpago Veloz), Lâminas (Corte Veloz / Lâmina Conjurada). Com Sangue vira combo com Pacto Rubro: mana sobrando para ultimates.", ["Raios", "Lâminas", "Sangue"], 0.1, ouro(250)),
+    "Máximo 1 por jogador. Forte com feitiços de 1 mana repetidos: Raios (Relâmpago Veloz), Lâminas (Corte Veloz / Lâmina Conjurada). Com Sangue vira combo com Pacto Rubro: mana sobrando para ultimates.", ["Raios", "Lâminas", "Sangue"], 0.1, ouro(250), { mana: 2 }),
   ibc("luva-conducao", "magico", "Luva de Condução", "raro", "Arco 2", "+1 nas rolagens de ataque de feitiço (d20 + atributo)", "Luva de couro com fios de metal bordados no dorso, que conduzem a mana até os dedos.",
-    "Muito boa em feitiços com vários alvos: Chuva de Lâminas, Tempestade Cortante (Vento) e Tempestade Trovejante (Raios) rolam um ataque por alvo, então o +1 vale várias vezes. Não deixe empilhar com outro bônus de ataque.", ["Lâminas", "Vento", "Raios"], 0.3, ouro(300)),
+    "Muito boa em feitiços com vários alvos: Chuva de Lâminas (Lâminas) e Tempestade Trovejante (Raios) rolam um ataque por alvo, então o +1 vale várias vezes. Em Vento, vale para Rajada repetida. Não deixe empilhar com outro bônus de ataque.", ["Lâminas", "Vento", "Raios"], 0.3, ouro(300)),
   ibc("espada-condutora", "arma", "Espada Condutora de Mana", "raro", "Arco 2", "Dano 1d8 cortante · +1 de dano se gastar 1 mana antes do golpe", "Lâmina escura com veios azuis. Responde à mana do dono.",
     "O +1 soma com Lâmina Conjurada, então o corpo a corpo de Lâminas fica pesado: considere que não empilha. Corte Perfurante (Lâminas) e Punho Pesado (Reforço) funcionam bem com ela.", ["Lâminas", "Reforço"], lb(3), ouro(400)),
   ibc("botas-leves", "magico", "Botas de Passo Leve", "incomum", "Arco 1: Floresta dos Cedros", "+1 de deslocamento", "Botas finas, silenciosas, feitas por caçadores da Floresta dos Cedros.",
-    "Para quem já anda muito, combina com Passo do Vento (dobra o deslocamento) e Relâmpago Veloz (age duas vezes). Dá vantagem em testes de furtividade em terreno de floresta se quiser.", ["Vento", "Raios", "Sombras"], 0.6, ouro(80)),
+    "Para quem já anda muito, combina com Passo do Vento (dobra o deslocamento) e Relâmpago Veloz (age duas vezes). Dá vantagem em testes de furtividade em terreno de floresta se quiser.", ["Vento", "Raios", "Sombras"], 0.6, ouro(80), { desl: 1 }),
   ibc("manto-cinzento", "magico", "Manto Cinzento", "incomum", "Arco 1: Porto Salgado", "Vantagem em furtividade quando há pouca luz", "Capa que absorve a luz ao redor e confunde o olhar.",
     "Dá o bônus de cenário a quem já é furtivo. Com Passo Sombrio e Lâmina Oculta (o dano dobra se o alvo não viu) o jogador vira um assassino; deixe isso para cenas de infiltração, não para qualquer combate.", ["Sombras", "Ilusão"], 0.8, ouro(150)),
   ibc("escudo-cristal", "armadura", "Escudo de Cristal Rúnico", "raro", "Arco 2", "Defesa +1 · uma vez por combate, anula um feitiço de 1 mana dirigido ao dono", "Escudo de cristal liso, com runas apagadas na borda.",
-    "Funciona bem com tanks (Terra, Reforço). Não conta como Barreira Anulante (Antimagia): não cancele feitiços de 2 ou 4 mana.", ["Terra", "Reforço", "Antimagia"], lb(8), ouro(350)),
+    "Funciona bem com tanks (Terra, Reforço). Não conta como Barreira Anulante (Antimagia): não cancele feitiços de 2 ou 4 mana.", ["Terra", "Reforço", "Antimagia"], lb(8), ouro(350), { def: 1 }),
   ibc("cinto-grimorio", "armadura", "Cinto Porta-Grimório", "incomum", "", "Protege o grimório: roubá-lo exige Destreza 15", "Cinto de couro grosso com um estojo trancado para o grimório.",
     "Gancho: a organização infiltrada pode tentar tomar grimórios. Dá ao jogador uma chance de reagir. Antimagia (Corte Nulo) pode abrir o estojo à força.", ["Antimagia"], 0.5, ouro(60)),
   ibc("vassoura", "magico", "Vassoura de Viagem", "raro", "Arco 1: Floresta dos Cedros", "Voa sobre obstáculos e vazios · 1 mana por cena", "Vassoura de cabo escuro, comum entre os cavaleiros mágicos.",
@@ -2872,6 +3076,30 @@ var ITENS_BC = [
     "Recompensa para o “Despertar do grimório” (aba Níveis): o jogador cria com você um feitiço de 4 mana ligado ao tema do grimório dele. Aprove o efeito para não quebrar o equilíbrio.", [], 0.05, 0),
   ibc("presa-lobo", "tesouro", "Presa de Lobo de Mana", "comum", "Sessão 1", "Material de criatura", "Dente longo que ainda guarda um pouco de brilho azul.",
     "Dropa do Lobo de Mana (bestiário). Gancho: um artesão de Pedra Velha troca 3 presas por um amuleto simples (+1 de deslocamento).", [], 0.1, ouro(8)),
+  ibc("pena-corvo", "tesouro", "Pena de Corvo de Mana", "comum", "Sessão 1", "Material de criatura", "Pena negra com um brilho azulado na ponta.",
+    "Material barato. Gancho: o vendedor de Pedra Velha paga bem por penas para fazer flechas leves.", [], 0.01, ouro(2)),
+  ibc("pele-lobo", "tesouro", "Pele de Lobo de Mana", "comum", "Sessão 1", "Material de criatura", "Pele grossa e quente, ainda com um leve brilho de mana.",
+    "Vende bem em Porto Salgado ou serve de matéria-prima para um manto simples.", [], 1, ouro(12)),
+  ibc("palha-mana", "tesouro", "Palha Impregnada de Mana", "comum", "Arco 1: Vale das Colheitas", "Material de criatura", "Feixe de palha que ainda vibra de leve.",
+    "Componente de poções simples. Um curandeiro do Vale paga por ela.", [], 0.2, ouro(5)),
+  ibc("couro-javali", "tesouro", "Couro de Javali de Mana", "comum", "Arco 1: Vale das Colheitas", "Material de criatura", "Couro duro, difícil de furar.",
+    "Dá para trocar por uma armadura de couro reforçada com um artesão do Vale.", [], 3, ouro(15)),
+  ibc("coracao-devorador", "tesouro", "Coração do Devorador de Colheitas", "raro", "Arco 1: Vale das Colheitas", "Material raro", "Coração enorme, que pulsa devagar mesmo depois da derrota.",
+    "Troféu do primeiro chefe. Gancho: o Vale oferece uma recompensa pública e a gratidão do vilarejo.", [], 2, ouro(60)),
+  ibc("carapaca", "tesouro", "Carapaça de Caranguejo Blindado", "incomum", "Arco 1: Porto Salgado", "Material de criatura", "Placa dura, azul-acinzentada, quase impossível de quebrar à mão.",
+    "O ferreiro do porto faz um escudo com duas carapaças (Defesa +1). Vira peça de equipamento sem você precisar inventar item novo.", [], 2, ouro(20)),
+  ibc("escama-serpente", "tesouro", "Escama da Serpente das Marés", "raro", "Arco 1: Porto Salgado", "Material raro", "Escama grande como uma mão, que muda de cor com a luz.",
+    "Prova de que o chefe do porto caiu. Pode virar amuleto com um artesão do porto.", [], 0.3, ouro(80)),
+  ibc("seda-aranha", "tesouro", "Fio de Seda de Aranha Tecelã", "incomum", "Arco 1: Floresta dos Cedros", "Material de criatura", "Novelo de fios finos, leves e muito resistentes.",
+    "Vale como corda leve (aguenta uma pessoa) ou armadilha. Rende boas cenas de improviso.", [], 0.2, ouro(10)),
+  ibc("pelo-sombrio", "tesouro", "Pelo da Raposa Sombria", "incomum", "Arco 1: Floresta dos Cedros", "Material de criatura", "Pelos escuros que quase não refletem luz.",
+    "Pista para o Manto Cinzento: um alfaiate da Floresta troca 4 tufos por um manto.", ["Sombras", "Ilusão"], 0.05, ouro(12)),
+  ibc("galhada", "tesouro", "Galhada do Cervo Ancestral", "raro", "Arco 1: Floresta dos Cedros", "Material raro", "Galhada clara e fria, coberta de musgo que não morre.",
+    "Troféu do chefe da Floresta. Os caçadores respeitam quem a carrega.", [], 4, ouro(100)),
+  ibc("cristal-fragmento", "tesouro", "Fragmento de Cristal", "comum", "Arco 1: Pedra Velha", "Material de criatura", "Pedaço de cristal azul das minas.",
+    "Pode ser trocado por uma Pedra de Mana com o ferreiro de Pedra Velha (3 fragmentos).", [], 0.1, ouro(6)),
+  ibc("nucleo-guardiao", "tesouro", "Núcleo do Guardião das Ruínas", "raro", "Arco 1: Pedra Velha", "Material raro", "Esfera de pedra com inscrições que ainda se acendem de vez em quando.",
+    "Pista para o mistério das ruínas. Defina com o grupo o que ele revela quando estudado.", [], 3, ouro(120)),
   ibc("emblema-vila", "tesouro", "Emblema do Vilarejo", "comum", "Sessão 1", "Prova de origem", "Pingente de madeira com o símbolo do vilarejo do personagem.",
     "Ligue à Origem do personagem (aba Vilarejos): NPCs do vilarejo ajudam quem mostra o emblema. Também é um bom gancho de roubo ou perda.", [], 0.05, 0)
 ];
@@ -2917,7 +3145,7 @@ function itemCatalogoHTML(i) {
   var tags = '<span class="tag role">' + esc(catNome(i.cat)) + '</span><span class="tag role">' + origemNome(i.origem) + "</span>";
   if (i.raridade && i.raridade !== "comum") tags += '<span class="tag leg">' + esc(i.raridade) + "</span>";
   if (i.fase) tags += '<span class="tag role">' + ic("ampulheta") + esc(i.fase) + "</span>";
-  tags += '<span class="tag role">' + pesoTxt(i.peso) + " · " + valorTxt(i.valor) + "</span>";
+  tags += '<span class="tag role">' + ic("mochila") + pesoTxt(i.peso) + " · " + valorTxt(i.valor) + "</span>" + modsTags(i);
   var h = '<article class="panel item-cat"><h3>' + esc(i.nome) + '</h3><div class="meta item-tags">' + tags + "</div>";
   if (!itemNaFase(i)) h += '<p class="item-alerta aviso">' + ic("alerta") + "<span>Adiantado: a campanha está em " + esc(EST.progresso) + ".</span></p>";
   if (i.efeito) h += "<p><b>" + esc(i.efeito) + "</b></p>";
@@ -2928,7 +3156,8 @@ function itemCatalogoHTML(i) {
     h += '<div class="item-grade">' + itCampo("Nome", "nome", i.id, i.nome, "text", ' maxlength="80"') +
       '<label>Categoria<select class="sorteio-in" data-itf="cat" data-itid="' + i.id + '">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === i.cat ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select></label>" +
       '<label>Raridade<select class="sorteio-in" data-itf="raridade" data-itid="' + i.id + '">' + RARID_ITEM.map(function (c) { return '<option value="' + c + '"' + (c === (i.raridade || "comum") ? " selected" : "") + ">" + c + "</option>"; }).join("") + "</select></label>" +
-      itCampo("Peso (kg)", "peso", i.id, i.peso || 0, "number", ' min="0" step="0.05"') + itCampo("Valor (ouro)", "valor", i.id, (i.valor || 0) / 100, "number", ' min="0" step="0.01"') + "</div>" +
+      itCampo("Peso (kg)", "peso", i.id, i.peso || 0, "number", ' min="0" step="0.05"') + itCampo("Valor (ouro)", "valor", i.id, (i.valor || 0) / 100, "number", ' min="0" step="0.01"') +
+      itCampo("Defesa (equipado)", "def", i.id, i.def || 0, "number", ' min="-10" max="10"') + itCampo("Deslocamento (equipado)", "desl", i.id, i.desl || 0, "number", ' min="-10" max="10"') + itCampo("Mana máxima (equipado)", "mana", i.id, i.mana || 0, "number", ' min="-10" max="10"') + "</div>" +
       itCampo("Efeito ou dano (resumo)", "efeito", i.id, i.efeito || "", "text", ' maxlength="200"') +
       '<label>Descrição (o jogador vê)<textarea class="sorteio-in" rows="3" data-itf="desc" data-itid="' + i.id + '">' + esc(i.desc || "") + "</textarea></label>" +
       '<fieldset class="pj-acesso item-mestre"><legend>' + ic("cadeado") + 'Só o mestre vê</legend><label>Descrição secreta (ex.: forte quando usado com tal magia)<textarea class="sorteio-in" rows="4" data-itf="mestre" data-itid="' + i.id + '">' + esc(i.mestre || "") + "</textarea></label>" +
@@ -3042,7 +3271,7 @@ function acoesItens(b) {
   }
   if (d.kitlib) {
     var jk = achaJog(invJogId);
-    if (jk && window.confirm("Liberar o kit inicial de novo? Os itens que ele já tem continuam, e o jogador ganha mais uma escolha (mais 10 po e os itens fixos).")) {
+    if (jk && window.confirm("Liberar o kit inicial de novo? Os itens que ele já tem continuam, e o jogador ganha mais uma escolha (só os itens que ele escolher; as moedas e os itens fixos não se repetem).")) {
       invOp("kit_liberar").then(function (r) { if (r) { jk.kitFeito = false; renderizar(); } });
     }
     return true;
@@ -3061,6 +3290,7 @@ function changeItens(el) {
     var v = el.value;
     if (d.itf === "peso") v = Math.max(0, Number(v) || 0);
     else if (d.itf === "valor") v = Math.max(0, Math.round((Number(v) || 0) * 100));
+    else if (d.itf === "def" || d.itf === "desl" || d.itf === "mana") v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0));
     else if (d.itf === "sinergia") v = v.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
     else if (d.itf === "nome" && !v.trim()) { el.value = i.nome; return true; }
     i[d.itf] = v;
@@ -3114,7 +3344,7 @@ MESTRE = {
 
   antes: function (r) {
     if (r !== "sorteio") cer.ativa = false;
-    if ((r === "jogadores" || r === "itens") && ultimaRota !== r) atualizarJogadores();
+    if ((r === "jogadores" || r === "itens" || r === "acao") && ultimaRota !== r) atualizarJogadores();
     if (r !== "acao" && campoRodando) pararCampoPoll();
     ultimaRota = r;
   },
@@ -3128,6 +3358,7 @@ MESTRE = {
 
   change: function (el) {
     var d = el.dataset || {};
+    if (el.id === "dropJog") { dropAlvo = el.value; return; }
     if (changeItens(el)) return;
     if (el.id === "cenaUp") { enviarCenario(el); return; }
     if (el.id === "cenaTroca") { trocarFotoCenario(el); return; }
@@ -3196,6 +3427,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (acoesDrops(b)) return true;
     if (acoesItens(b)) return true;
     if (clickCenarios(b)) return true;
     if (clickAcao(b)) return true;

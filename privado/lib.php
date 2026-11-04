@@ -429,6 +429,7 @@ function itemAplicar(array $item, array $campos, bool $mestre): array
             case 'peso': $item['peso'] = round(max(0.0, min(9999.0, (float)$v)), 2); break;
             case 'valor': $item['valor'] = max(0, min(100000000, (int)$v)); break;
             case 'equip': $item['equip'] = (bool)$v; break;
+            case 'def': case 'desl': case 'mana': $item[$k] = max(-10, min(10, (int)$v)); break; /* bônus (ou penalidade) enquanto equipado */
             case 'mestre': if ($mestre) $item['mestre'] = mb_substr(trim((string)$v), 0, 2000); break;
             case 'fase': if ($mestre) $item['fase'] = mb_substr(trim((string)$v), 0, 60); break;
             case 'sinergia':
@@ -515,9 +516,9 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
 
 /* Depois de criar o personagem, o jogador monta o próprio kit UMA vez: itens fixos + escolhas por grupo. O servidor confere tudo
    (quem manda o que quer não passa da lista) e marca 'kitFeito'; o mestre pode liberar de novo. Valores em cobre (100 = 1 ouro), pesos em kg. */
-function kitIt(string $id, string $cat, string $nome, string $efeito, float $peso, int $valor, int $qtd = 1, string $desc = ''): array
+function kitIt(string $id, string $cat, string $nome, string $efeito, float $peso, int $valor, int $qtd = 1, string $desc = '', array $x = []): array
 {
-    return ['id' => $id, 'cat' => $cat, 'nome' => $nome, 'efeito' => $efeito, 'peso' => $peso, 'valor' => $valor, 'qtd' => $qtd, 'desc' => $desc];
+    return ['id' => $id, 'cat' => $cat, 'nome' => $nome, 'efeito' => $efeito, 'peso' => $peso, 'valor' => $valor, 'qtd' => $qtd, 'desc' => $desc] + $x;
 }
 function kitInicial(): array
 {
@@ -533,21 +534,26 @@ function kitInicial(): array
             kitIt('emblema', 'tesouro', 'Emblema do Vilarejo', 'Prova de origem', 0.05, 0, 1, 'Pingente de madeira com o símbolo do seu vilarejo. Gente de lá confia em quem o mostra.'),
         ],
         'grupos' => [
-            ['id' => 'arma', 'nome' => 'Arma', 'min' => 1, 'max' => 1, 'itens' => [
+            /* Plebeus de vilarejo, num mundo onde o grimório é a arma de verdade: nada de espada de cavaleiro. São ferramentas de trabalho
+               de cada canto de Grimoria, e o jogador pode seguir sem arma. */
+            ['id' => 'arma', 'nome' => 'Arma ou ferramenta de trabalho (opcional)', 'min' => 0, 'max' => 1, 'itens' => [
                 kitIt('adaga', 'arma', 'Adaga', 'Dano 1d4 perfurante · leve, arremesso', 0.45, 200),
-                kitIt('espada-curta', 'arma', 'Espada curta', 'Dano 1d6 perfurante · leve, acuidade', 0.9, 1000),
-                kitIt('espada-longa', 'arma', 'Espada longa', 'Dano 1d8 cortante · versátil (1d10)', 1.35, 1500),
-                kitIt('lanca', 'arma', 'Lança', 'Dano 1d6 perfurante · arremesso, versátil', 1.35, 100),
-                kitIt('machadinha', 'arma', 'Machadinha', 'Dano 1d6 cortante · leve, arremesso', 0.9, 500),
-                kitIt('maca', 'arma', 'Maça', 'Dano 1d6 contundente', 1.8, 500),
-                kitIt('bordao', 'arma', 'Bordão', 'Dano 1d6 contundente · versátil (1d8)', 1.8, 20),
-                kitIt('arco-curto', 'arma', 'Arco curto com 20 flechas', 'Dano 1d6 perfurante · à distância', 1.35, 2600),
+                kitIt('faca-caca', 'arma', 'Faca de caça', 'Dano 1d4 cortante · leve', 0.45, 200, 1, 'Comum entre os caçadores da Floresta dos Cedros.'),
+                kitIt('foice', 'arma', 'Foice', 'Dano 1d4 cortante · leve', 0.9, 100, 1, 'Ferramenta de colheita do Vale das Colheitas.'),
+                kitIt('machadinha', 'arma', 'Machadinha de lenha', 'Dano 1d6 cortante · leve, arremesso', 0.9, 500),
+                kitIt('forcado', 'arma', 'Forcado', 'Dano 1d6 perfurante · versátil', 1.8, 100, 1, 'Ferramenta de fazenda, boa para manter a distância.'),
+                kitIt('arpao', 'arma', 'Arpão', 'Dano 1d6 perfurante · arremesso', 1.8, 100, 1, 'Usado pelos pescadores de Porto Salgado.'),
+                kitIt('picareta', 'arma', 'Picareta de mineiro', 'Dano 1d6 perfurante · versátil (1d8)', 4.5, 200, 1, 'Ferramenta das minas de Pedra Velha.'),
+                kitIt('marreta', 'arma', 'Marreta de pedreiro', 'Dano 1d8 contundente · duas mãos', 4.5, 200),
+                kitIt('bordao', 'arma', 'Bordão', 'Dano 1d6 contundente · versátil (1d8)', 1.8, 20, 1, 'Cajado de viajante. Também serve de apoio na estrada.'),
+                kitIt('arco-caca', 'arma', 'Arco de caça com 20 flechas', 'Dano 1d6 perfurante · à distância', 1.35, 2600),
+                kitIt('funda', 'arma', 'Funda com pedras', 'Dano 1d4 contundente · à distância', 0.45, 10),
             ]],
             ['id' => 'protecao', 'nome' => 'Proteção (opcional)', 'min' => 0, 'max' => 1, 'itens' => [
-                kitIt('acolchoada', 'armadura', 'Armadura acolchoada', 'Defesa +1 (leve)', 3.6, 500, 1, $arm),
-                kitIt('couro', 'armadura', 'Armadura de couro', 'Defesa +1 (leve)', 4.5, 1000, 1, $arm),
-                kitIt('gibao', 'armadura', 'Gibão de peles', 'Defesa +2 (média)', 5.4, 1000, 1, $arm),
-                kitIt('escudo', 'armadura', 'Escudo', 'Defesa +1', 2.7, 1000, 1, $arm),
+                kitIt('acolchoada', 'armadura', 'Armadura acolchoada', 'Defesa +1 (leve)', 3.6, 500, 1, $arm, ['def' => 1]),
+                kitIt('couro', 'armadura', 'Armadura de couro', 'Defesa +1 (leve)', 4.5, 1000, 1, $arm, ['def' => 1]),
+                kitIt('gibao', 'armadura', 'Gibão de peles', 'Defesa +2 (média)', 5.4, 1000, 1, $arm, ['def' => 2]),
+                kitIt('escudo', 'armadura', 'Escudo', 'Defesa +1', 2.7, 1000, 1, $arm, ['def' => 1]),
             ]],
             ['id' => 'equip', 'nome' => 'Equipamento e ferramentas', 'min' => 0, 'max' => 4, 'itens' => [
                 kitIt('corda', 'aventura', 'Corda de cânhamo (15 m)', 'Aguenta uma pessoa', 4.5, 100),
@@ -562,8 +568,10 @@ function kitInicial(): array
                 kitIt('alaude', 'ferramenta', 'Alaúde', 'Instrumento musical', 0.9, 3500),
                 kitIt('baralho', 'ferramenta', 'Baralho', '', 0.0, 50),
                 kitIt('pergaminho', 'aventura', 'Pergaminho, tinta e pena', '', 0.1, 1100),
+                kitIt('estojo-grimorio', 'aventura', 'Estojo de grimório', 'Protege o grimório da chuva, do fogo leve e de mãos ligeiras', 0.5, 600, 1, 'Estojo de couro com fecho, feito para um livro de mana.'),
             ]],
             ['id' => 'consumivel', 'nome' => 'Consumíveis', 'min' => 0, 'max' => 2, 'itens' => [
+                kitIt('pedra-mana', 'consumivel', 'Pedra de Mana', 'Restaura 2 de mana (gasta uma ação)', 0.1, 2500, 1, 'Cristal azul que se desfaz em luz quando é apertado.'),
                 kitIt('pocao-cura', 'consumivel', 'Poção de cura', 'Cura 2d4 + 2 de vida', 0.23, 5000, 1, 'Líquido vermelho que brilha levemente.'),
                 kitIt('antitoxina', 'consumivel', 'Antitoxina', 'Vantagem contra veneno por 1 hora', 0.0, 5000),
                 kitIt('fogo-alquimico', 'consumivel', 'Fogo alquímico', 'Arremessado: 1d4 de fogo por turno até apagar', 0.45, 5000),
@@ -577,7 +585,7 @@ function kitInicial(): array
 function kitParaItem(array $k): array
 {
     return itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false],
-        ['nome' => $k['nome'], 'cat' => $k['cat'], 'efeito' => $k['efeito'], 'desc' => $k['desc'], 'peso' => $k['peso'], 'valor' => $k['valor'], 'qtd' => $k['qtd'], 'ref' => 'kit-' . $k['id']], false);
+        ['nome' => $k['nome'], 'cat' => $k['cat'], 'efeito' => $k['efeito'], 'desc' => $k['desc'], 'peso' => $k['peso'], 'valor' => $k['valor'], 'qtd' => $k['qtd'], 'ref' => 'kit-' . $k['id'], 'def' => $k['def'] ?? 0, 'desl' => $k['desl'] ?? 0, 'mana' => $k['mana'] ?? 0, 'equip' => isset($k['def'])], false);
 }
 
 function kitEscolher(string $jogId, array $ids): array
@@ -606,9 +614,15 @@ function kitEscolher(string $jogId, array $ids): array
     $dados = json_decode($atual, true) ?: [];
     if (!empty($dados['kitFeito'])) { $pdo->rollBack(); erro('Você já escolheu o seu kit inicial. Peça ao mestre para liberar de novo.', 409); }
     $inv = array_values(array_filter((array)($dados['inv'] ?? []), 'is_array'));
-    foreach (array_merge($kit['fixos'], $escolhidos) as $it) $inv[] = kitParaItem($it);
+    /* Se o mestre liberar o kit de novo, os itens fixos e as moedas não se repetem: só entram as novas escolhas. */
+    $refs = array_column($inv, 'ref');
+    foreach ($kit['fixos'] as $it) { if (!in_array('kit-' . $it['id'], $refs, true)) $inv[] = kitParaItem($it); }
+    foreach ($escolhidos as $it) $inv[] = kitParaItem($it);
     $m = moedasLimpas($dados['moedas'] ?? []);
-    foreach ($kit['moedas'] as $k => $v) $m[$k] = min(999999999, $m[$k] + $v);
+    if (empty($dados['kitMoedas'])) {
+        foreach ($kit['moedas'] as $k => $v) $m[$k] = min(999999999, $m[$k] + $v);
+        $dados['kitMoedas'] = true;
+    }
     $dados['inv'] = $inv;
     $dados['moedas'] = $m;
     $dados['kitFeito'] = true;
