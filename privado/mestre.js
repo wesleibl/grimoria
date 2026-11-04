@@ -2970,7 +2970,8 @@ function itJogadoresHTML() {
   var h = '<div class="controls"><div class="fgroup"><span>Jogador</span><div class="chips" id="itJogs">' + jogs.map(function (j) {
     return '<button type="button" class="chip" data-itjog="' + j.id + '" aria-pressed="' + (j.id === invJogId) + '">' + esc(j.personagem || j.nome || "Sem nome") + "</button>";
   }).join("") + "</div></div></div>";
-  h += '<p class="mdica">' + esc(d.personagem || d.nome || "") + (d.grim ? " · Grimório: " + esc(d.grim) : " · sem grimório") + ". O jogador vê os mesmos itens, menos o que está marcado “Só mestre”.</p>";
+  h += '<p class="mdica">' + esc(d.personagem || d.nome || "") + (d.grim ? " · Grimório: " + esc(d.grim) : " · sem grimório") + ". O jogador vê os mesmos itens, menos o que está marcado “Só mestre”.</p>" +
+    '<p class="mdica">Kit inicial: ' + (d.kitFeito ? "já escolhido. " + '<button type="button" data-kitlib="1">Liberar para escolher de novo</button>' : "ainda não escolhido pelo jogador.") + "</p>";
   return h + invCorpoHTML(d, true);
 }
 
@@ -3037,6 +3038,13 @@ function acoesItens(b) {
       else itMsg = "Não foi possível entregar. Veja o aviso no topo.";
       var m = document.getElementById("itMsg"); if (m) m.textContent = itMsg;
     });
+    return true;
+  }
+  if (d.kitlib) {
+    var jk = achaJog(invJogId);
+    if (jk && window.confirm("Liberar o kit inicial de novo? Os itens que ele já tem continuam, e o jogador ganha mais uma escolha (mais 10 po e os itens fixos).")) {
+      invOp("kit_liberar").then(function (r) { if (r) { jk.kitFeito = false; renderizar(); } });
+    }
     return true;
   }
   if (d.invir) { invJogId = d.invir; itensAba = "jogadores"; location.hash = "#itens"; renderizar(); return true; }

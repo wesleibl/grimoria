@@ -492,6 +492,7 @@ function viewInicioJogador() {
   if (!j) {
     return h + criarPersonagemHTML() + atalhosJogador();
   }
+  if (j.kit) h += '<div class="note"><p><b>Falta escolher o seu kit inicial.</b> Você monta a mochila do seu personagem uma única vez. <a href="#inventario">Escolher agora</a></p></div>';
   var url = j.img ? imgUrl(j.img) : "";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Imagem de ' + esc(j.personagem || j.nome || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
@@ -1398,7 +1399,7 @@ function carregar(aposLogin) {
       });
     }
     PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [], vilaBonus: d.vilaBonus || "" };
-    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = "";
+    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = ""; kitSel = {}; kitMsg = "";
     renderizar();
   }).catch(function (e) {
     app.innerHTML = '<div class="lock"><h1>Sem conexão</h1><p>' + esc(e.message) + '</p><p><button type="button" class="primary" id="tentarDeNovo">Tentar de novo</button></p></div>';
@@ -1642,10 +1643,55 @@ function invCorpoHTML(d, mestre) {
     '<div id="invLista">' + invListaHTML(d, mestre) + "</div>" + invAdicionarHTML(mestre);
 }
 
+/* ----- Kit inicial: o jogador monta o próprio kit uma vez, logo depois de criar o personagem. A lista vem do servidor (PUB.jogador.kit). ----- */
+var kitSel = {}, kitMsg = "", kitSalvando = false;
+function kitContagem(g) { var n = 0; g.itens.forEach(function (i) { if (kitSel[i.id]) n++; }); return n; }
+function kitPronto(j) { return j.kit.grupos.every(function (g) { var n = kitContagem(g); return n >= g.min && n <= g.max; }); }
+function kitItemTxt(i) { return "<b>" + esc(i.nome) + (i.qtd > 1 ? " ×" + i.qtd : "") + "</b>" + (i.efeito ? "<small>" + esc(i.efeito) + "</small>" : ""); }
+function kitHTML(j) {
+  if (!j || !j.kit) return "";
+  var k = j.kit;
+  var h = '<section class="panel kit" id="kitPainel"><h3>' + ic("estrela") + "Escolha o seu kit inicial</h3>" +
+    '<p>Você só escolhe <b>uma vez</b>. Os itens fixos já vêm, e o resto é por sua conta, dentro do limite de cada grupo. Depois, você muda tudo no inventário.</p>' +
+    '<p class="mdica"><b>Já vem com:</b> ' + k.fixos.map(function (i) { return esc(i.nome) + (i.qtd > 1 ? " ×" + i.qtd : ""); }).join(", ") + " e " + k.moedas.po + " po.</p>";
+  k.grupos.forEach(function (g) {
+    var n = kitContagem(g);
+    h += '<fieldset class="pj-acesso"><legend>' + esc(g.nome) + " <span class=\"kit-cont" + (n >= g.min && n <= g.max ? " ok" : "") + '">' + n + " de " + g.max + (g.min ? " (obrigatório)" : "") + "</span></legend><div class=\"kit-grade\">";
+    g.itens.forEach(function (i) {
+      var marcado = !!kitSel[i.id], cheio = !marcado && n >= g.max;
+      h += '<label class="kit-op' + (marcado ? " sel" : "") + (cheio ? " cheio" : "") + '"><input type="checkbox" data-kit="' + i.id + '" data-kitg="' + g.id + '"' + (marcado ? " checked" : "") + (cheio ? " disabled" : "") + "><span>" + kitItemTxt(i) + "</span></label>";
+    });
+    h += "</div></fieldset>";
+  });
+  return h + '<p id="kitMsg" role="status" class="mdica">' + esc(kitMsg) + '</p><p><button type="button" class="primary" id="kitConfirmar"' + (kitPronto(j) && !kitSalvando ? "" : " disabled") + ">" + (kitSalvando ? "Salvando…" : "Confirmar kit") + "</button></p></section>";
+}
+function kitAtualizar() { var e = document.getElementById("kitPainel"); if (e && PUB.jogador) e.outerHTML = kitHTML(PUB.jogador); }
+function kitChange(el) {
+  if (!el.dataset || !el.dataset.kit || !PUB.jogador || !PUB.jogador.kit) return false;
+  kitSel[el.dataset.kit] = el.checked;
+  kitMsg = "";
+  kitAtualizar();
+  return true;
+}
+function kitClick(b) {
+  if (b.id !== "kitConfirmar") return false;
+  var j = PUB.jogador;
+  if (!j || !j.kit || kitSalvando || !kitPronto(j)) return true;
+  var escolhas = Object.keys(kitSel).filter(function (id) { return kitSel[id]; });
+  if (!window.confirm("Confirmar este kit? Você só escolhe uma vez.")) return true;
+  kitSalvando = true; kitAtualizar();
+  gravar("perfil_kit", { escolhas: escolhas }).then(function (r) {
+    kitSalvando = false;
+    if (r) { j.inv = r.inv; j.moedas = r.moedas; j.kitFeito = true; j.kit = null; kitMsg = ""; invMsg = "Kit inicial entregue. Bom jogo!"; renderizar(); }
+    else { kitMsg = "Não foi possível salvar o kit. Veja o aviso no topo."; kitAtualizar(); }
+  });
+  return true;
+}
+
 function viewInventario() {
   var j = PUB.jogador;
   if (!j) return "<h1>Inventário</h1>" + criarPersonagemHTML();
-  return "<h1>Inventário</h1>" + '<p class="lead">Tudo o que o seu personagem carrega. Você edita à vontade, e o mestre vê e também pode mexer. Marque o escudo ao lado do item para destacar o que está equipado.</p>' + invCorpoHTML(j, false);
+  return "<h1>Inventário</h1>" + kitHTML(j) + '<p class="lead">Tudo o que o seu personagem carrega. Você edita à vontade, e o mestre vê e também pode mexer. Marque o escudo ao lado do item para destacar o que está equipado.</p>' + invCorpoHTML(j, false);
 }
 
 function invRedesenharLista() {
@@ -1679,6 +1725,7 @@ function num(id, dflt) { var e = document.getElementById(id); var v = e ? parseF
 
 /* Cliques do inventário. Devolve true se tratou o clique. */
 function invClick(b) {
+  if (kitClick(b)) return true;
   var d = b.dataset;
   if (d.itog) {
     var corpo = document.getElementById("ic-" + d.itog), abrir = corpo ? corpo.hidden : false;
@@ -1730,6 +1777,7 @@ function invClick(b) {
 
 /* Mudanças em campos do inventário (ao sair do campo). */
 function invChange(el) {
+  if (kitChange(el)) return true;
   var d = el.dataset || {};
   if (d.ieq !== undefined && d.ieq !== "") {
     var it = invAchar(d.ieq);

@@ -53,6 +53,7 @@ try {
         'POST perfil_img' => acaoPerfilImg(),
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
         'POST inv_op' => acaoInvOp(),
+        'POST perfil_kit' => acaoPerfilKit(),
         default => erro('Ação desconhecida.', 404),
     };
 } catch (Throwable $e) {
@@ -158,7 +159,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado'])) + ['inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito'])) + ['kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -212,7 +213,7 @@ function acaoJogadorSalvar(): never
     $j = corpo()['jogador'] ?? null;
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
-    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas']); /* o inventário só muda por inv_op */
+    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito']); /* o inventário só muda por inv_op */
     salvarCamposJogador($id, $j, true);
     responder(['ok' => true]);
 }
@@ -401,6 +402,12 @@ function acaoInvOp(): never
     $mestre = $u['papel'] === 'mestre';
     $id = $mestre ? idValido($c['jogador'] ?? '') : jogadorDaConta()['id'];
     responder(inventarioOp($id, (string)($c['op'] ?? ''), $c, $mestre));
+}
+
+function acaoPerfilKit(): never
+{
+    $jog = jogadorDaConta();
+    responder(kitEscolher($jog['id'], (array)(corpo()['escolhas'] ?? [])));
 }
 
 /* ============================ AÇÃO (GRID) ============================ */

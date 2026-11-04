@@ -495,6 +495,8 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
     } elseif ($op === 'moedas') {
         $moedas = moedasLimpas($c['moedas'] ?? []);
+    } elseif ($op === 'kit_liberar' && $mestre) {
+        $dados['kitFeito'] = false;
     } else {
         $pdo->rollBack();
         erro('Operação inválida.');
@@ -506,7 +508,113 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
     if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
     $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$json, $jogId]);
     $pdo->commit();
-    return ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas];
+    return ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas, 'kitFeito' => !empty($dados['kitFeito'])];
+}
+
+/* ============================ KIT INICIAL ============================ */
+
+/* Depois de criar o personagem, o jogador monta o próprio kit UMA vez: itens fixos + escolhas por grupo. O servidor confere tudo
+   (quem manda o que quer não passa da lista) e marca 'kitFeito'; o mestre pode liberar de novo. Valores em cobre (100 = 1 ouro), pesos em kg. */
+function kitIt(string $id, string $cat, string $nome, string $efeito, float $peso, int $valor, int $qtd = 1, string $desc = ''): array
+{
+    return ['id' => $id, 'cat' => $cat, 'nome' => $nome, 'efeito' => $efeito, 'peso' => $peso, 'valor' => $valor, 'qtd' => $qtd, 'desc' => $desc];
+}
+function kitInicial(): array
+{
+    $arm = 'Adaptação do 5e: a Defesa é 10 + Destreza, então a proteção soma um bônus fixo.';
+    return [
+        'moedas' => ['po' => 10, 'pp' => 0, 'pc' => 0],
+        'fixos' => [
+            kitIt('mochila', 'aventura', 'Mochila', 'Carrega pequenos itens', 2.25, 200),
+            kitIt('saco-dormir', 'aventura', 'Saco de dormir', '', 3.15, 100),
+            kitIt('cantil', 'aventura', 'Cantil', 'Guarda 2 litros de líquido', 2.25, 200),
+            kitIt('racao', 'aventura', 'Ração (1 dia)', 'Comida seca para um dia', 0.9, 50, 3),
+            kitIt('pederneira', 'aventura', 'Pederneira e isqueiro', 'Acende fogo', 0.45, 50),
+            kitIt('emblema', 'tesouro', 'Emblema do Vilarejo', 'Prova de origem', 0.05, 0, 1, 'Pingente de madeira com o símbolo do seu vilarejo. Gente de lá confia em quem o mostra.'),
+        ],
+        'grupos' => [
+            ['id' => 'arma', 'nome' => 'Arma', 'min' => 1, 'max' => 1, 'itens' => [
+                kitIt('adaga', 'arma', 'Adaga', 'Dano 1d4 perfurante · leve, arremesso', 0.45, 200),
+                kitIt('espada-curta', 'arma', 'Espada curta', 'Dano 1d6 perfurante · leve, acuidade', 0.9, 1000),
+                kitIt('espada-longa', 'arma', 'Espada longa', 'Dano 1d8 cortante · versátil (1d10)', 1.35, 1500),
+                kitIt('lanca', 'arma', 'Lança', 'Dano 1d6 perfurante · arremesso, versátil', 1.35, 100),
+                kitIt('machadinha', 'arma', 'Machadinha', 'Dano 1d6 cortante · leve, arremesso', 0.9, 500),
+                kitIt('maca', 'arma', 'Maça', 'Dano 1d6 contundente', 1.8, 500),
+                kitIt('bordao', 'arma', 'Bordão', 'Dano 1d6 contundente · versátil (1d8)', 1.8, 20),
+                kitIt('arco-curto', 'arma', 'Arco curto com 20 flechas', 'Dano 1d6 perfurante · à distância', 1.35, 2600),
+            ]],
+            ['id' => 'protecao', 'nome' => 'Proteção (opcional)', 'min' => 0, 'max' => 1, 'itens' => [
+                kitIt('acolchoada', 'armadura', 'Armadura acolchoada', 'Defesa +1 (leve)', 3.6, 500, 1, $arm),
+                kitIt('couro', 'armadura', 'Armadura de couro', 'Defesa +1 (leve)', 4.5, 1000, 1, $arm),
+                kitIt('gibao', 'armadura', 'Gibão de peles', 'Defesa +2 (média)', 5.4, 1000, 1, $arm),
+                kitIt('escudo', 'armadura', 'Escudo', 'Defesa +1', 2.7, 1000, 1, $arm),
+            ]],
+            ['id' => 'equip', 'nome' => 'Equipamento e ferramentas', 'min' => 0, 'max' => 4, 'itens' => [
+                kitIt('corda', 'aventura', 'Corda de cânhamo (15 m)', 'Aguenta uma pessoa', 4.5, 100),
+                kitIt('tocha', 'aventura', 'Tocha', 'Luz por 1 hora (6 m)', 0.45, 1, 3),
+                kitIt('lanterna', 'aventura', 'Lanterna coberta com óleo', 'Luz por 6 horas', 1.35, 600),
+                kitIt('pe-cabra', 'aventura', 'Pé de cabra', 'Vantagem para forçar portas e baús', 2.25, 200),
+                kitIt('barraca', 'aventura', 'Barraca (2 pessoas)', '', 9.0, 200),
+                kitIt('espelho', 'aventura', 'Espelho de aço', '', 0.23, 500),
+                kitIt('kit-curandeiro', 'ferramenta', 'Kit de curandeiro', '10 usos · estabiliza um aliado caído', 1.35, 500),
+                kitIt('ferr-ladrao', 'ferramenta', 'Ferramentas de ladrão', 'Arrombar fechaduras e desarmar armadilhas', 0.45, 2500),
+                kitIt('herbalismo', 'ferramenta', 'Kit de herbalismo', 'Reconhecer plantas e preparar ervas', 1.35, 500),
+                kitIt('alaude', 'ferramenta', 'Alaúde', 'Instrumento musical', 0.9, 3500),
+                kitIt('baralho', 'ferramenta', 'Baralho', '', 0.0, 50),
+                kitIt('pergaminho', 'aventura', 'Pergaminho, tinta e pena', '', 0.1, 1100),
+            ]],
+            ['id' => 'consumivel', 'nome' => 'Consumíveis', 'min' => 0, 'max' => 2, 'itens' => [
+                kitIt('pocao-cura', 'consumivel', 'Poção de cura', 'Cura 2d4 + 2 de vida', 0.23, 5000, 1, 'Líquido vermelho que brilha levemente.'),
+                kitIt('antitoxina', 'consumivel', 'Antitoxina', 'Vantagem contra veneno por 1 hora', 0.0, 5000),
+                kitIt('fogo-alquimico', 'consumivel', 'Fogo alquímico', 'Arremessado: 1d4 de fogo por turno até apagar', 0.45, 5000),
+                kitIt('abrolhos', 'consumivel', 'Abrolhos (saco)', 'Quem passa perde deslocamento e sofre 1 de dano', 0.9, 100),
+            ]],
+        ],
+    ];
+}
+
+/* Converte uma entrada do kit em item de inventário. */
+function kitParaItem(array $k): array
+{
+    return itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false],
+        ['nome' => $k['nome'], 'cat' => $k['cat'], 'efeito' => $k['efeito'], 'desc' => $k['desc'], 'peso' => $k['peso'], 'valor' => $k['valor'], 'qtd' => $k['qtd'], 'ref' => 'kit-' . $k['id']], false);
+}
+
+function kitEscolher(string $jogId, array $ids): array
+{
+    $kit = kitInicial();
+    $ids = array_values(array_unique(array_map('strval', $ids)));
+    $porGrupo = [];
+    $escolhidos = [];
+    foreach ($kit['grupos'] as $g) {
+        $porGrupo[$g['id']] = 0;
+        foreach ($g['itens'] as $it) {
+            if (in_array($it['id'], $ids, true)) { $porGrupo[$g['id']]++; $escolhidos[] = $it; }
+        }
+    }
+    if (count($escolhidos) !== count($ids)) erro('Algum item escolhido não está no kit.');
+    foreach ($kit['grupos'] as $g) {
+        $n = $porGrupo[$g['id']];
+        if ($n < $g['min'] || $n > $g['max']) erro('Grupo "' . $g['nome'] . '": escolha de ' . $g['min'] . ' a ' . $g['max'] . '.');
+    }
+    $pdo = db();
+    $pdo->beginTransaction();
+    $st = $pdo->prepare('SELECT dados FROM jogadores WHERE id = ? FOR UPDATE');
+    $st->execute([$jogId]);
+    $atual = $st->fetchColumn();
+    if ($atual === false) { $pdo->rollBack(); erro('Jogador não encontrado.', 404); }
+    $dados = json_decode($atual, true) ?: [];
+    if (!empty($dados['kitFeito'])) { $pdo->rollBack(); erro('Você já escolheu o seu kit inicial. Peça ao mestre para liberar de novo.', 409); }
+    $inv = array_values(array_filter((array)($dados['inv'] ?? []), 'is_array'));
+    foreach (array_merge($kit['fixos'], $escolhidos) as $it) $inv[] = kitParaItem($it);
+    $m = moedasLimpas($dados['moedas'] ?? []);
+    foreach ($kit['moedas'] as $k => $v) $m[$k] = min(999999999, $m[$k] + $v);
+    $dados['inv'] = $inv;
+    $dados['moedas'] = $m;
+    $dados['kitFeito'] = true;
+    $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([json_encode((object)$dados, JSON_UNESCAPED_UNICODE), $jogId]);
+    $pdo->commit();
+    return ['inv' => invVisivel($inv, false), 'moedas' => $m, 'kitFeito' => true];
 }
 
 /* ============================ CAMPO: POSIÇÕES E COMBATE ============================ */

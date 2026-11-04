@@ -672,6 +672,15 @@ button.perigo:hover { background: var(--poder); color: #fff; }
 .inv-add label { margin: 0; }
 .inv-add select { min-width: 0; }
 @media (max-width: 520px) { .item-tags { margin-left: 0; } .item-topo { flex-wrap: wrap; } .item-nome { flex-basis: calc(100% - 60px); } }
+.kit-grade { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin: 0 0 .8rem; }
+.kit-op { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; min-height: 52px; }
+.kit-op input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+.kit-op span { display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
+.kit-op small { color: var(--muted); }
+.kit-op.sel { border-color: var(--accent); background: var(--surface2); }
+.kit-op.cheio { opacity: .55; cursor: not-allowed; }
+.kit-cont { font-weight: 500; color: var(--muted); margin-left: 6px; }
+.kit-cont.ok { color: var(--accent); font-weight: 700; }
 </style>
 </head>
 <body>
