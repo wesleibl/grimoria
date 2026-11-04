@@ -177,7 +177,7 @@ var GRIMORIOS = [
       sp("Sol da Sentença", 4, "ultimate", "Todos os inimigos próximos sofrem 2d6. Cada aliado ferido neste combate recupera 1d4 de vida.")
     ], futuras: [], nota: "O oposto da Luz Curativa: em vez de curar, pune quem machuca o grupo." },
 
-  { nome: "Grimório das Raízes", attr: "inteligencia", papel: "Suporte", sub: "cura e controle", elem: "Natureza", tier: "",
+  { nome: "Grimório das Raízes", attr: "inteligencia", papel: "Suporte", sub: "cura e controle", elem: "Planta", tier: "",
     spells: [
       sp("Espinho", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
       sp("Semente Vital", 1, "básico", "Um aliado recupera 1 de vida no início de cada turno dele, por 3 turnos."),
@@ -393,6 +393,25 @@ GRIMORIOS.forEach(function (g) {
 var ELEMS = [];
 GRIMORIOS.forEach(function (g) { if (ELEMS.indexOf(g.elem) === -1) ELEMS.push(g.elem); });
 ELEMS.sort(function (a, b) { return a.localeCompare(b, "pt"); });
+
+/* Famílias para o FILTRO da aba Grimórios: 5 elementos e alguns outros tipos, em vez dos 30 elementos detalhados. O elemento detalhado (g.elem) continua
+   no card e é ele que o sorteio usa para não repetir elemento entre os jogadores. */
+var FAMILIAS_ELEM = ["Fogo", "Água", "Planta", "Terra", "Ar"];
+var FAMILIAS_TIPO = ["Luz", "Sombra e mente", "Corpo e metal", "Tempo e espaço", "Outros"];
+var FAMILIA = {
+  "Grimório de Chamas": "Fogo", "Grimório do Fogo Régio": "Fogo",
+  "Grimório de Água": "Água", "Grimório da Névoa": "Água", "Grimório do Gelo": "Água",
+  "Grimório das Raízes": "Planta", "Grimório da Árvore-Mundo": "Planta", "Grimório dos Espinhos": "Planta", "Grimório de Veneno": "Planta",
+  "Grimório de Terra": "Terra", "Grimório da Fortaleza": "Terra",
+  "Grimório de Vento": "Ar", "Grimório do Espírito Celeste": "Ar", "Grimório de Raios": "Ar", "Grimório do Redemoinho": "Ar", "Grimório do Som": "Ar",
+  "Grimório de Luz Curativa": "Luz", "Grimório da Luz Vingativa": "Luz",
+  "Grimório de Sombras": "Sombra e mente", "Grimório do Breu": "Sombra e mente", "Grimório de Ilusão": "Sombra e mente", "Grimório dos Sonhos": "Sombra e mente",
+  "Grimório de Reforço": "Corpo e metal", "Grimório de Sangue": "Corpo e metal", "Grimório da Ira do Leão": "Corpo e metal", "Grimório do Aço": "Corpo e metal",
+  "Grimório de Correntes": "Corpo e metal", "Grimório da Ferrugem": "Corpo e metal", "Grimório de Lâminas": "Corpo e metal", "Grimório do Corte Irrestrito": "Corpo e metal",
+  "Grimório do Mercúrio": "Corpo e metal", "Grimório do Espelho": "Corpo e metal",
+  "Grimório do Tempo": "Tempo e espaço", "Grimório de Gravidade": "Tempo e espaço"
+};
+GRIMORIOS.forEach(function (g) { g.fam = FAMILIA[g.nome] || "Outros"; });
 
 var FASES = ["Sessão 1", "Arco 1: Vale das Colheitas", "Arco 1: Porto Salgado", "Arco 1: Floresta dos Cedros", "Arco 1: Pedra Velha", "Arco 2", "Arco final"];
 function mo(nome, fase, tipo, nivel, vida, def, atq, dano, mana, habs, comp, dica, e) {
@@ -717,7 +736,7 @@ function viewInicio() {
     '<div class="stats">' +
     '<div class="stat"><b>' + GRIMORIOS.length + '</b>grimórios</div>' +
     '<div class="stat"><b>' + tanks + '</b>de tank</div>' +
-    '<div class="stat"><b>' + ELEMS.length + '</b>elementos</div>' +
+    '<div class="stat"><b>' + FAMILIAS_ELEM.length + '</b>elementos</div>' +
     '<div class="stat"><b>' + INIMIGOS.length + '</b>inimigos</div>' +
     '<div class="stat"><b>' + VILAREJOS.length + '</b>vilarejos</div>' +
     '<div class="stat"><b>8</b>jogadores</div></div>' +
@@ -750,8 +769,12 @@ function viewGrimorios() {
       return '<button type="button" class="chip" data-papel="' + p + '" aria-pressed="' + (filtro.papel === p) + '">' + (PAPEL_ICON[p] ? ic(PAPEL_ICON[p]) : "") + (p === "todos" ? "Todos" : p) + "</button>";
     }).join("") + "</div></div></div>" +
     '<div class="controls"><div class="fgroup"><span>Elemento</span><div class="chips" id="fElem">' +
-    ["todos"].concat(ELEMS).map(function (e) {
+    ["todos"].concat(FAMILIAS_ELEM).map(function (e) {
       return '<button type="button" class="chip" data-elem="' + e + '" aria-pressed="' + (filtro.elem === e) + '">' + (e === "todos" ? "Todos" : e) + "</button>";
+    }).join("") + "</div></div></div>" +
+    '<div class="controls"><div class="fgroup"><span>Outros tipos</span><div class="chips" id="fTipo">' +
+    FAMILIAS_TIPO.map(function (e) {
+      return '<button type="button" class="chip" data-elem="' + e + '" aria-pressed="' + (filtro.elem === e) + '">' + e + "</button>";
     }).join("") + "</div></div></div>" +
     '<p id="contagem" role="status"></p><div class="grid" id="grid"></div>';
   return h;
@@ -762,7 +785,7 @@ function desenharGrimorios() {
   var lista = GRIMORIOS.filter(function (g) {
     if (filtro.attr !== "todos" && g.attr !== filtro.attr) return false;
     if (filtro.papel !== "todos" && g.papel !== filtro.papel) return false;
-    if (filtro.elem !== "todos" && g.elem !== filtro.elem) return false;
+    if (filtro.elem !== "todos" && g.fam !== filtro.elem) return false;
     if (q) {
       var tudo = (g.nome + " " + g.sub + " " + g.elem + " " + g.spells.concat(g.futuras || []).map(function (s) { return s.nome + " " + s.texto + " " + (s.aplica || []).join(" ") + (s.dot ? " dano contínuo resistência" : ""); }).join(" ")).toLowerCase();
       if (tudo.indexOf(q) === -1) return false;
@@ -3574,7 +3597,7 @@ MESTRE = {
     }
     if (b.dataset.elem) {
       filtro.elem = b.dataset.elem;
-      document.querySelectorAll("#fElem .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.elem === filtro.elem)); });
+      document.querySelectorAll("#fElem .chip, #fTipo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.elem === filtro.elem)); });
       desenharGrimorios();
       return true;
     }

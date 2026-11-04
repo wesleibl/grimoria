@@ -429,7 +429,7 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - *Nota do mestre:* O oposto da Luz Curativa: em vez de curar, pune quem machuca o grupo.
 
 ### Grimório das Raízes (suporte, cura e controle, usa Inteligência)
-*elemento: Natureza*
+*elemento: Planta*
 - **Espinho (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
 - **Semente Vital (1 mana, básico):** Um aliado recupera 1 de vida no início de cada turno dele, por 3 turnos.
 - **Raízes Prendedoras (2 mana, médio):** Teste de Inteligência contra a Defesa do alvo. Se acertar, ele fica preso por 2 turnos e sofre 1 de dano por turno enquanto preso. (aplica: Preso)
