@@ -84,6 +84,7 @@ function acaoRegistrar(): never
     anotarTentativa('cadastro-ip', ipCliente(), 3600);
     session_regenerate_id(true);
     $_SESSION['uid'] = (int)db()->lastInsertId();
+    session_write_close();
     responder(['ok' => true]);
 }
 
@@ -113,6 +114,7 @@ function acaoEntrar(): never
     limparTentativas('login-email', $email);
     session_regenerate_id(true);
     $_SESSION = ['uid' => (int)$u['id']];
+    session_write_close();
     responder(['ok' => true]);
 }
 
