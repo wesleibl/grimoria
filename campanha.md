@@ -112,7 +112,7 @@
 | Tipo | Atributo | Como protege |
 |---|---|---|
 | **Muralha** | Poder | Reduz dano, absorve golpes, protege aliados |
-| **Esquiva** | Destreza | Faz o inimigo errar, aparar, contra-ataque |
+| **Esquiva** | Destreza | Faz o inimigo errar, confunde e reposiciona (Névoa) |
 
 - O atributo deve entrar no **efeito** das habilidades de proteção (ex: escudo igual a 2 + Poder, ou +2 de Defesa mais metade da Destreza).
 - Todo grimório de tank tem pelo menos uma forma de **atrair a atenção dos inimigos**.
@@ -120,21 +120,7 @@
 ### Provocar (Muralha)
 - **Provocar (2 mana):** até o próximo turno, os inimigos próximos precisam atacar você.
 
-### Aparar (Esquiva) — regra a confirmar
-Quando um inimigo ataca um aliado perto de você, você pode tentar **aparar ou desviar** o ataque, mas isso custa o seu próximo turno.
-
-- **Quando:** depois que o inimigo rola o ataque e **acerta**, antes do dano.
-- **Teste:** d20 + Destreza contra o total do ataque do inimigo. Empate favorece o tank.
-- **Sucesso:** o ataque é cancelado e o aliado não sofre dano.
-- **Falha:** o ataque acerta o aliado normalmente.
-- **Custo:** você perde a **ação do seu próximo turno** (ainda pode se mover). Custa isso mesmo se tiver sucesso.
-- **Mana:** nenhuma (o custo é o turno).
-- **Limite natural:** como custa a ação do próximo turno, só dá para fazer uma vez por rodada.
-- **Não funciona contra ataques mágicos.** Para isso, existem Refletir (Esquiva) e Absorver (Muralha), abaixo.
-
-**Ideia equivalente para a Muralha (opcional):** *Interpor-se.* O tank se coloca na frente e **recebe o ataque no lugar do aliado**, reduzindo o dano pela sua redução de dano (metade do Poder).
-
-### Defesa contra magia: Refletir (Esquiva) e Absorver (Muralha) — regra a confirmar
+### Defesa contra magia: Absorver (Muralha) e Refletir (Espelho) — regra a confirmar
 
 Contra **ataques mágicos**, cada tank tem a sua reação, com **punição alta se falhar**.
 
@@ -147,8 +133,8 @@ Contra **ataques mágicos**, cada tank tem a sua reação, com **punição alta 
 
 Se o feitiço tiver rolagem de ataque, o tank pode comparar com o **total do ataque** em vez de usar a dificuldade fixa.
 
-**Refletir (Esquiva, usa Destreza)**
-- **Teste:** d20 + Destreza contra a dificuldade.
+**Refletir (Espelho, usa Destreza)**
+- **Teste:** d20 + Destreza contra a dificuldade. Precisa de um espelho seu a até 2 casas do alvo.
 - **Alvo:** o próprio tank ou um aliado perto dele.
 - **Sucesso:** o feitiço **volta contra quem lançou** (o lançador sofre o efeito).
 - **Contra feitiços em área:** só funciona para proteger o próprio tank.
@@ -159,11 +145,12 @@ Se o feitiço tiver rolagem de ataque, o tank pode comparar com o **total do ata
 - **Gastar Cargas:** 1 Carga = +1d4 de dano no próximo ataque, **ou** recuperar 1 de mana, **ou** +1 de redução de dano até o fim da rodada.
 - **Contra feitiços em área:** só funciona para proteger o próprio tank.
 
-**Punição se falhar (igual para os dois):**
+**Punição se falhar no Absorver:**
 - O feitiço atinge o alvo normalmente.
 - O tank perde o **próximo turno inteiro** (ação e movimento).
 - O tank perde **2 de mana**.
 - Opcional mais punitivo: o tank também sofre o efeito do feitiço.
+- No **Refletir** do Espelho a punição é outra: a falha só quebra o espelho (sem perder turno nem mana extra).
 
 **Notas:**
 - A dificuldade alta nos feitiços fortes faz o tank usar isso em momentos importantes (ultimates de chefes), não em qualquer ataque.
@@ -269,17 +256,17 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - Marco 4, **Última Muralha (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1, ganha 2 Cargas e os aliados próximos ganham +1 nas rolagens por 1 rodada.
 - *Nota do mestre:* Cargas: 1 Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada.
 
-### Grimório do Espelho (tank, tank Esquiva, usa Destreza)
+### Grimório do Espelho (suporte, espelhos no campo, usa Destreza)
 *elemento: Reflexo*
-- **Corte Rápido (1 mana, ataque simples):** d20 + Destreza, dano 1d6. Se acertar, ganha +1 de Defesa até o início do próximo turno.
-- **Aparar (reação, reação):** Quando um inimigo acerta um aliado perto de você, antes do dano, role d20 + Destreza contra o total do ataque dele (empate favorece você). Sucesso: o ataque é cancelado. Falha: acerta o aliado normalmente. Em ambos os casos, você perde a ação do próximo turno (ainda pode se mover).
-- **Refletir (reação, reação):** Contra um ataque mágico. d20 + Destreza contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço volta contra quem lançou. Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana.
-- **Dança dos Reflexos (4 mana, ultimate):** Por 3 turnos, +3 de Defesa. Todo inimigo que errar um ataque contra você sofre 1d6 de contra-ataque.
-- Marco 1, **Passo Evasivo (2 mana, médio):** +2 de Defesa até o fim da próxima rodada e troca de lugar com um aliado perto de você.
-- Marco 2, **Isca (2 mana, provocar sutil):** Escolha um inimigo. Até o próximo turno dele, os ataques dele contra qualquer alvo que não seja você têm -3. Você ganha +1 de Defesa.
-- Marco 3, **Contra-golpe (reação, melhora de Aparar):** Se você aparar com margem de 5 ou mais, ataca o inimigo de graça: d20 + Destreza, dano 1d6.
-- Marco 4, **Espelho Perfeito (4 mana, ultimate):** Uma vez por combate. Por 1 rodada, todo feitiço inimigo contra você ou aliados próximos é refletido sem teste, mas você não age no próximo turno.
-- *Nota do mestre:* Aparar e Refletir só funcionam uma vez por rodada, porque custam o próximo turno. Feitiços em área só protegem você mesmo.
+- **Estilhaço (1 mana, ataque simples):** d20 + Destreza, dano 1d6. O ataque pode partir de você ou de um espelho seu.
+- **Espelho (1 mana, básico):** Cria um espelho (Vida 6) numa casa a até 6 casas de você. No máximo 2 ativos: um terceiro desfaz o mais antigo.
+- **Passo Refletido (2 mana, médio):** Você, ou um aliado ao lado de um espelho seu, é teletransportado para outro espelho seu.
+- **Refletir (reação):** Contra um ataque mágico, com um espelho seu a até 2 casas do alvo. Custa 1 de mana. d20 + Destreza contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço volta contra quem lançou. Falha: o feitiço atinge o alvo e o espelho quebra (sem perder turno nem mana extra). Uma vez por rodada.
+- **Salão dos Espelhos (4 mana, ultimate):** Por 3 turnos, numa área: os aliados dentro têm -2 para serem acertados e os inimigos dentro têm -2 nas rolagens de ataque. Quem errar um ataque contra um aliado sofre 1d4 de volta.
+- Marco 1, **Cópia (2 mana, médio):** Cria uma cópia de você ou de um aliado por 2 turnos. O primeiro ataque contra o original vai para a cópia, que some.
+- Marco 2, **Raio Refletido (3 mana, médio):** d20 + Destreza, dano 2d6 em todos os inimigos na linha entre dois espelhos seus.
+- Marco 3, **Espelho Perfeito (4 mana, ultimate):** Uma vez por combate. Por 1 rodada, todo feitiço inimigo contra você ou aliados próximos é refletido sem teste, mas você não age no próximo turno. (limite: 1 uso por combate)
+- *Nota do mestre:* Frágil por natureza: os espelhos têm só 6 de Vida e é preciso posicioná-los antes. O dano vem do posicionamento (Raio Refletido) e a proteção é à distância, sem receber o golpe. Feitiços em área só protegem você mesmo.
 
 ### Grimório de Chamas (dano, dano e fogo contínuo, usa Poder)
 *elemento: Fogo*
@@ -400,16 +387,17 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - **Retrocesso (2 mana, médio):** Um aliado refaz a última rolagem dele.
 - **Parada no Tempo (4 mana, ultimate):** Um inimigo escolhido perde a próxima rodada inteira. (limite: 1 uso por combate)
 - Marco 2, **Eco do Tempo (2 mana, médio):** Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana.
-- *Nota do mestre:* Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, Refletir ou Aparar.
+- *Nota do mestre:* Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho.
 
 ### Grimório de Espíritos (suporte, conjuração, usa Inteligência)
 *elemento: Espírito*
 - **Toque Espectral (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
-- **Servo Etéreo (1 mana, básico):** Invoca um espírito (Vida 5, Defesa 10) que ataca com +2, dano 1d4. Dura até ser derrotado.
-- **Guardião Espiritual (2 mana, médio):** Um aliado ganha +1d4 de redução de dano no próximo golpe.
-- **Legião Fantasma (4 mana, ultimate):** Invoca 3 espíritos por 3 turnos.
+- **Servo Etéreo (1 mana, básico):** Invoca um espírito (Vida 5, Defesa 10) que ataca com +2, dano 1d4 no fim do seu turno. Dura até ser derrotado. No máximo 2 espíritos ativos: um terceiro desfaz o mais antigo.
+- **Guardião Espiritual (2 mana, médio):** O espírito se coloca ao lado de um aliado. Até o fim da próxima rodada, ele reduz em 1d4 todo dano sofrido, em até 2 golpes.
+- **Legião Fantasma (4 mana, ultimate):** Invoca 3 espíritos reforçados (Vida 8, Defesa 10, ataque +3, dano 1d6) por 3 turnos, ignorando o limite de 2. Quando acaba, eles somem.
 - Marco 2, **Possessão Benigna (3 mana, médio):** Um espírito entra em um aliado por 2 turnos: ele ganha +2 em todas as rolagens e +2 de dano. Você não pode invocar outro espírito nesse período.
-- *Nota do mestre:* Legião Fantasma gera muitos ataques. Se a mesa ficar lenta, limite a 2 espíritos.
+- Marco 3, **Sacrifício Espiritual (1 mana, reação):** Um espírito seu é desfeito. Escolha: um aliado próximo cura 1d6, ou os inimigos ao lado do espírito sofrem 1d6.
+- *Nota do mestre:* O limite de 2 espíritos mantém a mesa ágil; só a Legião Fantasma passa dele, e por pouco tempo. O Sacrifício Espiritual dá uso a espíritos que iam cair de qualquer jeito.
 
 ### Grimório de Sangue (dano, risco e recompensa, usa Poder)
 *elemento: Sangue*
@@ -651,18 +639,18 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 9 | Gravidade | Suporte | 7,5 | 7,5 | **7,5** |
 | 9 | Aço | Tank | 7,5 | 7,5 | **7,5** |
 | 9 | Luz Curativa | Suporte | 6,5 | 9 | **7,5** |
-| 12 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
-| 12 | Sangue | Dano | 7,5 | 7 | **7,3** |
-| 12 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
-| 12 | Raios | Dano | 7,5 | 7 | **7,3** |
-| 16 | Espelho | Tank | 7 | 7 | **7** |
+| 12 | Espelho | Suporte | 7 | 8 | **7,4** |
+| 13 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
+| 13 | Sangue | Dano | 7,5 | 7 | **7,3** |
+| 13 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
+| 13 | Raios | Dano | 7,5 | 7 | **7,3** |
 | 17 | Lâminas | Dano | 7,5 | 6 | **6,9** |
 | 17 | Vento | Suporte | 6,5 | 7,5 | **6,9** |
-| 19 | Água | Suporte | 6,5 | 7 | **6,7** |
-| 20 | Chamas | Dano | 7 | 6 | **6,6** |
-| 20 | Sombras | Suporte | 7 | 6 | **6,6** |
-| 22 | Terra | Suporte | 6,5 | 6,5 | **6,5** |
-| 22 | Espíritos | Suporte | 6,5 | 6,5 | **6,5** |
+| 17 | Espíritos | Suporte | 6,5 | 7,5 | **6,9** |
+| 20 | Água | Suporte | 6,5 | 7 | **6,7** |
+| 21 | Chamas | Dano | 7 | 6 | **6,6** |
+| 21 | Sombras | Suporte | 7 | 6 | **6,6** |
+| 23 | Terra | Suporte | 6,5 | 6,5 | **6,5** |
 | 24 | Veneno | Dano | 6 | 6 | **6** |
 | 25 | Reforço | Dano | 5,5 | 6 | **5,7** |
 | 26 | Sorte | Suporte | 5 | 5,5 | **5,2** |
@@ -691,17 +679,17 @@ Média dos reservados: PC 8,5 (contra 7,0 do sorteio). Isso é o esperado para l
 ### O que o ranking mostra (reflexão)
 
 1. **Controle sem teste manda no jogo.** Tempo (Parada no Tempo), Ilusão (Mundo Falso), Correntes (Jaula Total) e Gravidade (Singularidade) tiram turnos do inimigo sem rolagem. Os três primeiros agora valem só 1 uso por combate (as notas já pesam isso). Num combate de poucas rodadas e com chefe único, isso vale mais que qualquer dano. É coerente com Black Clover (Tempo e Espaço são magias raras e temidas), mas fazem o topo ficar dominado por suporte.
-2. **O Tempo sobe muito pela sinergia.** Retrocesso refaz a rolagem de um aliado, e a punição de falhar no Absorver/Refletir/Aparar do tank é enorme (perde o turno, 2 de mana). Com Eco do Tempo, qualquer feitiço de 1 mana vira de graça.
+2. **O Tempo sobe muito pela sinergia.** Retrocesso refaz a rolagem de um aliado, e a punição de falhar no Absorver do tank é enorme (perde o turno, 2 de mana). Com Eco do Tempo, qualquer feitiço de 1 mana vira de graça.
 3. **A Ferrugem é a melhor sinergia de dano.** Ela baixa a Defesa do alvo até -3 até o fim do combate: isso aumenta a chance de acerto de **todo o grupo**, e o Desmoronar faz 4d6 contra um alvo enferrujado, a maior explosão de um alvo só entre os de 4 mana.
 4. **Luz Curativa é fraca sozinha e essencial no grupo.** PC 6, mas SIN 9. Com as 3 salvaguardas (0 de Vida) e o descanso, o cuidador ganhou importância. Sangue + Luz Curativa é um combo natural (a cura devolve a Vida gasta).
 5. **Antimagia e Luz Curativa pesam mais nesta campanha.** O vilão é uma organização com uma marca de controle, e quebrar a marca depende de Corte Nulo (Antimagia) e de cura. Por isso a Antimagia sobe em sinergia (8) mesmo com dano comum.
-6. **Os tanks são equilibrados (7,0 a 7,7).** O Espelho é o mais difícil de jogar (Aparar custa o próximo turno), então fica um pouco atrás; a Névoa leva vantagem por dar +2 de Defesa ao grupo todo na Maré de Névoa.
+6. **Os tanks são equilibrados (7,0 a 7,7).** Fortaleza, Aço e Névoa ficam próximos; a Névoa leva vantagem por dar +2 de Defesa ao grupo todo na Maré de Névoa. O Espelho deixou de ser tank: virou suporte de posicionamento.
 
 ### Combos que valem anotar
 
 | Combo | Por que funciona |
 |---|---|
-| Tempo + Fortaleza ou Espelho | Retrocesso refaz o teste do Absorver/Refletir/Aparar que falhou e evita a punição |
+| Tempo + Fortaleza ou Espelho | Retrocesso refaz o teste do Absorver (ou do Refletir) que falhou e evita a punição |
 | Ferrugem + qualquer atacante | A Defesa menor ajuda todos. Com Lâminas (Corte Perfurante) ou Mercúrio, a redução de dano também cai |
 | Luz Curativa + Sangue | A cura devolve a Vida que o Sangue gasta; Pacto Rubro vira mana quase de graça |
 | Fortaleza + Luz Vingativa | O tank atrai os golpes, e Marca da Retribuição e Julgamento punem quem feriu um aliado |

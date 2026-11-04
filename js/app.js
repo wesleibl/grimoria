@@ -1716,6 +1716,7 @@ function itemHTML(it, mestre, dono) {
     '<span class="item-qtd"><button type="button" data-iqtd="' + id + '" data-d="-1" aria-label="Diminuir quantidade">−</button><b id="q-' + id + '">' + q + '</b><button type="button" data-iqtd="' + id + '" data-d="1" aria-label="Aumentar quantidade">+</button></span></div>';
   tags += '<span class="tag role">' + ic("mochila") + pesoItemTxt(it) + "</span>" + modsTags(it);
   h += '<div class="meta item-tags" id="it-tags-' + id + '">' + tags + "</div>";
+  if (it.motivo) h += '<p class="mdica item-motivo"><b>Motivo:</b> ' + esc(it.motivo) + "</p>";
   if (mestre && it.mestre) h += '<p class="item-segredo">' + ic("cadeado") + "<span><b>Só mestre:</b> " + esc(it.mestre) + "</span></p>";
   if (mestre) {
     var alertas = invAlertasItem(it, dono);
@@ -1797,6 +1798,18 @@ function invFiltroHTML() {
     }).join("") + "</div></div>";
 }
 
+/* Lista de itens que o jogador está montando antes de confirmar: [{id, qtd}]. */
+var invCarrinho = [];
+function invCarrinhoTotal() { var t = 0; invCarrinho.forEach(function (c) { var b = itemBase(c.id); if (b) t += (Number(b.valor) || 0) * c.qtd; }); return t; }
+function invCarrinhoHTML() {
+  if (!invCarrinho.length) return '<p class="mdica">A lista está vazia. Escolha um item, a quantidade e toque em "Pôr na lista".</p>';
+  return '<ul class="inv-cart">' + invCarrinho.map(function (c, k) {
+    var b = itemBase(c.id) || { nome: c.id, valor: 0 };
+    return "<li><span><b>" + esc(b.nome) + "</b> ×" + c.qtd + " <small>" + valorTxt((Number(b.valor) || 0) * c.qtd) + '</small></span><button type="button" data-icart="' + k + '" aria-label="Tirar ' + esc(b.nome) + ' da lista">Tirar</button></li>';
+  }).join("") + '</ul><p class="mdica"><b>Total:</b> ' + valorTxt(invCarrinhoTotal()) + "</p>";
+}
+function invCarrinhoRedesenhar() { var e = document.getElementById("invCart"); if (e) e.innerHTML = invCarrinhoHTML(); }
+
 /* Formulários para adicionar: do equipamento básico (jogador e mestre), do catálogo do mestre e item manual (os dois só do mestre). */
 function invAdicionarHTML(mestre) {
   var h = "<h2>Adicionar item</h2>";
@@ -1807,7 +1820,11 @@ function invAdicionarHTML(mestre) {
   h += '<section class="panel"><h3>' + ic("prancheta") + "Equipamento básico (D&amp;D 5e)</h3>" +
     '<div class="inv-add"><label>Item<select class="sorteio-in" id="invBase">' + grupos + '</select></label>' +
     '<label>Quantidade<input class="sorteio-in num" type="number" min="1" max="999" value="1" id="invBaseQtd"></label>' +
-    '<button type="button" class="primary" id="invAddBase">Adicionar</button></div></section>';
+    '<button type="button" id="invAddLista">Pôr na lista</button></div>' +
+    '<div id="invCart">' + invCarrinhoHTML() + "</div>" +
+    '<label>Motivo ' + (mestre ? "(opcional)" : "(obrigatório)") + '<textarea class="sorteio-in" rows="2" maxlength="300" id="invMotivo" placeholder="Por que o personagem pega estes itens? Ex.: comprou na feira do vilarejo"></textarea></label>' +
+    '<label class="chk"><input type="checkbox" id="invDescontar"> Descontar o valor total das minhas moedas (opcional)</label>' +
+    '<p><button type="button" class="primary" id="invConfirmar">Adicionar todos ao inventário</button></p></section>';
   if (mestre) {
     var cat = EST.itens || [];
     h += '<section class="panel"><h3>' + ic("estrela") + "Do seu catálogo (com as notas secretas)</h3>" +
@@ -1972,9 +1989,26 @@ function invClick(b) {
     return true;
   }
   if (d.invcat) { invCat = d.invcat; document.querySelectorAll("#invCats .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.invcat === invCat)); }); invRedesenharLista(); return true; }
-  if (b.id === "invAddBase") {
-    var t = itemBase((document.getElementById("invBase") || {}).value);
-    if (t) invAdicionar(invDeTemplate(t, Math.max(1, Math.min(999, Math.round(num("invBaseQtd", 1)))), false), t.nome);
+  if (b.id === "invAddLista") {
+    var t = itemBase((document.getElementById("invBase") || {}).value), qn = Math.max(1, Math.min(999, Math.round(num("invBaseQtd", 1))));
+    if (!t) return true;
+    var ja = null;
+    invCarrinho.forEach(function (c) { if (c.id === t.id) ja = c; });
+    if (ja) ja.qtd = Math.min(999, ja.qtd + qn); else invCarrinho.push({ id: t.id, qtd: qn });
+    invCarrinhoRedesenhar();
+    return true;
+  }
+  if (d.icart !== undefined) { invCarrinho.splice(parseInt(d.icart, 10), 1); invCarrinhoRedesenhar(); return true; }
+  if (b.id === "invConfirmar") {
+    if (!invCarrinho.length) { invMsgSet("A lista está vazia."); return true; }
+    var motivo = ((document.getElementById("invMotivo") || {}).value || "").trim();
+    if (!MESTRE && motivo.length < 3) { invMsgSet("Escreva o motivo de pegar esses itens."); return true; }
+    var desc = !!(document.getElementById("invDescontar") || {}).checked, n = invCarrinho.length;
+    var itens = invCarrinho.map(function (c) { return invDeTemplate(itemBase(c.id), c.qtd, false); });
+    invOp("add_lote", { itens: itens, motivo: motivo, descontar: desc }).then(function (r) {
+      if (invAplicar(r)) { invCarrinho = []; invMsg = n + (n > 1 ? " itens adicionados." : " item adicionado.") + (desc ? " Valor descontado das moedas." : ""); renderizar(); }
+      else invMsgSet("Não foi possível adicionar. Veja o aviso no topo.");
+    });
     return true;
   }
   if (b.id === "invAddCat" && MESTRE) {

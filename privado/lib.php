@@ -421,7 +421,7 @@ const CAMPOS_ITEM_MESTRE = ['mestre', 'sinergia', 'fase'];
 
 function itemAplicar(array $item, array $campos, bool $mestre): array
 {
-    $txt = ['nome' => 80, 'efeito' => 200, 'desc' => 1500, 'nota' => 1000, 'ref' => 40];
+    $txt = ['nome' => 80, 'efeito' => 200, 'desc' => 1500, 'nota' => 1000, 'ref' => 40, 'motivo' => 300];
     foreach ($campos as $k => $v) {
         if (isset($txt[$k])) { $item[$k] = mb_substr(trim((string)$v), 0, $txt[$k]); continue; }
         switch ($k) {
@@ -485,6 +485,31 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
         if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
         $inv[] = $item;
+    } elseif ($op === 'add_lote') {
+        /* Vários itens de uma vez, com o motivo e, se o jogador quiser, o desconto do valor nas moedas (1 po = 10 pp = 100 pc). */
+        $lista = array_values(array_filter((array)($c['itens'] ?? []), 'is_array'));
+        if (!$lista || count($lista) > 30) { $pdo->rollBack(); erro('Escolha de 1 a 30 itens.'); }
+        if (count($inv) + count($lista) > MAX_ITENS) { $pdo->rollBack(); erro('Inventário cheio (máximo ' . MAX_ITENS . ' itens).'); }
+        $motivo = mb_substr(trim((string)($c['motivo'] ?? '')), 0, 300);
+        if (!$mestre && mb_strlen($motivo) < 3) { $pdo->rollBack(); erro('Escreva o motivo de pegar esses itens.'); }
+        $novos = [];
+        $custo = 0;
+        foreach ($lista as $campos) {
+            if (!$mestre && trim((string)($campos['ref'] ?? '')) === '') { $pdo->rollBack(); erro('Só o mestre pode criar itens manualmente.', 403); }
+            $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
+            if ($item['nome'] === '') { $pdo->rollBack(); erro('Item sem nome.'); }
+            if ((int)$item['qtd'] < 1) $item['qtd'] = 1;
+            if ($motivo !== '') $item['motivo'] = $motivo;
+            $custo += (int)$item['valor'] * (int)$item['qtd'];
+            $novos[] = $item;
+        }
+        if (!empty($c['descontar'])) {
+            $total = $moedas['po'] * 100 + $moedas['pp'] * 10 + $moedas['pc'];
+            if ($custo > $total) { $pdo->rollBack(); erro('Moedas insuficientes: o total é ' . $custo . ' pc (100 pc = 1 po) e você tem ' . $total . ' pc.'); }
+            $resto = $total - $custo;
+            $moedas = ['po' => intdiv($resto, 100), 'pp' => intdiv($resto % 100, 10), 'pc' => $resto % 10];
+        }
+        $inv = array_merge($inv, $novos);
     } elseif ($op === 'set' || $op === 'del') {
         $id = (string)($c['id'] ?? '');
         $achou = false;

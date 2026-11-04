@@ -17,20 +17,20 @@ var GRIMORIOS = [
     ],
     nota: "Cargas: 1 Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada." },
 
-  { nome: "Grimório do Espelho", attr: "destreza", papel: "Tank", sub: "tank Esquiva", tier: "",
+  { nome: "Grimório do Espelho", attr: "destreza", papel: "Suporte", sub: "espelhos no campo", tier: "",
     spells: [
-      sp("Corte Rápido", 1, "ataque simples", "d20 + Destreza, dano 1d6. Se acertar, ganha +1 de Defesa até o início do próximo turno."),
-      sp("Aparar", "reação", "reação", "Quando um inimigo acerta um aliado perto de você, antes do dano, role d20 + Destreza contra o total do ataque dele (empate favorece você). Sucesso: o ataque é cancelado. Falha: acerta o aliado normalmente. Em ambos os casos, você perde a ação do próximo turno (ainda pode se mover)."),
-      sp("Refletir", "reação", "reação", "Contra um ataque mágico. d20 + Destreza contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço volta contra quem lançou. Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana."),
-      sp("Dança dos Reflexos", 4, "ultimate", "Por 3 turnos, +3 de Defesa. Todo inimigo que errar um ataque contra você sofre 1d6 de contra-ataque.")
+      sp("Estilhaço", 1, "ataque simples", "d20 + Destreza, dano 1d6. O ataque pode partir de você ou de um espelho seu."),
+      sp("Espelho", 1, "básico", "Cria um espelho (Vida 6) numa casa a até 6 casas de você. No máximo 2 ativos: um terceiro desfaz o mais antigo."),
+      sp("Passo Refletido", 2, "médio", "Você, ou um aliado ao lado de um espelho seu, é teletransportado para outro espelho seu."),
+      sp("Refletir", "reação", "reação", "Contra um ataque mágico, com um espelho seu a até 2 casas do alvo. Custa 1 de mana. d20 + Destreza contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço volta contra quem lançou. Falha: o feitiço atinge o alvo e o espelho quebra (sem perder turno nem mana extra). Uma vez por rodada."),
+      sp("Salão dos Espelhos", 4, "ultimate", "Por 3 turnos, numa área: os aliados dentro têm -2 para serem acertados e os inimigos dentro têm -2 nas rolagens de ataque. Quem errar um ataque contra um aliado sofre 1d4 de volta.")
     ],
     futuras: [
-      fu(1, "Passo Evasivo", 2, "médio", "+2 de Defesa até o fim da próxima rodada e troca de lugar com um aliado perto de você."),
-      fu(2, "Isca", 2, "provocar sutil", "Escolha um inimigo. Até o próximo turno dele, os ataques dele contra qualquer alvo que não seja você têm -3. Você ganha +1 de Defesa."),
-      fu(3, "Contra-golpe", "reação", "melhora de Aparar", "Se você aparar com margem de 5 ou mais, ataca o inimigo de graça: d20 + Destreza, dano 1d6."),
-      fu(4, "Espelho Perfeito", 4, "ultimate", "Uma vez por combate. Por 1 rodada, todo feitiço inimigo contra você ou aliados próximos é refletido sem teste, mas você não age no próximo turno.")
+      fu(1, "Cópia", 2, "médio", "Cria uma cópia de você ou de um aliado por 2 turnos. O primeiro ataque contra o original vai para a cópia, que some."),
+      fu(2, "Raio Refletido", 3, "médio", "d20 + Destreza, dano 2d6 em todos os inimigos na linha entre dois espelhos seus."),
+      fu(3, "Espelho Perfeito", 4, "ultimate", "Uma vez por combate. Por 1 rodada, todo feitiço inimigo contra você ou aliados próximos é refletido sem teste, mas você não age no próximo turno.", { limite: "1 uso por combate" })
     ],
-    nota: "Aparar e Refletir só funcionam uma vez por rodada, porque custam o próximo turno. Feitiços em área só protegem você mesmo." },
+    nota: "Frágil por natureza: os espelhos têm só 6 de Vida e é preciso posicioná-los antes. O dano vem do posicionamento (Raio Refletido) e a proteção é à distância, sem receber o golpe. Feitiços em área só protegem você mesmo." },
 
   { nome: "Grimório de Chamas", attr: "poder", papel: "Dano", sub: "dano e fogo contínuo", tier: "",
     spells: [
@@ -161,15 +161,20 @@ var GRIMORIOS = [
       sp("Pausa", 1, "básico", "Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior)."),
       sp("Retrocesso", 2, "médio", "Um aliado refaz a última rolagem dele."),
       sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima rodada inteira.", { limite: "1 uso por combate" })
-    ], futuras: [], nota: "Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, Refletir ou Aparar." },
+    ], futuras: [], nota: "Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho." },
 
   { nome: "Grimório de Espíritos", attr: "inteligencia", papel: "Suporte", sub: "conjuração", tier: "",
     spells: [
       sp("Toque Espectral", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
-      sp("Servo Etéreo", 1, "básico", "Invoca um espírito (Vida 5, Defesa 10) que ataca com +2, dano 1d4. Dura até ser derrotado."),
-      sp("Guardião Espiritual", 2, "médio", "Um aliado ganha +1d4 de redução de dano no próximo golpe."),
-      sp("Legião Fantasma", 4, "ultimate", "Invoca 3 espíritos por 3 turnos.")
-    ], futuras: [], nota: "Legião Fantasma gera muitos ataques. Se a mesa ficar lenta, limite a 2 espíritos." },
+      sp("Servo Etéreo", 1, "básico", "Invoca um espírito (Vida 5, Defesa 10) que ataca com +2, dano 1d4 no fim do seu turno. Dura até ser derrotado. No máximo 2 espíritos ativos: um terceiro desfaz o mais antigo."),
+      sp("Guardião Espiritual", 2, "médio", "O espírito se coloca ao lado de um aliado. Até o fim da próxima rodada, ele reduz em 1d4 todo dano sofrido, em até 2 golpes."),
+      sp("Legião Fantasma", 4, "ultimate", "Invoca 3 espíritos reforçados (Vida 8, Defesa 10, ataque +3, dano 1d6) por 3 turnos, ignorando o limite de 2. Quando acaba, eles somem.")
+    ],
+    futuras: [
+      fu(2, "Possessão Benigna", 3, "médio", "Um espírito entra em um aliado por 2 turnos: ele ganha +2 em todas as rolagens e +2 de dano. Você não pode invocar outro espírito nesse período."),
+      fu(3, "Sacrifício Espiritual", 1, "reação", "Um espírito seu é desfeito. Escolha: um aliado próximo cura 1d6, ou os inimigos ao lado do espírito sofrem 1d6.")
+    ],
+    nota: "O limite de 2 espíritos mantém a mesa ágil; só a Legião Fantasma passa dele, e por pouco tempo. O Sacrifício Espiritual dá uso a espíritos que iam cair de qualquer jeito." },
 
   { nome: "Grimório de Sangue", attr: "poder", papel: "Dano", sub: "risco e recompensa", tier: "",
     spells: [
@@ -394,7 +399,6 @@ var NIVEL3 = {
   "Grimório de Veneno": fu(2, "Veneno Paralisante", 2, "médio", "d20 + Destreza, dano 1d4. Se acertar, o alvo faz teste de Poder contra 13 ou fica com deslocamento 0 por 1 turno.", { aplica: ["Lento"] }),
   "Grimório de Gravidade": fu(2, "Leveza Forçada", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, o inimigo flutua por 1 turno, com deslocamento 0 e -3 de Defesa."),
   "Grimório do Tempo": fu(2, "Eco do Tempo", 2, "médio", "Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana."),
-  "Grimório de Espíritos": fu(2, "Possessão Benigna", 3, "médio", "Um espírito entra em um aliado por 2 turnos: ele ganha +2 em todas as rolagens e +2 de dano. Você não pode invocar outro espírito nesse período."),
   "Grimório de Lâminas": fu(2, "Corte Perfurante", 2, "médio", "d20 + Destreza, dano 1d8. O golpe ignora a redução de dano do alvo."),
   "Grimório de Sangue": fu(2, "Lâmina de Sangue", 2, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
   "Grimório do Gelo": fu(2, "Lança Gélida", 3, "médio", "d20 + Destreza, dano 2d6. Se o alvo estiver lento ou molhado, ele fica congelado por 1 turno.", { aplica: ["Congelado"] }),
@@ -618,7 +622,7 @@ var LISTAS = {
     ["Mapa de Grimoria criado", true],
     ["Decidir os segredos dos mistérios sem resposta (Lago, Torre, Cemitério)", false],
     ["Mesa de mapa com grid (etapa 1)", false],
-    ["Grimórios de tank criados (Fortaleza e Espelho)", true],
+    ["Grimórios de tank criados (Fortaleza, Aço e Névoa)", true],
     ["Sessão Zero montada", true],
     ["Regras de quebrar a marca anotadas", true]
   ],
@@ -1867,21 +1871,14 @@ function regrasExtraMestre() {
   h += "<h2>Os tanks</h2>" + '<p class="lead">Todo grimório tem pelo menos um ataque simples de 1 de mana. Os de tank têm também formas de proteger o grupo.</p>' +
     '<div class="cols">' +
     panel(ic("escudo") + "Muralha (Poder)", "<p>Reduz dano, absorve golpes e protege os aliados. Usa <b>Provocar</b>, <b>Interpor-se</b> e <b>Absorver</b>.</p>") +
-    panel(ic("vento") + "Esquiva (Destreza)", "<p>Faz o inimigo errar e desvia ataques. Usa <b>Aparar</b>, <b>Refletir</b> e <b>Isca</b>.</p>") + "</div>";
-
-  h += panel(ic("reacao") + "Aparar (ataques físicos)", "<ul>" +
-    "<li><b>Quando:</b> um inimigo acerta um aliado perto de você, antes do dano.</li>" +
-    "<li><b>Teste:</b> d20 + Destreza contra o total do ataque do inimigo. Empate favorece o tank.</li>" +
-    "<li><b>Sucesso:</b> o ataque é cancelado. <b>Falha:</b> acerta o aliado normalmente.</li>" +
-    "<li><b>Custo:</b> perde a ação do próximo turno (ainda pode se mover), mesmo se der certo. Sem custo de mana.</li>" +
-    "<li>Só dá para tentar uma vez por rodada.</li></ul>");
+    panel(ic("vento") + "Esquiva (Destreza)", "<p>Faz o inimigo errar e reposiciona o grupo. Usa <b>Silhueta</b>, <b>Desvanecer</b> e névoa (Grimório da Névoa).</p>") + "</div>";
 
   h += panel(ic("reacao") + "Refletir e Absorver (ataques mágicos)",
     "<p>Contra feitiços, cada tank tem uma reação, com punição alta se falhar.</p>" +
     table(["Custo do feitiço inimigo", "Dificuldade"], [["1 mana", "12"], ["2 mana", "15"], ["4 mana (ultimate)", "18"]]) +
-    "<ul><li><b>Refletir (Destreza):</b> d20 + Destreza. Sucesso: o feitiço volta contra quem lançou.</li>" +
+    "<ul><li><b>Refletir (Espelho, Destreza):</b> d20 + Destreza, com um espelho seu a até 2 casas do alvo. Sucesso: o feitiço volta contra quem lançou. Falha: o espelho quebra (sem perder turno).</li>" +
     "<li><b>Absorver (Poder):</b> d20 + Poder. Sucesso: o feitiço é anulado e o tank ganha Cargas iguais ao custo de mana dele (máximo 4). Cada Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada.</li>" +
-    "<li><b>Falha nos dois:</b> o feitiço atinge o alvo normalmente, o tank perde o próximo turno inteiro e perde 2 de mana.</li>" +
+    "<li><b>Falha no Absorver:</b> o feitiço atinge o alvo normalmente, o tank perde o próximo turno inteiro e perde 2 de mana.</li>" +
     "<li>Se o feitiço tiver rolagem de ataque, pode comparar com o total do ataque em vez da dificuldade fixa.</li>" +
     "<li>Contra feitiços em área, só protege o próprio tank.</li></ul>");
 
@@ -3122,33 +3119,33 @@ var CAMINHO_NOTAS = {
 
 /* ============================ QUESTIONÁRIO DO GRIMÓRIO (resultado) ============================ */
 
-/* Cada resposta soma pontos aos grimórios do grupo dela (peso da pergunta: 3, 2, 2, 1, 1; máximo 9). Esta tabela SÓ existe aqui, no arquivo do
+/* Cada resposta soma pontos aos grimórios do grupo dela (peso da pergunta: 2, 2, 2, 2, 1), ajustado pelo tamanho do grupo: peso × raiz(tamanho do grupo ÷ tamanho médio dos grupos da pergunta), para um grupo pequeno não dominar. Esta tabela SÓ existe aqui, no arquivo do
    mestre: o jogador responde às perguntas (app.js) e nunca vê o que cada resposta vale nem o resultado. Só entram os grimórios do sorteio. */
 var QUESTIONARIO_PONTOS = [
-  { peso: 3, g: {
+  { peso: 2, g: {
     A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Lâminas", "Raios", "Veneno", "Gelo", "Som", "Ferrugem"],
-    B: ["Fortaleza", "Aço", "Espelho", "Névoa"],
-    C: ["Luz Curativa", "Raízes"],
-    D: ["Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Espíritos", "Terra", "Sorte", "Sombras", "Vento"] } },
+    B: ["Fortaleza", "Aço", "Névoa"],
+    C: ["Luz Curativa", "Espíritos", "Espelho"],
+    D: ["Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Terra", "Sorte", "Sombras", "Vento", "Raízes"] } },
   { peso: 2, g: {
     A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Fortaleza", "Aço"],
     B: ["Lâminas", "Raios", "Veneno", "Gelo", "Espelho", "Névoa", "Sombras", "Vento"],
     C: ["Som", "Ferrugem", "Luz Curativa", "Raízes", "Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Espíritos", "Terra", "Sorte"] } },
   { peso: 2, g: {
     A: ["Chamas", "Raios", "Luz Vingativa", "Luz Curativa"],
-    B: ["Reforço", "Sangue", "Aço", "Lâminas", "Fortaleza", "Ferrugem", "Correntes"],
+    B: ["Reforço", "Aço", "Lâminas", "Fortaleza", "Ferrugem", "Correntes"],
     C: ["Raízes", "Veneno", "Água", "Vento", "Gelo", "Névoa", "Terra"],
-    D: ["Ilusão", "Sombras", "Tempo", "Gravidade", "Som", "Espíritos", "Espelho", "Sorte"] } },
-  { peso: 1, g: {
+    D: ["Ilusão", "Sombras", "Tempo", "Gravidade", "Som", "Espíritos", "Espelho", "Sorte", "Sangue"] } },
+  { peso: 2, g: {
     A: ["Lâminas", "Reforço", "Sangue", "Fortaleza", "Aço", "Espelho"],
-    B: ["Chamas", "Raios", "Gelo", "Veneno", "Som", "Ferrugem", "Luz Vingativa", "Água"],
-    C: ["Sombras", "Vento", "Névoa", "Espelho", "Raios"],
-    D: ["Luz Curativa", "Raízes", "Tempo", "Correntes", "Gravidade", "Terra", "Espíritos", "Ilusão", "Sorte"] } },
+    B: ["Chamas", "Raios", "Gelo", "Veneno", "Som", "Ferrugem", "Luz Vingativa", "Água", "Ilusão", "Raízes"],
+    C: ["Sombras", "Vento", "Névoa", "Espelho", "Raios", "Tempo"],
+    D: ["Luz Curativa", "Correntes", "Gravidade", "Terra", "Espíritos", "Sorte"] } },
   { peso: 1, g: {
-    A: ["Sangue", "Sorte", "Raios", "Chamas", "Reforço"],
-    B: ["Ferrugem", "Tempo", "Gravidade", "Veneno", "Correntes", "Ilusão", "Terra"],
-    C: ["Luz Curativa", "Raízes", "Fortaleza", "Espelho", "Névoa", "Água", "Espíritos", "Aço"],
-    D: ["Sombras", "Vento", "Gelo", "Lâminas", "Som", "Luz Vingativa", "Sorte"] } }
+    A: ["Sangue", "Sorte", "Raios", "Chamas", "Reforço", "Aço"],
+    B: ["Ferrugem", "Tempo", "Gravidade", "Veneno", "Correntes", "Terra", "Raízes"],
+    C: ["Luz Curativa", "Fortaleza", "Espelho", "Névoa", "Água", "Espíritos"],
+    D: ["Sombras", "Vento", "Gelo", "Lâminas", "Som", "Luz Vingativa", "Sorte", "Ilusão"] } }
 ];
 /* Devolve os grimórios do sorteio ordenados por pontos (null se o jogador ainda não respondeu). */
 function questionarioResultado(j) {
@@ -3156,23 +3153,33 @@ function questionarioResultado(j) {
   if (!r || r.length !== QUESTIONARIO_PONTOS.length) return null;
   var lista = GRIMORIOS.filter(function (g) { return !g.reservado; }).map(function (g) { return { nome: grimCurto(g.nome), grim: g.nome, pontos: 0 }; });
   r.forEach(function (letra, i) {
-    var grupo = QUESTIONARIO_PONTOS[i].g[letra] || [];
-    lista.forEach(function (x) { if (grupo.indexOf(x.nome) !== -1) x.pontos += QUESTIONARIO_PONTOS[i].peso; });
+    var q = QUESTIONARIO_PONTOS[i], grupo = q.g[letra] || [], letras = Object.keys(q.g), tot = 0;
+    letras.forEach(function (l) { tot += q.g[l].length; });
+    var peso = q.peso * Math.sqrt(grupo.length / (tot / letras.length));
+    lista.forEach(function (x) { if (grupo.indexOf(x.nome) !== -1) x.pontos += peso; });
   });
+  lista.forEach(function (x) { x.pontos = Math.round(x.pontos * 100) / 100; });
   return lista.sort(function (a, b) { return b.pontos - a.pontos || a.nome.localeCompare(b.nome, "pt"); });
 }
+function pontosTxt(p) { return String(Math.round(p * 10) / 10).replace(".", ","); }
 function questionarioJog(j) {
   var res = questionarioResultado(j);
   var h = '<fieldset class="pj-acesso"><legend>Questionário do grimório</legend>';
   if (!res) return h + '<p class="mdica">O jogador ainda não respondeu. Ele vê as 5 perguntas no Perfil, e só você vê o resultado.</p></fieldset>';
-  var topo = res[0].pontos, empatados = res.filter(function (x) { return x.pontos === topo; });
-  h += '<p class="mdica">Respostas: ' + j.questionario.r.map(function (l, i) { return (i + 1) + l; }).join(" · ") + " (máximo 9 pontos)." +
-    (empatados.length > 1 ? " <b>Empate no topo entre " + empatados.length + " grimórios:</b> o jogador escolhe, ou você sorteia." : "") + "</p>";
-  h += '<div class="scroll"><table><thead><tr><th>Grimório</th><th>Pontos</th><th></th></tr></thead><tbody>' + res.slice(0, Math.max(6, empatados.length)).map(function (x) {
+  /* Quem já está com outro jogador sai da lista principal e aparece só no aviso embaixo. */
+  var tomados = [], livres = [];
+  res.forEach(function (x) {
     var dono = (jogs || []).filter(function (q) { return q.grim === x.grim && q.id !== j.id; })[0];
-    return "<tr><td><b>" + esc(x.nome) + "</b>" + (x.grim === j.grim ? " (já é o dele)" : "") + (dono ? ' <small class="pena-txt">já está com ' + esc(dono.personagem || dono.nome || "outro jogador") + "</small>" : "") + "</td><td>" + x.pontos + '</td><td><button type="button" data-qgrim="' + esc(x.grim) + '"' + (x.grim === j.grim || dono ? " disabled" : "") + ">Dar este grimório</button></td></tr>";
-  }).join("") + "</tbody></table></div>" +
-    '<p><button type="button" data-qreset="1">Apagar as respostas (o jogador responde de novo)</button></p>';
+    if (dono) tomados.push({ x: x, dono: dono }); else livres.push(x);
+  });
+  var topo = livres.length ? livres[0].pontos : 0, empatados = livres.filter(function (x) { return Math.abs(x.pontos - topo) < 0.005; });
+  h += '<p class="mdica">Respostas: ' + j.questionario.r.map(function (l, i) { return (i + 1) + l; }).join(" · ") + ". Só aparecem os grimórios que ainda estão livres." +
+    (empatados.length > 1 ? " <b>Empate no topo entre " + empatados.length + " grimórios:</b> o jogador escolhe, ou você sorteia." : "") + "</p>";
+  h += '<div class="scroll"><table><thead><tr><th>Grimório</th><th>Pontos</th><th></th></tr></thead><tbody>' + livres.slice(0, Math.max(6, empatados.length)).map(function (x) {
+    return "<tr><td><b>" + esc(x.nome) + "</b>" + (x.grim === j.grim ? " (já é o dele)" : "") + "</td><td>" + pontosTxt(x.pontos) + '</td><td><button type="button" data-qgrim="' + esc(x.grim) + '"' + (x.grim === j.grim ? " disabled" : "") + ">Dar este grimório</button></td></tr>";
+  }).join("") + "</tbody></table></div>";
+  if (tomados.length) h += '<p class="mdica">Já escolhidos (fora da lista): ' + tomados.slice(0, 8).map(function (t) { return esc(t.x.nome) + " (" + pontosTxt(t.x.pontos) + ", com " + esc(t.dono.personagem || t.dono.nome || "outro jogador") + ")"; }).join(", ") + ".</p>";
+  h += '<p><button type="button" data-qreset="1">Apagar as respostas (o jogador responde de novo)</button></p>';
   return h + "</fieldset>";
 }
 function acoesQuestionario(b) {
