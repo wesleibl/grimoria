@@ -42,11 +42,16 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Luz Curativa", attr: "inteligencia", papel: "Suporte", sub: "suporte e cura", tier: "",
     spells: [
-      sp("Raio de Luz", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
+      sp("Raio de Luz", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, um aliado próximo recupera 1 de vida."),
       sp("Toque Calmo", 1, "básico", "Cura 1d6 de vida em um aliado."),
       sp("Escudo de Luz", 2, "médio", "O aliado ganha +2 de Defesa até o fim da próxima rodada."),
-      sp("Bênção Radiante", 4, "ultimate", "Cura 1d8 em todos os aliados e dá +1 em todas as rolagens deles por 2 turnos.")
-    ], futuras: [], nota: "" },
+      sp("Bênção Radiante", 4, "ultimate", "Cura 1d8 em até 4 aliados e dá +1 em todas as rolagens deles por 2 turnos.")
+    ],
+    futuras: [
+      fu(2, "Segunda Chance", 3, "reação", "Quando um aliado a até 6 casas fosse cair a 0 de Vida, ele fica com 1d6 de vida em vez disso, sem cair e sem salvaguardas.", { limite: "1 uso por combate" }),
+      fu(3, "Purificação", 2, "médio", "Remove todos os estados negativos de um aliado e cura 1d4.")
+    ],
+    nota: "Qualquer cura já levanta quem está a 0 de Vida; a Segunda Chance é diferente porque impede a queda. A Purificação limpa tudo em um só aliado, enquanto o Florescer (Raízes) limpa um estado em dois." },
 
   { nome: "Grimório de Sombras", attr: "destreza", papel: "Suporte", sub: "furtividade", tier: "",
     spells: [
@@ -379,7 +384,6 @@ var EXTRAS_EXISTENTES = {
 };
 var NIVEL3 = {
   "Grimório de Chamas": fu(2, "Lança Incandescente", 3, "médio", "d20 + Poder, dano 2d6 em todos os inimigos em uma linha de até 4 casas.", { aplica: ["Em chamas"] }),
-  "Grimório de Luz Curativa": fu(2, "Segunda Chance", 3, "médio", "Um aliado que caiu a 0 de Vida volta com 1d6 de vida.", { limite: "1 uso por combate" }),
   "Grimório de Sombras": fu(2, "Fundir-se", 2, "médio", "Você entra na sombra de uma criatura e sai de outra sombra a até 6 casas, invisível até atacar."),
   "Grimório de Correntes": fu(2, "Elo de Aço", 2, "médio", "Liga você a um aliado por 2 turnos: o dano que ele sofrer é dividido entre vocês dois."),
   "Grimório de Reforço": fu(2, "Salto Demolidor", 3, "médio", "Salta até 6 casas e cai sobre um inimigo: d20 + Poder, dano 2d6. Os inimigos ao lado do alvo sofrem 1d6."),

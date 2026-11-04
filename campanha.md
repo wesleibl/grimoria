@@ -291,11 +291,13 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Luz Curativa (suporte, suporte e cura, usa Inteligência)
 *elemento: Luz*
-- **Raio de Luz (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
+- **Raio de Luz (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, um aliado próximo recupera 1 de vida.
 - **Toque Calmo (1 mana, básico):** Cura 1d6 de vida em um aliado.
 - **Escudo de Luz (2 mana, médio):** O aliado ganha +2 de Defesa até o fim da próxima rodada.
-- **Bênção Radiante (4 mana, ultimate):** Cura 1d8 em todos os aliados e dá +1 em todas as rolagens deles por 2 turnos.
-- Marco 2, **Segunda Chance (3 mana, médio):** Um aliado que caiu a 0 de Vida volta com 1d6 de vida. (limite: 1 uso por combate)
+- **Bênção Radiante (4 mana, ultimate):** Cura 1d8 em até 4 aliados e dá +1 em todas as rolagens deles por 2 turnos.
+- Marco 2, **Segunda Chance (3 mana, reação):** Quando um aliado a até 6 casas fosse cair a 0 de Vida, ele fica com 1d6 de vida em vez disso, sem cair e sem salvaguardas. (limite: 1 uso por combate)
+- Marco 3, **Purificação (2 mana, médio):** Remove todos os estados negativos de um aliado e cura 1d4.
+- *Nota do mestre:* Qualquer cura já levanta quem está a 0 de Vida; a Segunda Chance é diferente porque impede a queda. A Purificação limpa tudo em um só aliado, enquanto o Florescer (Raízes) limpa um estado em dois.
 
 ### Grimório de Sombras (suporte, furtividade, usa Destreza)
 *elemento: Sombra*
@@ -648,12 +650,12 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 5 | Névoa | Tank | 7,5 | 8 | **7,7** |
 | 9 | Gravidade | Suporte | 7,5 | 7,5 | **7,5** |
 | 9 | Aço | Tank | 7,5 | 7,5 | **7,5** |
-| 11 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
-| 11 | Sangue | Dano | 7,5 | 7 | **7,3** |
-| 13 | Luz Curativa | Suporte | 6 | 9 | **7,2** |
-| 14 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
-| 15 | Raios | Dano | 7,5 | 7 | **7,3** |
-| 15 | Espelho | Tank | 7 | 7 | **7** |
+| 9 | Luz Curativa | Suporte | 6,5 | 9 | **7,5** |
+| 12 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
+| 12 | Sangue | Dano | 7,5 | 7 | **7,3** |
+| 12 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
+| 12 | Raios | Dano | 7,5 | 7 | **7,3** |
+| 16 | Espelho | Tank | 7 | 7 | **7** |
 | 17 | Lâminas | Dano | 7,5 | 6 | **6,9** |
 | 17 | Vento | Suporte | 6,5 | 7,5 | **6,9** |
 | 19 | Água | Suporte | 6,5 | 7 | **6,7** |
