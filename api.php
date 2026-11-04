@@ -201,6 +201,18 @@ function acaoEstado(): never
 
 /* ============================ JOGADORES ============================ */
 
+/* Devolve o nome do personagem que já tem este grimório (ou null se está livre). */
+function grimorioEmUso(string $nome, string $exceto): ?string
+{
+    $st = db()->prepare('SELECT id, dados FROM jogadores WHERE id <> ?');
+    $st->execute([$exceto]);
+    foreach ($st->fetchAll() as $r) {
+        $d = json_decode($r['dados'], true) ?: [];
+        if (($d['grim'] ?? '') === $nome) return (string)($d['personagem'] ?? $d['nome'] ?? 'outro jogador');
+    }
+    return null;
+}
+
 function idValido(mixed $id): string
 {
     $id = (string)$id;
@@ -215,6 +227,12 @@ function acaoJogadorSalvar(): never
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
     unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito']); /* o inventário só muda por inv_op */
+    /* Um grimório por jogador: dois jogadores nunca ficam com o mesmo. */
+    $grim = trim((string)($j['grim'] ?? ''));
+    if ($grim !== '') {
+        $dono = grimorioEmUso($grim, $id);
+        if ($dono !== null) erro('O ' . $grim . ' já está com ' . $dono . '. Cada jogador tem um grimório só.', 409);
+    }
     salvarCamposJogador($id, $j, true);
     responder(['ok' => true]);
 }

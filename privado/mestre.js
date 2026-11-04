@@ -1388,6 +1388,8 @@ function salvarJog(j, agora, chaves) {
   return f();
 }
 function garantirJogs() { if (jogs === null) jogs = []; }
+/* Quem já tem este grimório (outro jogador que não `exceto`), ou null. Cada jogador tem um grimório só. */
+function donoGrim(nome, exceto) { var r = null; (jogs || []).forEach(function (q) { if (q.grim === nome && q.id !== exceto) r = q; }); return r; }
 function achaJog(id) { var r = null; (jogs || []).forEach(function (j) { if (j.id === id) r = j; }); return r; }
 function getImg(id) { var j = achaJog(id); return j && j.img ? imgUrl(j.img) : ""; }
 function contaNome(uid) {
@@ -1529,7 +1531,10 @@ function acessoJog(j) {
     contas.map(function (c) {
       return '<option value="' + c.id + '"' + (j.usuario === c.id ? " selected" : "") + ">" + esc(c.nome + " (" + c.email + ")" + (outros[c.id] ? ", ligada a " + outros[c.id] : "")) + "</option>";
     }).join("") + "</select></label>" +
-    '<label>Grimório<select class="sorteio-in" data-jf="grim"><option value="">Sem grimório</option>' + opcoes(GRIMORIOS.map(function (g) { return g.nome; }), j.grim || "", false) + "</select></label>" +
+    '<label>Grimório<select class="sorteio-in" data-jf="grim"><option value="">Sem grimório</option>' + GRIMORIOS.map(function (g) {
+      var dono = donoGrim(g.nome, j.id);
+      return '<option value="' + esc(g.nome) + '"' + (g.nome === j.grim ? " selected" : "") + (dono ? " disabled" : "") + ">" + esc(g.nome) + (dono ? " (já com " + esc(dono.personagem || dono.nome || "outro jogador") + ")" : "") + "</option>";
+    }).join("") + "</select></label>" +
     '<label class="rev-label"><input type="checkbox" data-jgrimrev="1"' + (j.grimRev ? " checked" : "") + (j.grim ? "" : " disabled") + "> Revelar o grimório ao jogador</label>" +
     '<p class="mdica">O jogador vê só o próprio perfil (sem as observações nem a moralidade) e o próprio grimório, com os feitiços que você liberar na aba Grimórios.</p></fieldset>';
 }
@@ -1604,6 +1609,12 @@ function salvarCampoJog(el) {
   var j = achaJog(jogSel);
   if (!j) return;
   if (el.dataset.jf) {
+    if (el.dataset.jf === "grim" && el.value && donoGrim(el.value, j.id)) {
+      /* Um grimório por jogador: recusa e volta para o que ele tinha. */
+      jogMsg = "O " + el.value + " já está com " + (donoGrim(el.value, j.id).personagem || "outro jogador") + ". Cada jogador tem um grimório só.";
+      renderizar();
+      return;
+    }
     j[el.dataset.jf] = el.value;
     if (el.dataset.jf === "grim") {
       if (!el.value) j.grimRev = false;
@@ -3118,7 +3129,7 @@ function questionarioJog(j) {
     (empatados.length > 1 ? " <b>Empate no topo entre " + empatados.length + " grimórios:</b> o jogador escolhe, ou você sorteia." : "") + "</p>";
   h += '<div class="scroll"><table><thead><tr><th>Grimório</th><th>Pontos</th><th></th></tr></thead><tbody>' + res.slice(0, Math.max(6, empatados.length)).map(function (x) {
     var dono = (jogs || []).filter(function (q) { return q.grim === x.grim && q.id !== j.id; })[0];
-    return "<tr><td><b>" + esc(x.nome) + "</b>" + (x.grim === j.grim ? " (já é o dele)" : "") + (dono ? ' <small class="pena-txt">já está com ' + esc(dono.personagem || dono.nome || "outro jogador") + "</small>" : "") + "</td><td>" + x.pontos + '</td><td><button type="button" data-qgrim="' + esc(x.grim) + '"' + (x.grim === j.grim ? " disabled" : "") + ">Dar este grimório</button></td></tr>";
+    return "<tr><td><b>" + esc(x.nome) + "</b>" + (x.grim === j.grim ? " (já é o dele)" : "") + (dono ? ' <small class="pena-txt">já está com ' + esc(dono.personagem || dono.nome || "outro jogador") + "</small>" : "") + "</td><td>" + x.pontos + '</td><td><button type="button" data-qgrim="' + esc(x.grim) + '"' + (x.grim === j.grim || dono ? " disabled" : "") + ">Dar este grimório</button></td></tr>";
   }).join("") + "</tbody></table></div>" +
     '<p><button type="button" data-qreset="1">Apagar as respostas (o jogador responde de novo)</button></p>';
   return h + "</fieldset>";
@@ -3128,7 +3139,10 @@ function acoesQuestionario(b) {
   if (d.qgrim === undefined && d.qreset === undefined) return false;
   var j = achaJog(jogSel);
   if (!j) return true;
-  if (d.qgrim) { j.grim = d.qgrim; salvarJog(j, true, ["grim"]); renderizar(); return true; }
+  if (d.qgrim) {
+    if (donoGrim(d.qgrim, j.id)) { jogMsg = "Esse grimório já está com outro jogador."; renderizar(); return true; }
+    j.grim = d.qgrim; salvarJog(j, true, ["grim"]); renderizar(); return true;
+  }
   if (window.confirm("Apagar as respostas? O jogador poderá responder de novo.")) { j.questionario = null; salvarJog(j, true, ["questionario"]); renderizar(); }
   return true;
 }

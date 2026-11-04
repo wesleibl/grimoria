@@ -192,7 +192,7 @@ Sem pontos de experiência: todos sobem juntos, em marcos da história.
 - O jogador anota o bônus de atributo na própria ficha, e o mestre confere. O limite por nível é combinado na mesa (o servidor não trava, porque pode variar).
 - **Aprimorar um feitiço:** mais dano (+1 dado ou +2 fixo), mais barato (-1 de mana, mínimo 1), mais alcance, mais duradouro (+1 turno) ou mais difícil de resistir (+2). No máximo 2 aprimoramentos por feitiço, nunca o mesmo duas vezes. O mestre aprova.
 - **Despertar do grimório (nível 5):** feitiço novo, de 4 de mana, 1 uso por combate, criado com o mestre.
-- **Caminho de mana (opcional, a partir do nível 3):** no lugar do crescimento do grimório de cada nível, o personagem pode aprender uma técnica de mana. Veja a seção 2.4.
+- **Caminho de mana (opcional, a partir do nível 3):** um extra, que **não substitui** o crescimento do grimório. Veja a seção 2.4.
 
 ## 2.3 Itens, inventário e kit inicial
 
@@ -212,7 +212,8 @@ Em Black Clover, além do grimório existem técnicas de mana (reforçar o corpo
 
 - **Não é sorteado.** Acontece quando a história faz sentido (um mentor, um treino, ruínas, um item raro) e o **mestre aprova**.
 - **Um caminho só** por personagem, a partir do nível 3.
-- **Cada técnica ocupa a vaga do crescimento do grimório naquele nível:** a 1ª no lugar da Nova habilidade (nível 3), a 2ª no lugar do Aprimorar (nível 4), a 3ª no lugar do Despertar (nível 5). Escolhe-se nível a nível, sempre na ordem. Assim o caminho tem um custo e não vira poder grátis.
+- **As técnicas não substituem nada:** o grimório continua crescendo normalmente (aprimorar, nova habilidade, despertar). O caminho é um extra.
+- **Ritmo:** a 1ª técnica pode vir a partir do nível 3, a 2ª a partir do nível 4 e a 3ª a partir do nível 5, sempre na ordem. Cada uma depende de uma cena de aprendizado e da aprovação do mestre, que controla quando chega. Como é poder extra, ofereça com parcimônia (e confira o Encantamento, que é o mais forte em grupo).
 - As técnicas gastam a mesma mana dos feitiços e não dependem do atributo do grimório.
 - Na aba Jogadores o mestre marca o caminho e quantas técnicas o jogador já aprendeu (0 a 3). O jogador vê só as aprendidas, em "Meu grimório".
 

@@ -203,7 +203,7 @@ function viewRegras() {
 /* ============================ CAMINHOS DE MANA ============================ */
 
 /* Técnicas de mana: independentes do grimório (como o reforço do corpo e o encantamento de armas em Black Clover). O personagem aprende
-   um caminho quando a história permitir, com a aprovação do mestre. Cada técnica ocupa a vaga do crescimento do grimório naquele nível. */
+   um caminho quando a história permitir, com a aprovação do mestre. As técnicas são um extra: não tiram nada do crescimento do grimório. */
 var CAMINHOS = [
   { id: "reforco", nome: "Reforço de Mana", attr: "poder", ideia: "Mana espalhada pelo corpo: mais resistência e mais força nos golpes. Quem confia no físico.",
     combina: "Fortaleza, Reforço, Aço, Ira do Leão, Lâminas",
@@ -247,7 +247,8 @@ function caminhosHTML(mestre) {
   var h = "<h2>Caminhos de mana</h2>" + panel(ic("brilho") + "Aprender uma técnica de mana",
     "<p>Além do grimório, um personagem pode aprender um <b>caminho de mana</b>: técnicas que não dependem do grimório (como reforçar o corpo ou encantar uma arma). Isso <b>não é sorteado</b>: acontece quando a história faz sentido (um mentor, um treino, ruínas antigas, um item raro) e o mestre aprova.</p>" +
     "<ul><li><b>Um caminho só</b> por personagem, a partir do nível 3.</li>" +
-    "<li><b>Cada técnica ocupa a vaga do crescimento do grimório naquele nível:</b> a 1ª no lugar da Nova habilidade (nível 3), a 2ª no lugar do Aprimorar (nível 4) e a 3ª no lugar do Despertar (nível 5). Você escolhe nível a nível, sempre na ordem.</li>" +
+    "<li><b>As técnicas não substituem nada:</b> o grimório continua crescendo normalmente (aprimorar, nova habilidade, despertar). O caminho é um extra.</li>" +
+    "<li><b>Ritmo:</b> a 1ª técnica pode vir a partir do nível 3, a 2ª a partir do nível 4 e a 3ª a partir do nível 5, sempre na ordem. Cada uma só depende de uma cena de aprendizado e da aprovação do mestre, então ele controla quando chega.</li>" +
     "<li>As técnicas gastam a mesma mana dos feitiços e funcionam mesmo sem usar o atributo do grimório.</li></ul>");
   return h + '<div class="grid">' + CAMINHOS.map(function (c) { return caminhoCardHTML(c, null, mestre); }).join("") + "</div>";
 }
