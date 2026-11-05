@@ -395,6 +395,9 @@ small { color: var(--muted); font-size: .9rem; }
 .flag { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 12px; font-size: .92rem; color: var(--muted); }
 .flag-dot { border-color: var(--poder); color: var(--poder); }
 .flag-st { border-color: var(--accent); color: var(--accent); }
+.flag-st[data-tip] { position: relative; cursor: help; }
+.flag-st[data-tip]::after { content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 20; width: max-content; max-width: min(300px, 80vw); padding: 8px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface2); color: var(--text, inherit); font-size: .88rem; line-height: 1.4; box-shadow: 0 4px 16px rgba(0,0,0,.4); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .12s; }
+.flag-st[data-tip]:hover::after, .flag-st[data-tip]:focus::after { opacity: 1; visibility: visible; }
 .spells .lembrete { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 10px 14px; background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; font-size: .97rem; line-height: 1.55; }
 .spells .lembrete .ic { margin-top: 4px; color: var(--accent); }
 

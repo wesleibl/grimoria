@@ -252,17 +252,32 @@ var GRIMORIOS = [
 
   { nome: "Grimório da Névoa", attr: "destreza", papel: "Tank", sub: "tank Esquiva", elem: "Água", tier: "",
     spells: [
-      sp("Gota Veloz", 1, "ataque simples", "d20 + Destreza, dano 1d6.", { aplica: ["Molhado"] }),
+      sp("Gota Veloz", 1, "ataque simples", "d20 + Destreza, dano 1d6. Se acertar, você ganha +1 de Defesa até o início do próximo turno.", { aplica: ["Molhado"] }),
       sp("Silhueta de Névoa", 2, "provocar sutil", "Uma silhueta de névoa copia você. Até o início do seu próximo turno, os ataques inimigos contra qualquer alvo que não seja você têm -2."),
-      sp("Desvanecer", 1, "reação", "Quando um inimigo erra um ataque contra você, você se move até 3 casas e ganha +1 de Defesa até o início do próximo turno."),
-      sp("Maré de Névoa", 4, "ultimate", "Por 3 turnos, uma névoa cobre o campo: os aliados ganham +2 de Defesa e os inimigos têm -2 nas rolagens de ataque.")
+      sp("Desvanecer", 1, "reação", "Quando um inimigo ataca você, depois da rolagem. Se errou, você se move até 3 casas e ganha +1 de Defesa até o início do próximo turno. Se acertou, o dano cai em 1d4 (mínimo 0). Uma vez por rodada."),
+      sp("Maré de Névoa", 4, "ultimate", "Por 3 turnos, uma névoa cobre o campo: os aliados ganham +2 de Defesa e os inimigos têm -1 nas rolagens de ataque.")
     ],
     futuras: [
-      fu(1, "Cortina de Névoa", 2, "médio", "Bloqueia a linha de visão entre o seu grupo e os inimigos por 2 turnos: ataques à distância contra o grupo têm -3."),
-      fu(2, "Chuva Fina", 2, "médio", "Apaga o fogo sobre você e os aliados próximos e dá +1 de redução de dano a todos até o fim da rodada.", { aplica: ["Molhado"] }),
-      fu(3, "Oceano Calmo", 4, "ultimate", "Os aliados recuperam 1d6 de vida e ganham +2 de Defesa por 2 turnos.", { limite: "1 uso por combate" })
+      fu(1, "Cortina de Névoa", 2, "médio", "Bloqueia a linha de visão entre o seu grupo e os inimigos por 2 turnos: ataques à distância contra o grupo têm -2."),
+      fu(2, "Chuva Fina", 2, "médio", "Apaga o fogo sobre você e os aliados próximos e dá +1 de redução de dano a todos por 2 turnos.", { aplica: ["Molhado"] }),
+      fu(3, "Oceano Calmo", 4, "ultimate", "Os aliados recuperam 1d6 de vida e removem um estado negativo.", { limite: "1 uso por combate" })
     ],
-    nota: "Evita golpes sem precisar parar de agir. Molhado combina com Raios (decisão do mestre)." },
+    nota: "Evita golpes sem precisar parar de agir; a Defesa vem de acertar (Gota Veloz), de reagir (Desvanecer) e do ultimate, mas os efeitos de Defesa não se acumulam além de +3 no mesmo alvo. Molhado combina com Raios (decisão do mestre)." },
+
+  { nome: "Grimório da Garra Selvagem", attr: "poder", papel: "Tank", sub: "tank Muralha", elem: "Floresta", tier: "",
+    spells: [
+      sp("Patada de Urso", 1, "ataque simples", "d20 + Poder, dano 1d6. Se acertar, você ganha 1 Pelagem (máx. 3)."),
+      sp("Rugido do Urso", 2, "provocar", "Os inimigos próximos fazem teste de Inteligência contra 13. Quem falhar precisa atacar você até o início do seu próximo turno. Quem passar fica com -1 nos ataques contra seus aliados."),
+      sp("Absorver", "reação", "reação", "Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana."),
+      sp("Aura do Urso", 4, "ultimate", "Por 3 turnos, você vira um urso: +3 de redução de dano, +1d4 nos ataques corpo a corpo, e não pode ser empurrado nem derrubado. Os aliados próximos ganham +1 de redução de dano. Nesse período você só usa Patada de Urso, Rugido do Urso e reações.", { limite: "1 uso por combate" })
+    ],
+    futuras: [
+      fu(1, "Interpor-se", 1, "reação", "Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada."),
+      fu(2, "Hibernar", 2, "médio", "Você recupera 1d6 de vida e remove um estado negativo, mas fica com deslocamento 0 até o próximo turno."),
+      fu(3, "Mãe Ursa", 3, "médio", "Os aliados próximos ganham 1d6 de vida temporária e +1 de Defesa por 2 turnos."),
+      fu(4, "Raiz Inquebrável", "passiva", "passiva", "Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e ganha 2 Pelagens.")
+    ],
+    nota: "Pelagem: 1 Pelagem vira +1 de redução de dano até o fim da rodada, ou 1 de vida temporária. Fogo é a fraqueza: um alvo Em chamas ignora o Rugido por 1 turno. Não acumula com Pele de Ferro nem Pele de Pedra." },
 
   /* ===== Grimórios lendários de referência (base nos capitães e membros mais fortes dos esquadrões do anime). Reservados: o mestre entrega à mão, não entram no sorteio. ===== */
   { nome: "Grimório do Breu", attr: "poder", papel: "Dano", sub: "escuridão que consome magia", elem: "Escuridão", tier: "lendário", reservado: true,
@@ -423,7 +438,7 @@ var FAMILIAS_TIPO = ["Luz", "Sombra e mente", "Corpo e metal", "Tempo e espaço"
 var FAMILIA = {
   "Grimório de Chamas": "Fogo", "Grimório do Fogo Régio": "Fogo",
   "Grimório de Água": "Água", "Grimório da Névoa": "Água", "Grimório do Gelo": "Água",
-  "Grimório das Raízes": "Planta", "Grimório da Árvore-Mundo": "Planta", "Grimório dos Espinhos": "Planta", "Grimório de Veneno": "Planta",
+  "Grimório das Raízes": "Planta", "Grimório da Garra Selvagem": "Planta", "Grimório da Árvore-Mundo": "Planta", "Grimório dos Espinhos": "Planta", "Grimório de Veneno": "Planta",
   "Grimório de Terra": "Terra", "Grimório da Fortaleza": "Terra",
   "Grimório de Vento": "Ar", "Grimório do Espírito Celeste": "Ar", "Grimório de Raios": "Ar", "Grimório do Redemoinho": "Ar", "Grimório do Som": "Ar",
   "Grimório de Luz Curativa": "Luz", "Grimório da Luz Vingativa": "Luz",
@@ -622,7 +637,7 @@ var LISTAS = {
     ["Mapa de Grimoria criado", true],
     ["Decidir os segredos dos mistérios sem resposta (Lago, Torre, Cemitério)", false],
     ["Mesa de mapa com grid (etapa 1)", false],
-    ["Grimórios de tank criados (Fortaleza, Aço e Névoa)", true],
+    ["Grimórios de tank criados (Fortaleza, Aço, Névoa e Garra Selvagem)", true],
     ["Sessão Zero montada", true],
     ["Regras de quebrar a marca anotadas", true]
   ],
@@ -3138,27 +3153,27 @@ var CAMINHO_NOTAS = {
 var QUESTIONARIO_PONTOS = [
   { peso: 2, g: {
     A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Lâminas", "Raios", "Veneno", "Gelo", "Som", "Ferrugem"],
-    B: ["Fortaleza", "Aço", "Névoa"],
+    B: ["Fortaleza", "Aço", "Névoa", "Garra Selvagem"],
     C: ["Luz Curativa", "Espíritos", "Espelho"],
     D: ["Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Terra", "Sorte", "Sombras", "Vento", "Raízes"] } },
   { peso: 2, g: {
-    A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Fortaleza", "Aço"],
+    A: ["Chamas", "Reforço", "Sangue", "Luz Vingativa", "Fortaleza", "Aço", "Garra Selvagem"],
     B: ["Lâminas", "Raios", "Veneno", "Gelo", "Espelho", "Névoa", "Sombras", "Vento"],
     C: ["Som", "Ferrugem", "Luz Curativa", "Raízes", "Correntes", "Água", "Ilusão", "Gravidade", "Tempo", "Espíritos", "Terra", "Sorte"] } },
   { peso: 2, g: {
     A: ["Chamas", "Raios", "Luz Vingativa", "Luz Curativa"],
     B: ["Reforço", "Aço", "Lâminas", "Fortaleza", "Ferrugem", "Correntes"],
-    C: ["Raízes", "Veneno", "Água", "Vento", "Gelo", "Névoa", "Terra"],
+    C: ["Raízes", "Veneno", "Água", "Vento", "Gelo", "Névoa", "Terra", "Garra Selvagem"],
     D: ["Ilusão", "Sombras", "Tempo", "Gravidade", "Som", "Espíritos", "Espelho", "Sorte", "Sangue"] } },
   { peso: 2, g: {
-    A: ["Lâminas", "Reforço", "Sangue", "Fortaleza", "Aço", "Espelho"],
+    A: ["Lâminas", "Reforço", "Sangue", "Fortaleza", "Aço", "Espelho", "Garra Selvagem"],
     B: ["Chamas", "Raios", "Gelo", "Veneno", "Som", "Ferrugem", "Luz Vingativa", "Água", "Ilusão", "Raízes"],
     C: ["Sombras", "Vento", "Névoa", "Espelho", "Raios", "Tempo"],
     D: ["Luz Curativa", "Correntes", "Gravidade", "Terra", "Espíritos", "Sorte"] } },
   { peso: 1, g: {
     A: ["Sangue", "Sorte", "Raios", "Chamas", "Reforço", "Aço"],
     B: ["Ferrugem", "Tempo", "Gravidade", "Veneno", "Correntes", "Terra", "Raízes"],
-    C: ["Luz Curativa", "Fortaleza", "Espelho", "Névoa", "Água", "Espíritos"],
+    C: ["Luz Curativa", "Fortaleza", "Espelho", "Névoa", "Água", "Espíritos", "Garra Selvagem"],
     D: ["Sombras", "Vento", "Gelo", "Lâminas", "Som", "Luz Vingativa", "Sorte", "Ilusão"] } }
 ];
 /* Devolve os grimórios do sorteio ordenados por pontos (null se o jogador ainda não respondeu). */

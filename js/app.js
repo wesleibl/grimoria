@@ -27,11 +27,30 @@ function desc(t) {
   if (n === t) return "<p>" + t + "</p>";
   return '<p class="desc" tabindex="0"><span class="d-a">' + marcaDados(t) + '</span><span class="d-b">' + n + "</span></p>";
 }
+/* O que cada estado significa: aparece ao passar o mouse (ou focar) na etiqueta do feitiço. */
+var ESTADOS = {
+  "Molhado": "Alvo encharcado. Combina com outros estados: o choque de raio se espalha, o gelo congela com mais facilidade e a Semente Vital cura +1.",
+  "Eletrizado": "Carregado de eletricidade. Se sofrer dano de raio, faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno. Dura até o fim do combate ou até ser atordoado.",
+  "Congelado": "Gelo prende o alvo: deslocamento 0 e -2 de Defesa até o fim da próxima rodada. Um ataque de fogo quebra o gelo.",
+  "Lento": "O alvo perde deslocamento (o quanto, o feitiço diz).",
+  "Em chamas": "O alvo sofre dano de fogo por turno (o feitiço diz quanto e por quanto tempo). A água apaga o fogo.",
+  "Envenenado": "O alvo sofre dano de veneno no início de cada turno dele, pelo tempo que o feitiço diz.",
+  "Sangrando": "O alvo perde 1 de vida por turno, durante 2 turnos.",
+  "Preso": "O alvo não pode se mover. Só perde a ação se o feitiço disser o que foi preso (por exemplo, os braços).",
+  "Cego": "O alvo não enxerga bem: -3 nas rolagens de ataque, pelo tempo que o feitiço diz.",
+  "Atordoado": "O alvo perde a ação (por 1 turno, ou a próxima ação, conforme o feitiço).",
+  "Silenciado": "O alvo não pode lançar feitiços por 1 turno.",
+  "Enferrujado": "A Defesa do alvo cai e a ferrugem pode acumular, conforme o feitiço.",
+  "Marcado": "O alvo foi marcado: na próxima vez que ferir um aliado, sofre dano radiante (uma vez)."
+};
 function flagsHTML(s) {
   var f = [];
   if (s.limite) f.push('<span class="flag">' + ic("relogio") + s.limite + "</span>");
   if (s.dot) f.push('<span class="flag flag-dot">' + ic("ampulheta") + "Dano contínuo</span>");
-  (s.aplica || []).forEach(function (a) { f.push('<span class="flag flag-st">' + ic("etiqueta") + a + "</span>"); });
+  (s.aplica || []).forEach(function (a) {
+    var d = ESTADOS[a];
+    f.push('<span class="flag flag-st"' + (d ? ' tabindex="0" data-tip="' + d.replace(/"/g, "&quot;") + '"' : "") + ">" + ic("etiqueta") + a + "</span>");
+  });
   var h = f.length ? '<div class="flags">' + f.join("") + "</div>" : "";
   if (s.dot) h += '<p class="lembrete">' + ic("ampulheta") + s.dot + "</p>";
   return h;

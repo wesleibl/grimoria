@@ -232,7 +232,7 @@ Pôr mana em armas e armaduras, as suas ou as de aliados. É de Inteligência po
 
 > Gerado a partir da aba **Grimórios** do site (versão atual). Se algo mudar no site, esta seção deve acompanhar. Os custos de mana variam de feitiço para feitiço: o valor certo é o que está em cada um.
 
-São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega à mão, não entram no sorteio). Papéis: **Dano**, **Tank** ou **Suporte**. Todo grimório tem pelo menos um feitiço de dano barato (ataque simples ou básico).
+São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega à mão, não entram no sorteio). Papéis: **Dano**, **Tank** ou **Suporte**. Todo grimório tem pelo menos um feitiço de dano barato (ataque simples ou básico).
 
 ### Por atributo (grimórios do sorteio)
 
@@ -477,14 +477,26 @@ São 26 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório da Névoa (tank, tank Esquiva, usa Destreza)
 *elemento: Água*
-- **Gota Veloz (1 mana, ataque simples):** d20 + Destreza, dano 1d6. (aplica: Molhado)
+- **Gota Veloz (1 mana, ataque simples):** d20 + Destreza, dano 1d6. Se acertar, você ganha +1 de Defesa até o início do próximo turno. (aplica: Molhado)
 - **Silhueta de Névoa (2 mana, provocar sutil):** Uma silhueta de névoa copia você. Até o início do seu próximo turno, os ataques inimigos contra qualquer alvo que não seja você têm -2.
-- **Desvanecer (1 mana, reação):** Quando um inimigo erra um ataque contra você, você se move até 3 casas e ganha +1 de Defesa até o início do próximo turno.
-- **Maré de Névoa (4 mana, ultimate):** Por 3 turnos, uma névoa cobre o campo: os aliados ganham +2 de Defesa e os inimigos têm -2 nas rolagens de ataque.
-- Marco 1, **Cortina de Névoa (2 mana, médio):** Bloqueia a linha de visão entre o seu grupo e os inimigos por 2 turnos: ataques à distância contra o grupo têm -3.
-- Marco 2, **Chuva Fina (2 mana, médio):** Apaga o fogo sobre você e os aliados próximos e dá +1 de redução de dano a todos até o fim da rodada. (aplica: Molhado)
-- Marco 3, **Oceano Calmo (4 mana, ultimate):** Os aliados recuperam 1d6 de vida e ganham +2 de Defesa por 2 turnos. (limite: 1 uso por combate)
-- *Nota do mestre:* Evita golpes sem precisar parar de agir. Molhado combina com Raios (decisão do mestre).
+- **Desvanecer (1 mana, reação):** Quando um inimigo ataca você, depois da rolagem. Se errou, você se move até 3 casas e ganha +1 de Defesa até o início do próximo turno. Se acertou, o dano cai em 1d4 (mínimo 0). Uma vez por rodada.
+- **Maré de Névoa (4 mana, ultimate):** Por 3 turnos, uma névoa cobre o campo: os aliados ganham +2 de Defesa e os inimigos têm -1 nas rolagens de ataque.
+- Marco 1, **Cortina de Névoa (2 mana, médio):** Bloqueia a linha de visão entre o seu grupo e os inimigos por 2 turnos: ataques à distância contra o grupo têm -2.
+- Marco 2, **Chuva Fina (2 mana, médio):** Apaga o fogo sobre você e os aliados próximos e dá +1 de redução de dano a todos por 2 turnos. (aplica: Molhado)
+- Marco 3, **Oceano Calmo (4 mana, ultimate):** Os aliados recuperam 1d6 de vida e removem um estado negativo. (limite: 1 uso por combate)
+- *Nota do mestre:* Evita golpes sem precisar parar de agir; a Defesa vem de acertar (Gota Veloz), de reagir (Desvanecer) e do ultimate, mas os efeitos de Defesa não se acumulam além de +3 no mesmo alvo. Molhado combina com Raios (decisão do mestre).
+
+### Grimório da Garra Selvagem (tank, tank Muralha, usa Poder)
+*elemento: Floresta*
+- **Patada de Urso (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, você ganha 1 Pelagem (máx. 3).
+- **Rugido do Urso (2 mana, provocar):** Os inimigos próximos fazem teste de Inteligência contra 13. Quem falhar precisa atacar você até o início do seu próximo turno. Quem passar fica com -1 nos ataques contra seus aliados.
+- **Absorver (reação, reação):** Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana.
+- **Aura do Urso (4 mana, ultimate):** Por 3 turnos, você vira um urso: +3 de redução de dano, +1d4 nos ataques corpo a corpo, e não pode ser empurrado nem derrubado. Os aliados próximos ganham +1 de redução de dano. Nesse período você só usa Patada de Urso, Rugido do Urso e reações. (limite: 1 uso por combate)
+- Marco 1, **Interpor-se (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada.
+- Marco 2, **Hibernar (2 mana, médio):** Você recupera 1d6 de vida e remove um estado negativo, mas fica com deslocamento 0 até o próximo turno.
+- Marco 3, **Mãe Ursa (3 mana, médio):** Os aliados próximos ganham 1d6 de vida temporária e +1 de Defesa por 2 turnos.
+- Marco 4, **Raiz Inquebrável (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e ganha 2 Pelagens.
+- *Nota do mestre:* Pelagem: 1 Pelagem vira +1 de redução de dano até o fim da rodada, ou 1 de vida temporária. Fogo é a fraqueza: um alvo Em chamas ignora o Rugido por 1 turno. Não acumula com Pele de Ferro nem Pele de Pedra.
 
 ### Grimórios lendários reservados
 
@@ -636,12 +648,12 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 5 | Correntes | Suporte | 7,5 | 8 | **7,7** |
 | 5 | Som | Dano | 7,5 | 8 | **7,7** |
 | 5 | Fortaleza | Tank | 7,5 | 8 | **7,7** |
-| 5 | Névoa | Tank | 7,5 | 8 | **7,7** |
 | 9 | Gravidade | Suporte | 7,5 | 7,5 | **7,5** |
 | 9 | Aço | Tank | 7,5 | 7,5 | **7,5** |
 | 9 | Luz Curativa | Suporte | 6,5 | 9 | **7,5** |
 | 12 | Espelho | Suporte | 7 | 8 | **7,4** |
 | 12 | Água | Suporte | 7 | 8 | **7,4** |
+| 12 | Névoa | Tank | 7 | 8 | **7,4** |
 | 14 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
 | 14 | Sangue | Dano | 7,5 | 7 | **7,3** |
 | 14 | Raízes | Suporte | 6,5 | 8,5 | **7,3** |
@@ -684,7 +696,7 @@ Média dos reservados: PC 8,5 (contra 7,0 do sorteio). Isso é o esperado para l
 3. **A Ferrugem é a melhor sinergia de dano.** Ela baixa a Defesa do alvo até -3 até o fim do combate: isso aumenta a chance de acerto de **todo o grupo**, e o Desmoronar faz 4d6 contra um alvo enferrujado, a maior explosão de um alvo só entre os de 4 mana.
 4. **Luz Curativa é fraca sozinha e essencial no grupo.** PC 6, mas SIN 9. Com as 3 salvaguardas (0 de Vida) e o descanso, o cuidador ganhou importância. Sangue + Luz Curativa é um combo natural (a cura devolve a Vida gasta).
 5. **Antimagia e Luz Curativa pesam mais nesta campanha.** O vilão é uma organização com uma marca de controle, e quebrar a marca depende de Corte Nulo (Antimagia) e de cura. Por isso a Antimagia sobe em sinergia (8) mesmo com dano comum.
-6. **Os tanks são equilibrados (7,0 a 7,7).** Fortaleza, Aço e Névoa ficam próximos; a Névoa leva vantagem por dar +2 de Defesa ao grupo todo na Maré de Névoa. O Espelho deixou de ser tank: virou suporte de posicionamento.
+6. **Os tanks são equilibrados (7,4 a 7,7).** Fortaleza, Aço e Névoa ficam próximos; a Névoa foi ajustada (Maré de Névoa antes dava +2 de Defesa e -2 nos ataques inimigos ao mesmo tempo, ou -4 no total; agora é +2 e -1) e ficou um pouco abaixo dos outros dois, o que compensa a Defesa alta que a Destreza já dá. O Espelho deixou de ser tank: virou suporte de posicionamento.
 
 ### Combos que valem anotar
 
