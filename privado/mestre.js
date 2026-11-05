@@ -6,7 +6,7 @@ var GRIMORIOS = [
     spells: [
       sp("Impacto Sólido", 1, "ataque simples", "d20 + Poder, dano 1d6. Se acertar, ganha +1 de redução de dano até o início do próximo turno."),
       sp("Chamado da Fortaleza", 2, "provocar", "Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano."),
-      sp("Absorver", "reação", "reação", "Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana."),
+      sp("Absorver", 1, "reação", "Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana."),
       sp("Bastião Inabalável", 4, "ultimate", "Por 3 turnos, você ganha +3 de redução de dano e os aliados próximos ganham +2.")
     ],
     futuras: [
@@ -268,7 +268,7 @@ var GRIMORIOS = [
     spells: [
       sp("Patada de Urso", 1, "ataque simples", "d20 + Poder, dano 1d6. Se acertar, você ganha 1 Pelagem (máx. 3)."),
       sp("Rugido do Urso", 2, "provocar", "Os inimigos próximos fazem teste de Inteligência contra 13. Quem falhar precisa atacar você até o início do seu próximo turno. Quem passar fica com -1 nos ataques contra seus aliados."),
-      sp("Absorver", "reação", "reação", "Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana."),
+      sp("Absorver", 1, "reação", "Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana."),
       sp("Aura do Urso", 4, "ultimate", "Por 3 turnos, você vira um urso: +3 de redução de dano, +1d4 nos ataques corpo a corpo, e não pode ser empurrado nem derrubado. Os aliados próximos ganham +1 de redução de dano. Nesse período você só usa Patada de Urso, Rugido do Urso e reações.", { limite: "1 uso por combate" })
     ],
     futuras: [
@@ -1906,8 +1906,8 @@ function regrasExtraMestre() {
     "<p>Contra feitiços, cada tank tem uma reação, com punição alta se falhar.</p>" +
     table(["Custo do feitiço inimigo", "Dificuldade"], [["1 mana", "12"], ["2 mana", "15"], ["4 mana (ultimate)", "18"]]) +
     "<ul><li><b>Refletir (Espelho, Destreza):</b> d20 + Destreza, com um espelho seu a até 2 casas do alvo. Sucesso: o feitiço volta contra quem lançou. Falha: o espelho quebra (sem perder turno).</li>" +
-    "<li><b>Absorver (Poder):</b> d20 + Poder. Sucesso: o feitiço é anulado e o tank ganha Cargas iguais ao custo de mana dele (máximo 4). Cada Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada.</li>" +
-    "<li><b>Falha no Absorver:</b> o feitiço atinge o alvo normalmente, o tank perde o próximo turno inteiro e perde 2 de mana.</li>" +
+    "<li><b>Absorver (Poder, 1 mana):</b> custa 1 de mana mesmo se der certo. d20 + Poder. Sucesso: o feitiço é anulado e o tank ganha Cargas iguais ao custo de mana dele (máximo 4). Cada Carga vira +1d4 de dano no próximo ataque, ou 1 de mana, ou +1 de redução de dano até o fim da rodada.</li>" +
+    "<li><b>Falha no Absorver:</b> o feitiço atinge o alvo normalmente, o tank perde o próximo turno inteiro e mais 2 de mana (além do 1 do custo).</li>" +
     "<li>Se o feitiço tiver rolagem de ataque, pode comparar com o total do ataque em vez da dificuldade fixa.</li>" +
     "<li>Contra feitiços em área, só protege o próprio tank.</li></ul>");
 

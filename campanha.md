@@ -140,6 +140,7 @@ Se o feitiço tiver rolagem de ataque, o tank pode comparar com o **total do ata
 - **Contra feitiços em área:** só funciona para proteger o próprio tank.
 
 **Absorver (Muralha, usa Poder)**
+- **Custo:** 1 de mana, pago mesmo se der certo.
 - **Teste:** d20 + Poder contra a dificuldade.
 - **Sucesso:** o feitiço é anulado e o tank ganha **Cargas** iguais ao custo de mana do feitiço absorvido (máximo 4 Cargas).
 - **Gastar Cargas:** 1 Carga = +1d4 de dano no próximo ataque, **ou** recuperar 1 de mana, **ou** +1 de redução de dano até o fim da rodada.
@@ -148,7 +149,7 @@ Se o feitiço tiver rolagem de ataque, o tank pode comparar com o **total do ata
 **Punição se falhar no Absorver:**
 - O feitiço atinge o alvo normalmente.
 - O tank perde o **próximo turno inteiro** (ação e movimento).
-- O tank perde **2 de mana**.
+- O tank perde **mais 2 de mana** (além do 1 do custo).
 - Opcional mais punitivo: o tank também sofre o efeito do feitiço.
 - No **Refletir** do Espelho a punição é outra: a falha só quebra o espelho (sem perder turno nem mana extra).
 
@@ -248,7 +249,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Terra*
 - **Impacto Sólido (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, ganha +1 de redução de dano até o início do próximo turno.
 - **Chamado da Fortaleza (2 mana, provocar):** Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano.
-- **Absorver (reação, reação):** Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana.
+- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana.
 - **Bastião Inabalável (4 mana, ultimate):** Por 3 turnos, você ganha +3 de redução de dano e os aliados próximos ganham +2.
 - Marco 1, **Interpor-se (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada.
 - Marco 2, **Pele de Ferro (2 mana, médio):** Por 2 turnos, +2 de redução de dano e você não pode ser empurrado nem derrubado.
@@ -490,7 +491,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Floresta*
 - **Patada de Urso (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, você ganha 1 Pelagem (máx. 3).
 - **Rugido do Urso (2 mana, provocar):** Os inimigos próximos fazem teste de Inteligência contra 13. Quem falhar precisa atacar você até o início do seu próximo turno. Quem passar fica com -1 nos ataques contra seus aliados.
-- **Absorver (reação, reação):** Contra um ataque mágico. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e 2 de mana.
+- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana.
 - **Aura do Urso (4 mana, ultimate):** Por 3 turnos, você vira um urso: +3 de redução de dano, +1d4 nos ataques corpo a corpo, e não pode ser empurrado nem derrubado. Os aliados próximos ganham +1 de redução de dano. Nesse período você só usa Patada de Urso, Rugido do Urso e reações. (limite: 1 uso por combate)
 - Marco 1, **Interpor-se (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada.
 - Marco 2, **Hibernar (2 mana, médio):** Você recupera 1d6 de vida e remove um estado negativo, mas fica com deslocamento 0 até o próximo turno.
