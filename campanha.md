@@ -370,17 +370,20 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Veneno (dano, dano contínuo, usa Destreza)
 *elemento: Veneno*
-- **Dardo Tóxico (1 mana, básico):** d20 + Destreza, dano 1d4 e o alvo fica envenenado (1 de dano por turno, 2 turnos). (aplica: Envenenado)
-- **Névoa Verde (2 mana, médio):** Nuvem em área por 2 turnos. Quem estiver dentro sofre 1 de dano por turno e -1 nas rolagens. (aplica: Envenenado)
-- **Antídoto Reverso (4 mana, ultimate):** Todos os inimigos envenenados sofrem 2d6 de uma vez e o veneno é renovado. (aplica: Envenenado)
+- **Dardo Tóxico (1 mana, básico):** d20 + Destreza, dano 1d6 e o alvo fica envenenado (1 de dano por turno, 2 turnos). (aplica: Envenenado)
+- **Névoa Verde (2 mana, médio):** Nuvem em área por 2 turnos. Quem estiver dentro sofre 2 de dano por turno e -1 nas rolagens. (aplica: Envenenado)
+- **Antídoto Reverso (4 mana, ultimate):** Todos os inimigos envenenados sofrem 2d8 de uma vez e o veneno é renovado. (aplica: Envenenado)
+- Marco 1, **Armadilha Venenosa (2 mana, médio):** Prepara uma armadilha em uma casa próxima, até o fim do combate. O primeiro inimigo que pisar nela sofre 1d6 e fica envenenado (1 de dano por turno, 2 turnos). Uma armadilha por vez. (aplica: Envenenado)
 - Marco 2, **Veneno Paralisante (2 mana, médio):** d20 + Destreza, dano 1d4. Se acertar, o alvo faz teste de Poder contra 13 ou fica com deslocamento 0 por 1 turno. (aplica: Lento)
+- Marco 3, **Toxina Letal (3 mana, médio):** d20 + Destreza, dano 1d6. Se o alvo já estiver envenenado, o veneno dele passa a causar 2 de dano por turno por mais 2 turnos. (aplica: Envenenado)
+- *Nota do mestre:* Dano contínuo: o veneno precisa de tempo para render, então é melhor aplicar cedo e deixar o grupo se organizar. A Armadilha Venenosa combina com o tema de caçador.
 
 ### Grimório de Gravidade (suporte, controle, usa Inteligência)
 *elemento: Cosmos*
-- **Esmagar (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
-- **Peso Morto (1 mana, básico):** Teste de Inteligência contra a Defesa do alvo. Se acertar, ele perde 2 de deslocamento e -1 na Defesa. (aplica: Lento)
+- **Esmagar (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, o alvo perde 1 de deslocamento até o início do próximo turno dele.
+- **Peso Morto (1 mana, básico):** Teste de Inteligência contra a Defesa do alvo. Se acertar, ele perde 2 de deslocamento e -1 na Defesa por 2 turnos. (aplica: Lento)
 - **Inversão (2 mana, médio):** Um alvo é jogado para cima e cai, sofrendo 1d8. Teste de Destreza contra 13 para sofrer metade.
-- **Singularidade (4 mana, ultimate):** Puxa todos os inimigos próximos para um ponto, causa 1d6 e eles perdem a próxima ação.
+- **Singularidade (4 mana, ultimate):** Puxa todos os inimigos próximos para um ponto e causa 1d6 neles. Eles fazem teste de Poder contra 13: quem falhar perde a próxima ação; quem passar perde 2 de deslocamento. (limite: 1 uso por combate)
 - Marco 2, **Leveza Forçada (2 mana, médio):** Teste de Inteligência contra a Defesa do alvo. Se acertar, o inimigo flutua por 1 turno, com deslocamento 0 e -3 de Defesa.
 
 ### Grimório do Tempo (suporte, suporte e controle, usa Inteligência)
@@ -471,7 +474,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - **Martelada (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, o alvo fica com -1 no próximo ataque dele.
 - **Ímã de Guerra (2 mana, provocar):** Puxa até 2 inimigos próximos para perto de você. Até o início do seu próximo turno, eles precisam atacar você.
 - **Revidar (1 mana, reação):** Quando um inimigo corpo a corpo acerta você, ele sofre 1d4 de dano de volta. Uma vez por rodada.
-- **Muralha de Aço (4 mana, ultimate):** Por 3 turnos, +4 de redução de dano e deslocamento 0. Os inimigos que atacarem você sofrem 1d4.
+- **Muralha de Aço (4 mana, ultimate):** Por 3 turnos, +3 de redução de dano e deslocamento 0. Os inimigos que atacarem você sofrem 1d4.
 - Marco 1, **Corrente de Resgate (2 mana, médio):** Puxa um aliado distante para perto de você e coloca você entre ele e o inimigo mais próximo.
 - Marco 2, **Fundição (2 mana, médio):** Remove um estado negativo (preso, congelado, enferrujado) de você ou de um aliado perto.
 - Marco 3, **Colosso (4 mana, ultimate):** Por 2 turnos, você vira um gigante de aço: +1d6 de dano nos seus ataques, +3 de redução de dano, e os aliados próximos ganham +1 de redução de dano. (limite: 1 uso por combate)

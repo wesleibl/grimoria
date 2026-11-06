@@ -142,17 +142,20 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Veneno", attr: "destreza", papel: "Dano", sub: "dano contínuo", tier: "",
     spells: [
-      sp("Dardo Tóxico", 1, "básico", "d20 + Destreza, dano 1d4 e o alvo fica envenenado (1 de dano por turno, 2 turnos)."),
-      sp("Névoa Verde", 2, "médio", "Nuvem em área por 2 turnos. Quem estiver dentro sofre 1 de dano por turno e -1 nas rolagens."),
-      sp("Antídoto Reverso", 4, "ultimate", "Todos os inimigos envenenados sofrem 2d6 de uma vez e o veneno é renovado.")
-    ], futuras: [], nota: "" },
+      sp("Dardo Tóxico", 1, "básico", "d20 + Destreza, dano 1d6 e o alvo fica envenenado (1 de dano por turno, 2 turnos)."),
+      sp("Névoa Verde", 2, "médio", "Nuvem em área por 2 turnos. Quem estiver dentro sofre 2 de dano por turno e -1 nas rolagens."),
+      sp("Antídoto Reverso", 4, "ultimate", "Todos os inimigos envenenados sofrem 2d8 de uma vez e o veneno é renovado.")
+    ], futuras: [
+      fu(1, "Armadilha Venenosa", 2, "médio", "Prepara uma armadilha em uma casa próxima, até o fim do combate. O primeiro inimigo que pisar nela sofre 1d6 e fica envenenado (1 de dano por turno, 2 turnos). Uma armadilha por vez.", { aplica: ["Envenenado"] }),
+      fu(3, "Toxina Letal", 3, "médio", "d20 + Destreza, dano 1d6. Se o alvo já estiver envenenado, o veneno dele passa a causar 2 de dano por turno por mais 2 turnos.", { aplica: ["Envenenado"] })
+    ], nota: "Dano contínuo: o veneno precisa de tempo para render, então é melhor aplicar cedo e deixar o grupo se organizar. A Armadilha Venenosa combina com o tema de caçador." },
 
   { nome: "Grimório de Gravidade", attr: "inteligencia", papel: "Suporte", sub: "controle", tier: "",
     spells: [
-      sp("Esmagar", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
-      sp("Peso Morto", 1, "básico", "Teste de Inteligência contra a Defesa do alvo. Se acertar, ele perde 2 de deslocamento e -1 na Defesa."),
+      sp("Esmagar", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, o alvo perde 1 de deslocamento até o início do próximo turno dele."),
+      sp("Peso Morto", 1, "básico", "Teste de Inteligência contra a Defesa do alvo. Se acertar, ele perde 2 de deslocamento e -1 na Defesa por 2 turnos."),
       sp("Inversão", 2, "médio", "Um alvo é jogado para cima e cai, sofrendo 1d8. Teste de Destreza contra 13 para sofrer metade."),
-      sp("Singularidade", 4, "ultimate", "Puxa todos os inimigos próximos para um ponto, causa 1d6 e eles perdem a próxima ação.")
+      sp("Singularidade", 4, "ultimate", "Puxa todos os inimigos próximos para um ponto e causa 1d6 neles. Eles fazem teste de Poder contra 13: quem falhar perde a próxima ação; quem passar perde 2 de deslocamento.", { limite: "1 uso por combate" })
     ], futuras: [], nota: "" },
 
   { nome: "Grimório do Tempo", attr: "inteligencia", papel: "Suporte", sub: "suporte e controle", tier: "",
@@ -241,7 +244,7 @@ var GRIMORIOS = [
       sp("Martelada", 1, "ataque simples", "d20 + Poder, dano 1d6. Se acertar, o alvo fica com -1 no próximo ataque dele."),
       sp("Ímã de Guerra", 2, "provocar", "Puxa até 2 inimigos próximos para perto de você. Até o início do seu próximo turno, eles precisam atacar você."),
       sp("Revidar", 1, "reação", "Quando um inimigo corpo a corpo acerta você, ele sofre 1d4 de dano de volta. Uma vez por rodada."),
-      sp("Muralha de Aço", 4, "ultimate", "Por 3 turnos, +4 de redução de dano e deslocamento 0. Os inimigos que atacarem você sofrem 1d4.")
+      sp("Muralha de Aço", 4, "ultimate", "Por 3 turnos, +3 de redução de dano e deslocamento 0. Os inimigos que atacarem você sofrem 1d4.")
     ],
     futuras: [
       fu(1, "Corrente de Resgate", 2, "médio", "Puxa um aliado distante para perto de você e coloca você entre ele e o inimigo mais próximo."),
