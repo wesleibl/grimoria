@@ -148,10 +148,9 @@ Se o feitiço tiver rolagem de ataque, o tank pode comparar com o **total do ata
 - **Contra feitiços em área:** só funciona para proteger o próprio tank.
 
 **Punição se falhar no Absorver:**
-- O feitiço atinge o alvo normalmente.
+- O tank **sofre o feitiço** e o **alvo original sofre metade do dano** (arredondada para baixo, mínimo 1; só o dano, sem estados). Se o alvo era o próprio tank, ele só sofre o feitiço.
 - O tank perde o **próximo turno inteiro** (ação e movimento).
 - O tank perde **mais 2 de mana** (além do 1 do custo).
-- Opcional mais punitivo: o tank também sofre o efeito do feitiço.
 - No **Refletir** do Espelho a punição é outra: a falha só quebra o espelho (sem perder turno nem mana extra).
 
 **Notas:**
@@ -251,7 +250,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Terra*
 - **Impacto Sólido (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, ganha +1 de redução de dano até o início do próximo turno.
 - **Chamado da Fortaleza (2 mana, provocar):** Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano.
-- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana.
+- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você ganha Cargas iguais ao custo de mana dele (máximo 4). Falha: o tank sofre o feitiço e o alvo original sofre metade do dano (arredondada para baixo, mínimo 1; só o dano, sem estados). Você também perde o próximo turno inteiro e mais 2 de mana.
 - **Bastião Inabalável (4 mana, ultimate):** Por 3 turnos, você ganha +3 de redução de dano e os aliados próximos ganham +2.
 - Marco 1, **Interpor-se (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada.
 - Marco 2, **Pele de Ferro (2 mana, médio):** Por 2 turnos, +2 de redução de dano e você não pode ser empurrado nem derrubado.
@@ -493,7 +492,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Floresta*
 - **Patada de Urso (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se acertar, você ganha 1 Pelagem (máx. 3).
 - **Rugido do Urso (2 mana, provocar):** Os inimigos próximos fazem teste de Inteligência contra 13. Quem falhar precisa atacar você até o início do seu próximo turno. Quem passar fica com -1 nos ataques contra seus aliados.
-- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o feitiço atinge o alvo, você perde o próximo turno inteiro e mais 2 de mana.
+- **Absorver (1 mana, reação):** Contra um ataque mágico. Custa 1 de mana, mesmo se der certo. d20 + Poder contra a dificuldade do feitiço (12, 15 ou 18). Sucesso: o feitiço é anulado e você recupera vida igual à metade do custo de mana dele (mínimo 1). Falha: o tank sofre o feitiço e o alvo original sofre metade do dano (arredondada para baixo, mínimo 1; só o dano, sem estados). Você também perde o próximo turno inteiro e mais 2 de mana.
 - **Aura do Urso (4 mana, ultimate):** Por 3 turnos, você vira um urso: +3 de redução de dano, +1d4 nos ataques corpo a corpo, e não pode ser empurrado nem derrubado. Os aliados próximos ganham +1 de redução de dano. Nesse período você só usa Patada de Urso, Rugido do Urso e reações. (limite: 1 uso por combate)
 - Marco 1, **Interpor-se (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +1. Uma vez por rodada.
 - Marco 2, **Hibernar (2 mana, médio):** Você recupera 1d6 de vida e remove um estado negativo, mas fica com deslocamento 0 até o próximo turno.
@@ -505,13 +504,13 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Mar; reservado (fora do sorteio)*
 - **Estocada do Marujo (1 mana, ataque simples):** Um marujo espectral surge, desfere a estocada e some (não fica em campo). d20 + Poder, dano 1d6. Se acertar, você ganha 1 Osso (máx. 3).
 - **Abordagem! (2 mana, provocar):** Gritos de piratas mortos ecoam. Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano.
-- **Escudo de Ossos (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, ossos de piratas formam um escudo: você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2. Uma vez por rodada.
+- **Escudo de Ossos (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, gaste 1 Osso: ossos de piratas formam um escudo, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2 (o Osso gasto já conta nesse +2). Sem Osso, não dá para usar. Uma vez por rodada.
 - **Navio Fantasma (4 mana, ultimate):** Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma. (limite: 1 uso por combate)
 - Marco 1, **Âncora (2 mana, médio):** Lança uma âncora em um inimigo: ele faz teste de Poder contra 13 ou fica com deslocamento 0 até o fim do próximo turno dele.
-- Marco 2, **Rum do Capitão (2 mana, médio):** Você recupera 1d6 de vida e remove um estado negativo de você ou de um aliado próximo.
+- Marco 2, **Rum do Capitão (2 mana, médio):** Você ou um aliado próximo remove um estado negativo e recupera 1d4 de vida.
 - Marco 3, **Salva Fantasma (3 mana, médio):** d20 + Poder contra os inimigos em uma linha de 4 casas. Quem for atingido sofre 1d6 e é empurrado 1 casa.
-- Marco 4, **Não Afunda (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e os aliados próximos ganham +1 nas rolagens por 1 rodada.
-- *Nota do mestre:* Feito para o Ketysuru (Porto Salgado). Osso: cada Osso se quebra sozinho quando um inimigo acerta você e reduz o dano desse golpe em 1 (como o Escudo de Ossos do Cavaleiro da Morte, do WoW). Sem Absorver nem Cargas: a regra é só provocar, receber o golpe pelo aliado e aguentar. Os piratas fantasmas não são invocações: cada ataque é um golpe que surge e some, e os ossos deles viram o escudo. Reservado: o mestre entrega à mão, fora do sorteio.
+- Marco 4, **Não Afunda (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1, ganha 2 Ossos e os aliados próximos ganham +1 nas rolagens por 1 rodada.
+- *Nota do mestre:* Feito para o Ketysuru (Porto Salgado). Osso: cada Osso se quebra sozinho quando um inimigo acerta você e reduz o dano desse golpe em 1, e também podem ser gastos no Escudo de Ossos (como o Escudo de Ossos do Cavaleiro da Morte, do WoW). Sem Absorver nem Cargas: a regra é só provocar, receber o golpe pelo aliado e aguentar. Os piratas fantasmas não são invocações: cada ataque é um golpe que surge e some, e os ossos deles viram o escudo. Reservado: o mestre entrega à mão, fora do sorteio.
 
 ### Grimórios lendários reservados
 
