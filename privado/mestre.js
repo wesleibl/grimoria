@@ -120,7 +120,7 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Terra", attr: "inteligencia", papel: "Suporte", sub: "defesa e controle", tier: "",
     spells: [
-      sp("Estaca de Pedra", 1, "básico", "d20 + Inteligência, dano 1d6."),
+      sp("Estaca de Pedra", 1, "básico", "d20 + Inteligência, dano 1d6. Se acertar, um aliado próximo (ou você) ganha +1 de Defesa até o início do seu próximo turno."),
       sp("Muro de Terra", 2, "médio", "Cria uma barreira que bloqueia a passagem por 2 turnos (Vida 10)."),
       sp("Terremoto", 4, "ultimate", "Os inimigos próximos sofrem 1d6. Quem falhar em um teste de Destreza contra 12 fica caído: deslocamento 0 e -2 de Defesa até o fim da próxima rodada.")
     ], futuras: [], nota: "" },
@@ -157,7 +157,7 @@ var GRIMORIOS = [
 
   { nome: "Grimório do Tempo", attr: "inteligencia", papel: "Suporte", sub: "suporte e controle", tier: "",
     spells: [
-      sp("Pulso Temporal", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
+      sp("Pulso Temporal", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, o alvo fica com -1 no próximo ataque dele."),
       sp("Pausa", 1, "básico", "Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior)."),
       sp("Retrocesso", 2, "médio", "Um aliado refaz a última rolagem dele."),
       sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima rodada inteira.", { limite: "1 uso por combate" })
@@ -193,7 +193,7 @@ var GRIMORIOS = [
 
   { nome: "Grimório da Luz Vingativa", attr: "poder", papel: "Dano", sub: "dano e retribuição", elem: "Luz", tier: "",
     spells: [
-      sp("Lança Radiante", 1, "ataque simples", "d20 + Poder, dano 1d6."),
+      sp("Lança Radiante", 1, "ataque simples", "d20 + Poder, dano 1d6. Se o alvo estiver Marcado ou já tiver ferido um aliado neste combate, o dano aumenta em 1d4 radiante."),
       sp("Marca da Retribuição", 1, "básico", "Marca um inimigo até o fim do combate (uma marca por vez). Na próxima vez que ele causar dano a um aliado, mesmo que a vida temporária absorva, ele sofre 1d6 de dano radiante (uma vez).", { aplica: ["Marcado"] }),
       sp("Julgamento", 2, "médio", "d20 + Poder, dano 1d8. Contra um inimigo que já feriu um aliado neste combate, o dano é 2d6."),
       sp("Sol da Sentença", 4, "ultimate", "Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 2d6; quem passar sofre metade. Cada aliado ferido neste combate recupera 1d4 de vida.")
@@ -201,7 +201,7 @@ var GRIMORIOS = [
 
   { nome: "Grimório das Raízes", attr: "inteligencia", papel: "Suporte", sub: "cura e controle", elem: "Planta", tier: "",
     spells: [
-      sp("Espinho", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
+      sp("Espinho", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, um aliado próximo recupera 1 de vida."),
       sp("Semente Vital", 1, "básico", "Um aliado recupera 2 de vida no início de cada turno dele, por 2 turnos. Se o aliado estiver Molhado, recupera +1 por turno."),
       sp("Raízes Prendedoras", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, raízes prendem as pernas dele por 2 turnos: ele não pode se mover e sofre 1 de dano por turno. No início de cada turno dele, faz um teste de Poder contra 13 para se soltar.", { aplica: ["Preso"] }),
       sp("Floresta Viva", 4, "ultimate", "Por 3 turnos, uma floresta cobre a área: os aliados recuperam 1d4 de vida por turno e os inimigos dentro dela perdem 2 de deslocamento.")
@@ -222,7 +222,7 @@ var GRIMORIOS = [
 
   { nome: "Grimório da Ferrugem", attr: "inteligencia", papel: "Dano", sub: "corrosão", elem: "Metal", tier: "",
     spells: [
-      sp("Corroer", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
+      sp("Corroer", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, o alvo fica Enferrujado: -1 de Defesa até o início do seu próximo turno.", { aplica: ["Enferrujado"] }),
       sp("Oxidar", 1, "básico", "Teste de Inteligência contra a Defesa do alvo. Se acertar, a Defesa dele cai em 1 até o fim do combate (acumula até -3).", { aplica: ["Enferrujado"] }),
       sp("Carcomer", 2, "médio", "d20 + Inteligência contra a Defesa do alvo, dano 1d6. Se ele já estiver enferrujado, a Defesa dele cai em mais 1.", { aplica: ["Enferrujado"] }),
       sp("Desmoronar", 4, "ultimate", "d20 + Inteligência contra a Defesa do alvo, dano 3d6. Contra um alvo enferrujado, o dano é 4d6.")
@@ -278,6 +278,21 @@ var GRIMORIOS = [
       fu(4, "Raiz Inquebrável", "passiva", "passiva", "Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e ganha 2 Pelagens.")
     ],
     nota: "Pelagem: 1 Pelagem vira +1 de redução de dano até o fim da rodada, ou 1 de vida temporária. Fogo é a fraqueza: um alvo Em chamas ignora o Rugido por 1 turno. Não acumula com Pele de Ferro nem Pele de Pedra." },
+
+  { nome: "Grimório do Capitão", attr: "poder", papel: "Tank", sub: "tank Muralha, piratas fantasmas e ossos", elem: "Mar", tier: "", reservado: true,
+    spells: [
+      sp("Estocada do Marujo", 1, "ataque simples", "Um marujo espectral surge, desfere a estocada e some (não fica em campo). d20 + Poder, dano 1d6. Se acertar, você ganha 1 Osso (máx. 3)."),
+      sp("Abordagem!", 2, "provocar", "Gritos de piratas mortos ecoam. Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano."),
+      sp("Escudo de Ossos", 1, "reação", "Quando um inimigo acerta um aliado perto de você, ossos de piratas formam um escudo: você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2. Uma vez por rodada."),
+      sp("Navio Fantasma", 4, "ultimate", "Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma.", { limite: "1 uso por combate" })
+    ],
+    futuras: [
+      fu(1, "Âncora", 2, "médio", "Lança uma âncora em um inimigo: ele faz teste de Poder contra 13 ou fica com deslocamento 0 até o fim do próximo turno dele."),
+      fu(2, "Rum do Capitão", 2, "médio", "Você recupera 1d6 de vida e remove um estado negativo de você ou de um aliado próximo."),
+      fu(3, "Salva Fantasma", 3, "médio", "d20 + Poder contra os inimigos em uma linha de 4 casas. Quem for atingido sofre 1d6 e é empurrado 1 casa."),
+      fu(4, "Não Afunda", "passiva", "passiva", "Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e os aliados próximos ganham +1 nas rolagens por 1 rodada.")
+    ],
+    nota: "Feito para o Ketysuru (Porto Salgado). Osso: cada Osso se quebra sozinho quando um inimigo acerta você e reduz o dano desse golpe em 1 (como o Escudo de Ossos do Cavaleiro da Morte, do WoW). Sem Absorver nem Cargas: a regra é só provocar, receber o golpe pelo aliado e aguentar. Os piratas fantasmas não são invocações: cada ataque é um golpe que surge e some, e os ossos deles viram o escudo. Reservado: o mestre entrega à mão, fora do sorteio." },
 
   /* ===== Grimórios lendários de referência (base nos capitães e membros mais fortes dos esquadrões do anime). Reservados: o mestre entrega à mão, não entram no sorteio. ===== */
   { nome: "Grimório do Breu", attr: "poder", papel: "Dano", sub: "escuridão que consome magia", elem: "Escuridão", tier: "lendário", reservado: true,
@@ -437,7 +452,7 @@ var FAMILIAS_ELEM = ["Fogo", "Água", "Planta", "Terra", "Ar"];
 var FAMILIAS_TIPO = ["Luz", "Sombra e mente", "Corpo e metal", "Tempo e espaço", "Outros"];
 var FAMILIA = {
   "Grimório de Chamas": "Fogo", "Grimório do Fogo Régio": "Fogo",
-  "Grimório de Água": "Água", "Grimório da Névoa": "Água", "Grimório do Gelo": "Água",
+  "Grimório de Água": "Água", "Grimório da Névoa": "Água", "Grimório do Gelo": "Água", "Grimório do Capitão": "Água",
   "Grimório das Raízes": "Planta", "Grimório da Garra Selvagem": "Planta", "Grimório da Árvore-Mundo": "Planta", "Grimório dos Espinhos": "Planta", "Grimório de Veneno": "Planta",
   "Grimório de Terra": "Terra", "Grimório da Fortaleza": "Terra",
   "Grimório de Vento": "Ar", "Grimório do Espírito Celeste": "Ar", "Grimório de Raios": "Ar", "Grimório do Redemoinho": "Ar", "Grimório do Som": "Ar",

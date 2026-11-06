@@ -355,7 +355,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Terra (suporte, defesa e controle, usa Inteligência)
 *elemento: Terra*
-- **Estaca de Pedra (1 mana, básico):** d20 + Inteligência, dano 1d6.
+- **Estaca de Pedra (1 mana, básico):** d20 + Inteligência, dano 1d6. Se acertar, um aliado próximo (ou você) ganha +1 de Defesa até o início do seu próximo turno.
 - **Muro de Terra (2 mana, médio):** Cria uma barreira que bloqueia a passagem por 2 turnos (Vida 10).
 - **Terremoto (4 mana, ultimate):** Os inimigos próximos sofrem 1d6. Quem falhar em um teste de Destreza contra 12 fica caído: deslocamento 0 e -2 de Defesa até o fim da próxima rodada.
 - Marco 2, **Armadilha de Pedra (2 mana, médio):** Esconde uma armadilha em uma casa. O primeiro inimigo que pisar nela sofre 2d6 e fica preso por 1 turno. (aplica: Preso)
@@ -386,7 +386,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório do Tempo (suporte, suporte e controle, usa Inteligência)
 *elemento: Cosmos*
-- **Pulso Temporal (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
+- **Pulso Temporal (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, o alvo fica com -1 no próximo ataque dele.
 - **Pausa (1 mana, básico):** Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior).
 - **Retrocesso (2 mana, médio):** Um aliado refaz a última rolagem dele.
 - **Parada no Tempo (4 mana, ultimate):** Um inimigo escolhido perde a próxima rodada inteira. (limite: 1 uso por combate)
@@ -422,7 +422,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório da Luz Vingativa (dano, dano e retribuição, usa Poder)
 *elemento: Luz*
-- **Lança Radiante (1 mana, ataque simples):** d20 + Poder, dano 1d6.
+- **Lança Radiante (1 mana, ataque simples):** d20 + Poder, dano 1d6. Se o alvo estiver Marcado ou já tiver ferido um aliado neste combate, o dano aumenta em 1d4 radiante.
 - **Marca da Retribuição (1 mana, básico):** Marca um inimigo até o fim do combate (uma marca por vez). Na próxima vez que ele causar dano a um aliado, mesmo que a vida temporária absorva, ele sofre 1d6 de dano radiante (uma vez). (aplica: Marcado)
 - **Julgamento (2 mana, médio):** d20 + Poder, dano 1d8. Contra um inimigo que já feriu um aliado neste combate, o dano é 2d6.
 - **Sol da Sentença (4 mana, ultimate):** Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 2d6; quem passar sofre metade. Cada aliado ferido neste combate recupera 1d4 de vida.
@@ -432,7 +432,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 ### Grimório das Raízes (suporte, cura e controle, usa Inteligência)
 *elemento: Planta*
 *Regra do Preso: "preso" prende o movimento. Só tira a ação se o feitiço disser o que foi preso (por exemplo, "prende os braços").*
-- **Espinho (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
+- **Espinho (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, um aliado próximo recupera 1 de vida.
 - **Semente Vital (1 mana, básico):** Um aliado recupera 2 de vida no início de cada turno dele, por 2 turnos. Se o aliado estiver Molhado, recupera +1 por turno.
 - **Raízes Prendedoras (2 mana, médio):** Teste de Inteligência contra a Defesa do alvo. Se acertar, raízes prendem as pernas dele por 2 turnos: ele não pode se mover e sofre 1 de dano por turno. No início de cada turno dele, faz um teste de Poder contra 13 para se soltar. (aplica: Preso)
 - **Floresta Viva (4 mana, ultimate):** Por 3 turnos, uma floresta cobre a área: os aliados recuperam 1d4 de vida por turno e os inimigos dentro dela perdem 2 de deslocamento.
@@ -451,7 +451,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório da Ferrugem (dano, corrosão, usa Inteligência)
 *elemento: Metal*
-- **Corroer (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
+- **Corroer (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, o alvo fica Enferrujado: -1 de Defesa até o início do seu próximo turno. (aplica: Enferrujado)
 - **Oxidar (1 mana, básico):** Teste de Inteligência contra a Defesa do alvo. Se acertar, a Defesa dele cai em 1 até o fim do combate (acumula até -3). (aplica: Enferrujado)
 - **Carcomer (2 mana, médio):** d20 + Inteligência contra a Defesa do alvo, dano 1d6. Se ele já estiver enferrujado, a Defesa dele cai em mais 1. (aplica: Enferrujado)
 - **Desmoronar (4 mana, ultimate):** d20 + Inteligência contra a Defesa do alvo, dano 3d6. Contra um alvo enferrujado, o dano é 4d6.
@@ -500,6 +500,18 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - Marco 3, **Mãe Ursa (3 mana, médio):** Os aliados próximos ganham 1d6 de vida temporária e +1 de Defesa por 2 turnos.
 - Marco 4, **Raiz Inquebrável (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e ganha 2 Pelagens.
 - *Nota do mestre:* Pelagem: 1 Pelagem vira +1 de redução de dano até o fim da rodada, ou 1 de vida temporária. Fogo é a fraqueza: um alvo Em chamas ignora o Rugido por 1 turno. Não acumula com Pele de Ferro nem Pele de Pedra.
+
+### Grimório do Capitão (tank, tank Muralha, piratas fantasmas e ossos, usa Poder)
+*elemento: Mar; reservado (fora do sorteio)*
+- **Estocada do Marujo (1 mana, ataque simples):** Um marujo espectral surge, desfere a estocada e some (não fica em campo). d20 + Poder, dano 1d6. Se acertar, você ganha 1 Osso (máx. 3).
+- **Abordagem! (2 mana, provocar):** Gritos de piratas mortos ecoam. Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano.
+- **Escudo de Ossos (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, ossos de piratas formam um escudo: você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2. Uma vez por rodada.
+- **Navio Fantasma (4 mana, ultimate):** Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma. (limite: 1 uso por combate)
+- Marco 1, **Âncora (2 mana, médio):** Lança uma âncora em um inimigo: ele faz teste de Poder contra 13 ou fica com deslocamento 0 até o fim do próximo turno dele.
+- Marco 2, **Rum do Capitão (2 mana, médio):** Você recupera 1d6 de vida e remove um estado negativo de você ou de um aliado próximo.
+- Marco 3, **Salva Fantasma (3 mana, médio):** d20 + Poder contra os inimigos em uma linha de 4 casas. Quem for atingido sofre 1d6 e é empurrado 1 casa.
+- Marco 4, **Não Afunda (passiva, passiva):** Uma vez por combate, ao cair a 0 de Vida, você fica com 1 e os aliados próximos ganham +1 nas rolagens por 1 rodada.
+- *Nota do mestre:* Feito para o Ketysuru (Porto Salgado). Osso: cada Osso se quebra sozinho quando um inimigo acerta você e reduz o dano desse golpe em 1 (como o Escudo de Ossos do Cavaleiro da Morte, do WoW). Sem Absorver nem Cargas: a regra é só provocar, receber o golpe pelo aliado e aguentar. Os piratas fantasmas não são invocações: cada ataque é um golpe que surge e some, e os ossos deles viram o escudo. Reservado: o mestre entrega à mão, fora do sorteio.
 
 ### Grimórios lendários reservados
 
