@@ -103,7 +103,7 @@
 
 ### Acertar e dano (resumo)
 - **Acertou?** d20 + ataque contra a Defesa do alvo (jogador: 10 + Destreza; bandido: 10).
-- **Quanto de dano?** rola o dado de dano. Se o alvo é jogador, subtrai a redução de dano dele (metade do Poder; mínimo 1). Alguns inimigos do bestiário têm redução de dano (está no card deles); os demais, não.
+- **Quanto de dano?** rola o dado de dano e soma o bônus de dano do nível (+1 no nível 3, +2 no nível 5). Se o alvo é jogador, subtrai a redução de dano dele (metade do Poder; mínimo 1). Alguns inimigos do bestiário têm redução de dano (está no card deles); os demais, não.
 
 ### Todo grimório tem
 - **1 ataque simples de 1 mana** (padrão).
@@ -177,6 +177,7 @@ Sem pontos de experiência: todos sobem juntos, em marcos da história.
 | 4 | Fim do Arco 1 | 32 | +1 ponto | +4 | Aprimorar 1 feitiço |
 | 5 | Fim do Arco 2 | 36 | +1 ponto | +5 | Despertar do grimório |
 
+- **Bônus de dano por nível:** feitiços de dano e ataques com arma ganham dano fixo: **+1 a partir do nível 3** e **+2 a partir do nível 5**. Vale em cada acerto (e em cada alvo atingido); não conta para dano contínuo (sangramento, queimadura, veneno).
 - Todo nível: Vida e Mana voltam ao máximo (já com o novo máximo) e o personagem ganha +1 ponto de atributo.
 - O jogador anota o bônus de atributo na própria ficha, e o mestre confere. O limite por nível é combinado na mesa (o servidor não trava, porque pode variar).
 - **Aprimorar um feitiço:** mais dano (+1 dado ou +2 fixo), mais barato (-1 de mana, mínimo 1), mais alcance, mais duradouro (+1 turno) ou mais difícil de resistir (+2). No máximo 2 aprimoramentos por feitiço, nunca o mesmo duas vezes. O mestre aprova.
@@ -633,7 +634,7 @@ Em Grimoria **não existem esquadrões nem esses personagens**: a tabela só reg
 
 ### Como foi pontuado
 
-Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 por turno), combates de 3 a 5 rodadas, inimigos com Defesa de 10 a 17 e chefes de 60 a 150 de Vida. Notas de 1 a 10.
+Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 por turno), combates de 3 a 5 rodadas, inimigos com Defesa de 10 a 17 e chefes de 48 a 90 de Vida. Notas de 1 a 10.
 
 - **Poder de combate (PC):** dano esperado por mana (35%), controle, ou seja, tirar ações do inimigo (30%), sobrevivência própria e do grupo (20%), economia de mana e confiabilidade (15%). Efeito sem rolagem pesa mais que efeito com teste. Controle pesa mais que dano porque, com rodadas curtas, uma ação tirada do chefe vale mais que 5 pontos de dano.
 - **Sinergia (SIN):** quanto o grimório melhora os outros (Defesa do inimigo, repetir ou refazer rolagens, estados que outros aproveitam), quanto aproveita estados dos outros (Molhado, Lento, Preso, Em chamas) e o quanto vale na história desta campanha (por exemplo, quebrar a marca da organização).
@@ -807,7 +808,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Possíveis drops:** Couro de Javali de Mana (60%); Ração (1 dia) (80%)
 
 #### Devorador de Colheitas (chefe, nível 2 a 3)
-- **Vida:** 60 | **Defesa:** 13 | **Ataque:** +5 | **Mana:** 8
+- **Vida:** 48 | **Defesa:** 13 | **Ataque:** +5 | **Mana:** 8
 - **Dano:** 2d6 + 2 (média 9)
 - **Mordida Voraz (passiva, passiva):** Recupera metade do dano que causar.
 - **Rugido Faminto (2 mana, habilidade):** Todos os jogadores próximos fazem teste de Poder contra 13 ou ficam com -2 nas rolagens por 1 turno.
@@ -845,7 +846,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Possíveis drops:** Frasco de Névoa (30%); Pedra de Mana (25%)
 
 #### Serpente das Marés (chefe, nível 3)
-- **Vida:** 65 | **Defesa:** 14 | **Ataque:** +5 | **Mana:** 10
+- **Vida:** 55 | **Defesa:** 14 | **Ataque:** +5 | **Mana:** 10
 - **Dano:** 2d6 + 2 (média 9)
 - **Enrolar (2 mana, habilidade):** d20 + 5 contra um alvo. Se acertar, o alvo fica preso por 2 turnos e sofre 1d6 por turno. (aplica: Preso)
 - **Onda (4 mana, habilidade):** Todos os jogadores próximos fazem teste de Poder contra 13 ou são arrastados 3 casas e ficam molhados. (aplica: Molhado)
@@ -882,7 +883,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Possíveis drops:** Erva Curativa do Reino (60%); Botas de Passo Leve (15%)
 
 #### Cervo Ancestral (chefe, nível 3)
-- **Vida:** 70 | **Defesa:** 14 | **Ataque:** +5 | **Mana:** 10
+- **Vida:** 58 | **Defesa:** 14 | **Ataque:** +5 | **Mana:** 10
 - **Dano:** 2d6 + 2 (média 9)
 - **Chifres Radiantes (2 mana, habilidade):** d20 + 5, dano 2d6. O alvo faz teste de Destreza contra 13 ou fica cego por 1 turno. (aplica: Cego)
 - **Chamado da Mata (4 mana, habilidade):** Invoca 2 Raposas Sombrias.
@@ -919,7 +920,7 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Possíveis drops:** Pedra de Mana (40%); Fragmento de Cristal (75%); Cinto Porta-Grimório (10%)
 
 #### Guardião das Ruínas (chefe, nível 4)
-- **Vida:** 80 | **Defesa:** 15 | **Ataque:** +6 | **Mana:** 12 | **Redução de dano:** 3
+- **Vida:** 62 | **Defesa:** 15 | **Ataque:** +6 | **Mana:** 12 | **Redução de dano:** 3
 - **Dano:** 2d8 + 2 (média 11)
 - **Runa de Selamento (2 mana, habilidade):** Um jogador faz teste de Inteligência contra 14 ou fica com -2 em todas as rolagens por 2 turnos.
 - **Colapso (4 mana, habilidade):** Os jogadores próximos sofrem 2d6 (teste de Destreza contra 13 para sofrer metade).
@@ -956,24 +957,24 @@ No Perfil, o jogador responde **uma vez** a 5 perguntas, sem ver o que cada resp
 - **Possíveis drops:** Elixir de Mana (35%); Luva de Condução (15%); Anel de Reserva de Mana (10%); Páginas rasgadas de um grimório (gancho) (50%)
 
 #### Quimera de Mana (chefe, nível 4)
-- **Vida:** 60 | **Defesa:** 15 | **Ataque:** +6 | **Mana:** 12
+- **Vida:** 50 | **Defesa:** 15 | **Ataque:** +6 | **Mana:** 12
 - **Dano:** 2d8 + 2 (média 11)
-- **Três cabeças (passiva, passiva):** Cada cabeça tem 20 de Vida e Defesa 14, e pode ser atacada à parte. Cada cabeça viva faz um ataque especial por turno. Uma cabeça derrotada para de atacar.
+- **Três cabeças (passiva, passiva):** Cada cabeça tem 18 de Vida e Defesa 14, e pode ser atacada à parte. Por turno, escolha até 2 cabeças vivas para fazerem o ataque especial. Uma cabeça derrotada para de atacar.
 - **Cabeça de Fogo (passiva, ataque):** Sopro em cone: 2d6 e o alvo fica em chamas (2 de dano por turno, 2 turnos). (aplica: Em chamas)
 - **Cabeça de Raio (passiva, ataque):** d20 + 6 contra um alvo, dano 2d6 e o alvo fica eletrizado. (aplica: Eletrizado)
 - **Cabeça de Gelo (passiva, ataque):** Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada. (aplica: Lento)
-- **Comportamento:** Usa todas as cabeças vivas a cada turno.
-- *Dica:* Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (40 cada): todos têm algo para atacar.
+- **Comportamento:** Usa 2 cabeças vivas por turno, as que alcançam mais jogadores.
+- *Dica:* Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (36 cada): todos têm algo para atacar.
 - **Possíveis drops:** Elixir de Mana (100%); Luva de Condução (30%); Espada Condutora de Mana (25%); Bolsa Sem Fundo (25%)
 
 ### Arco final
 
 #### Titã Corrompido (chefe, nível 5)
-- **Vida:** 120 | **Defesa:** 16 | **Ataque:** +7 | **Mana:** 16 | **Redução de dano:** 3
+- **Vida:** 90 | **Defesa:** 16 | **Ataque:** +7 | **Mana:** 16 | **Redução de dano:** 2
 - **Dano:** 3d6 + 3 (média 13,5)
 - **Pisada Sísmica (2 mana, habilidade):** Os jogadores próximos fazem teste de Destreza contra 14 ou caem (-2 de Defesa até o fim da próxima rodada) e sofrem 2d6.
 - **Punho Colossal (4 mana, habilidade):** d20 + 7 contra um alvo, dano 4d6. O alvo faz teste de Poder contra 15 ou é arremessado 4 casas.
-- **Corpo de Pedra (passiva, passiva):** Redução de dano 3. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada.
+- **Corpo de Pedra (passiva, passiva):** Redução de dano 2. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada.
 - **Comportamento:** Usa a pisada quando os jogadores se juntam e o punho no tank.
 - *Dica:* Um combate longo, para fechar o arco antes do final.
 - **Possíveis drops:** Elixir de Mana (100%); Página de Grimório Perdida (50%); Pingente Purificador (25%)

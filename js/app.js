@@ -286,6 +286,7 @@ function viewNiveis() {
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
+    panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b> e <b>+2 a partir do nível 5</b>. O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço",
       "<p>Você escolhe um feitiço do seu grimório e um aprimoramento:</p>" +
       "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +

@@ -482,7 +482,7 @@ var INIMIGOS = [
     sp("Investida", "passiva", "passiva", "Se andar 3 ou mais casas antes de atacar, causa +1d6 de dano e o alvo faz teste de Poder contra 12 ou cai.")
   ], "Sempre se afasta antes de investir. Dá para provocar com um tank.",
     "Um tank com Chamado da Fortaleza ou Ímã de Guerra brilha aqui."),
-  mo("Devorador de Colheitas", "Arco 1: Vale das Colheitas", "chefe", "2 a 3", 60, 13, "+5", "2d6 + 2 (média 9)", "8", [
+  mo("Devorador de Colheitas", "Arco 1: Vale das Colheitas", "chefe", "2 a 3", 48, 13, "+5", "2d6 + 2 (média 9)", "8", [
     sp("Mordida Voraz", "passiva", "passiva", "Recupera metade do dano que causar."),
     sp("Rugido Faminto", 2, "habilidade", "Todos os jogadores próximos fazem teste de Poder contra 13 ou ficam com -2 nas rolagens por 1 turno."),
     sp("Cavar", 2, "habilidade", "Some no chão e volta no próximo turno em outro lugar, atacando de surpresa com +1d6 de dano.")
@@ -504,7 +504,7 @@ var INIMIGOS = [
     sp("Tinta Negra", 2, "habilidade", "Os alvos na área fazem teste de Destreza contra 12 ou ficam cegos (-3 nas rolagens de ataque) até o fim da próxima rodada.", { aplica: ["Cego"] })
   ], "Prefere ficar na água e puxar alvos para perto.",
     "Bom para a primeira luta contra um elite."),
-  mo("Serpente das Marés", "Arco 1: Porto Salgado", "chefe", "3", 65, 14, "+5", "2d6 + 2 (média 9)", "10", [
+  mo("Serpente das Marés", "Arco 1: Porto Salgado", "chefe", "3", 55, 14, "+5", "2d6 + 2 (média 9)", "10", [
     sp("Enrolar", 2, "habilidade", "d20 + 5 contra um alvo. Se acertar, o alvo fica preso por 2 turnos e sofre 1d6 por turno.", { aplica: ["Preso"], dot: dotRes("Poder", 13) }),
     sp("Onda", 4, "habilidade", "Todos os jogadores próximos fazem teste de Poder contra 13 ou são arrastados 3 casas e ficam molhados.", { aplica: ["Molhado"] })
   ], "Começa escondida na água. Usa Enrolar no jogador mais frágil.",
@@ -525,7 +525,7 @@ var INIMIGOS = [
     sp("Regenerar", "passiva", "passiva", "Recupera 3 de vida no início de cada turno dela, a não ser que tenha sofrido dano de fogo desde o turno anterior.")
   ], "Fica imóvel. Só ataca quem está perto.",
     "Um combate de posição: quem tem fogo vira a estrela."),
-  mo("Cervo Ancestral", "Arco 1: Floresta dos Cedros", "chefe", "3", 70, 14, "+5", "2d6 + 2 (média 9)", "10", [
+  mo("Cervo Ancestral", "Arco 1: Floresta dos Cedros", "chefe", "3", 58, 14, "+5", "2d6 + 2 (média 9)", "10", [
     sp("Chifres Radiantes", 2, "habilidade", "d20 + 5, dano 2d6. O alvo faz teste de Destreza contra 13 ou fica cego por 1 turno.", { aplica: ["Cego"] }),
     sp("Chamado da Mata", 4, "habilidade", "Invoca 2 Raposas Sombrias.")
   ], "Mantém distância e usa o chamado cedo.",
@@ -546,7 +546,7 @@ var INIMIGOS = [
     sp("Ponto Fraco", "passiva", "passiva", "Feitiços do Grimório do Som e do Grimório de Gravidade causam +1d6 de dano nele.")
   ], "Avança em linha reta e esmaga o mais próximo.",
     "Um bom lugar para os grimórios de Som e Gravidade brilharem.", { red: 2 }),
-  mo("Guardião das Ruínas", "Arco 1: Pedra Velha", "chefe", "4", 80, 15, "+6", "2d8 + 2 (média 11)", "12", [
+  mo("Guardião das Ruínas", "Arco 1: Pedra Velha", "chefe", "4", 62, 15, "+6", "2d8 + 2 (média 11)", "12", [
     sp("Runa de Selamento", 2, "habilidade", "Um jogador faz teste de Inteligência contra 14 ou fica com -2 em todas as rolagens por 2 turnos."),
     sp("Colapso", 4, "habilidade", "Os jogadores próximos sofrem 2d6 (teste de Destreza contra 13 para sofrer metade)."),
     sp("Selo Antigo", "passiva", "passiva", "Tem redução de dano 3 contra ataques físicos. Feitiços ignoram essa redução.")
@@ -567,21 +567,21 @@ var INIMIGOS = [
     sp("Feitiços de um grimório", "passiva", "passiva", "Escolha um grimório do catálogo e use 2 dos feitiços dele: um de 1 mana e um de 2 mana. Troque o grimório a cada mago para variar.")
   ], "Fica longe e usa o feitiço de controle primeiro.",
     "Deixa os jogadores verem como é enfrentar o poder de um grimório."),
-  mo("Quimera de Mana", "Arco 2", "chefe", "4", 60, 15, "+6", "2d8 + 2 (média 11)", "12", [
-    sp("Três cabeças", "passiva", "passiva", "Cada cabeça tem 20 de Vida e Defesa 14, e pode ser atacada à parte. Cada cabeça viva faz um ataque especial por turno. Uma cabeça derrotada para de atacar."),
+  mo("Quimera de Mana", "Arco 2", "chefe", "4", 50, 15, "+6", "2d8 + 2 (média 11)", "12", [
+    sp("Três cabeças", "passiva", "passiva", "Cada cabeça tem 18 de Vida e Defesa 14, e pode ser atacada à parte. Por turno, escolha até 2 cabeças vivas para fazerem o ataque especial. Uma cabeça derrotada para de atacar."),
     sp("Cabeça de Fogo", "passiva", "ataque", "Sopro em cone: 2d6 e o alvo fica em chamas (2 de dano por turno, 2 turnos).", { aplica: ["Em chamas"], dot: dotRes("Destreza", 13) }),
     sp("Cabeça de Raio", "passiva", "ataque", "d20 + 6 contra um alvo, dano 2d6 e o alvo fica eletrizado.", { aplica: ["Eletrizado"] }),
     sp("Cabeça de Gelo", "passiva", "ataque", "Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada.", { aplica: ["Lento"] })
-  ], "Usa todas as cabeças vivas a cada turno.",
-    "Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (40 cada): todos têm algo para atacar."),
+  ], "Usa 2 cabeças vivas por turno, as que alcançam mais jogadores.",
+    "Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (36 cada): todos têm algo para atacar."),
 
   /* Arco final */
-  mo("Titã Corrompido", "Arco final", "chefe", "5", 120, 16, "+7", "3d6 + 3 (média 13,5)", "16", [
+  mo("Titã Corrompido", "Arco final", "chefe", "5", 90, 16, "+7", "3d6 + 3 (média 13,5)", "16", [
     sp("Pisada Sísmica", 2, "habilidade", "Os jogadores próximos fazem teste de Destreza contra 14 ou caem (-2 de Defesa até o fim da próxima rodada) e sofrem 2d6."),
     sp("Punho Colossal", 4, "habilidade", "d20 + 7 contra um alvo, dano 4d6. O alvo faz teste de Poder contra 15 ou é arremessado 4 casas."),
-    sp("Corpo de Pedra", "passiva", "passiva", "Redução de dano 3. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada.")
+    sp("Corpo de Pedra", "passiva", "passiva", "Redução de dano 2. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada.")
   ], "Usa a pisada quando os jogadores se juntam e o punho no tank.",
-    "Um combate longo, para fechar o arco antes do final.", { red: 3 }),
+    "Um combate longo, para fechar o arco antes do final.", { red: 2 }),
 
   /* Segredos da organização (aparecem na aba Mestre) */
   mo("Capanga Marcado", "Segredo", "capanga", "2 a 4", 14, 12, "+4", "1d8 + 2 (média 6,5)", "-", [
@@ -1856,6 +1856,7 @@ function viewNiveisMestre() {
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
+    panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b> e <b>+2 a partir do nível 5</b>. O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço (níveis 2 e 4)",
       "<p>O jogador escolhe um feitiço do grimório e um aprimoramento:</p>" +
       "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
@@ -3342,7 +3343,7 @@ function itemCatalogoHTML(i) {
   if (i.raridade && i.raridade !== "comum") tags += '<span class="tag leg">' + esc(i.raridade) + "</span>";
   if (i.fase) tags += '<span class="tag role">' + ic("ampulheta") + esc(i.fase) + "</span>";
   tags += '<span class="tag role">' + ic("mochila") + pesoTxt(i.peso) + " · " + valorTxt(i.valor) + "</span>" + modsTags(i);
-  var h = '<article class="panel item-cat"><h3>' + esc(i.nome) + '</h3><div class="meta item-tags">' + tags + "</div>";
+  var h = '<article class="panel item-cat"><h3 class="item-cat-tit">' + iconeItem(i) + "<span>" + esc(i.nome) + '</span></h3><div class="meta item-tags">' + tags + "</div>";
   if (!itemNaFase(i)) h += '<p class="item-alerta aviso">' + ic("alerta") + "<span>Adiantado: a campanha está em " + esc(EST.progresso) + ".</span></p>";
   if (i.efeito) h += "<p><b>" + esc(i.efeito) + "</b></p>";
   if (i.desc) h += "<p>" + esc(i.desc) + "</p>";
