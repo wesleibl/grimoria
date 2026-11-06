@@ -518,6 +518,12 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             $achou = true;
             if ($op === 'del') { unset($inv[$k]); break; }
             $novo = itemAplicar($i, (array)($c['campos'] ?? []), $mestre);
+            /* O jogador não aumenta a quantidade de um item (é o mesmo que ganhar item) sem dizer o motivo. */
+            if (!$mestre && (int)($novo['qtd'] ?? 0) > (int)($i['qtd'] ?? 0)) {
+                $motivo = mb_substr(trim((string)($c['motivo'] ?? '')), 0, 300);
+                if (mb_strlen($motivo) < 3) { $pdo->rollBack(); erro('Escreva o motivo de ganhar mais deste item.'); }
+                $novo['motivo'] = $motivo;
+            }
             if ($novo['nome'] === '') $novo['nome'] = $i['nome'] ?? 'Item';
             /* Quantidade 0 = o item acabou: sai do inventário em vez de ficar como "×0". */
             if ((int)($novo['qtd'] ?? 1) <= 0) unset($inv[$k]); else $inv[$k] = $novo;
@@ -525,7 +531,17 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         }
         if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
     } elseif ($op === 'moedas') {
+        $antes = $moedas['po'] * 100 + $moedas['pp'] * 10 + $moedas['pc'];
         $moedas = moedasLimpas($c['moedas'] ?? []);
+        $depois = $moedas['po'] * 100 + $moedas['pp'] * 10 + $moedas['pc'];
+        /* Ganhar dinheiro exige motivo (gastar não). Cada mudança fica registrada para o mestre ver. */
+        $motivo = mb_substr(trim((string)($c['motivo'] ?? '')), 0, 300);
+        if (!$mestre && $depois > $antes && mb_strlen($motivo) < 3) { $pdo->rollBack(); erro('Escreva o motivo de ganhar dinheiro.'); }
+        if ($depois !== $antes) {
+            $log = array_values(array_filter((array)($dados['moedasLog'] ?? []), 'is_array'));
+            $log[] = ['em' => date('c'), 'por' => $mestre ? 'mestre' : 'jogador', 'de' => $antes, 'para' => $depois, 'motivo' => $motivo];
+            $dados['moedasLog'] = array_slice($log, -30);
+        }
     } elseif ($op === 'kit_liberar' && $mestre) {
         $dados['kitFeito'] = false;
     } else {
@@ -540,7 +556,9 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
     if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
     $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$json, $jogId]);
     $pdo->commit();
-    return ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas, 'kitFeito' => !empty($dados['kitFeito'])];
+    $out = ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas, 'kitFeito' => !empty($dados['kitFeito'])];
+    if ($mestre) $out['moedasLog'] = array_values((array)($dados['moedasLog'] ?? []));
+    return $out;
 }
 
 /* ============================ KIT INICIAL ============================ */

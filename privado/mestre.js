@@ -78,8 +78,8 @@ var GRIMORIOS = [
     spells: [
       sp("Chicote de Corrente", 1, "ataque simples", "d20 + Inteligência, dano 1d4."),
       sp("Laço", 1, "básico", "Teste de Inteligência contra a Defesa do inimigo. Se acertar, o alvo perde 3 de deslocamento."),
-      sp("Prisão de Aço", 2, "médio", "Prende um inimigo por 1 turno (ele não age). Teste de Inteligência contra a Defesa dele."),
-      sp("Jaula Total", 4, "ultimate", "Prende até 3 inimigos por 1 turno.", { limite: "1 uso por combate" })
+      sp("Prisão de Aço", 2, "médio", "Teste de Inteligência contra a Defesa do inimigo. Se acertar, correntes prendem os braços dele por 1 turno (ele não age). O mesmo alvo não pode ser preso de novo no turno seguinte."),
+      sp("Jaula Total", 4, "ultimate", "Até 3 inimigos próximos fazem teste de Poder contra 13. Quem falhar fica preso por 1 turno (não age).", { limite: "1 uso por combate" })
     ], futuras: [], nota: "Jaula Total é muito forte, por isso já vale 1 uso por combate." },
 
   { nome: "Grimório de Reforço", attr: "poder", papel: "Dano", sub: "fortalecimento", tier: "",
@@ -178,10 +178,10 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Sangue", attr: "poder", papel: "Dano", sub: "risco e recompensa", tier: "",
     spells: [
-      sp("Corte Escarlate", "1 ou 3 de Vida", "básico", "d20 + Poder, dano 1d8. Pode pagar com 3 de Vida em vez de 1 de mana."),
-      sp("Pacto Rubro", 2, "médio", "Perde 3 de Vida e recupera 2 de mana."),
-      sp("Frenesi", 4, "ultimate", "Por 3 turnos, você recupera 2 de Vida por acerto e os alvos atingidos sangram (1 de dano por turno durante 2 turnos).", { aplica: ["Sangrando"], dot: dotRes("Poder", 12) })
-    ], futuras: [], nota: "Arriscado: vida baixa é perigo. Cuidado com novatos." },
+      sp("Corte Escarlate", "1 mana ou 3 de Vida", "básico", "d20 + Poder, dano 1d8. Pode pagar com 3 de Vida em vez de 1 de mana."),
+      sp("Pacto Rubro", "3 de Vida", "médio", "Paga 3 de Vida e recupera 2 de mana."),
+      sp("Frenesi", 4, "ultimate", "Por 3 turnos, seus ataques causam +1d4 de dano, você recupera 2 de Vida por acerto e os alvos atingidos sangram (1 de dano por turno durante 2 turnos).", { aplica: ["Sangrando"], dot: dotRes("Poder", 12) })
+    ], futuras: [], nota: "Arriscado: vida baixa é perigo. Cuidado com novatos. Regra da mesa: não dá para pagar Vida se isso deixar o jogador com menos de 1 de Vida." },
 
   { nome: "Grimório do Gelo", attr: "destreza", papel: "Dano", sub: "dano e lentidão", elem: "Gelo", tier: "",
     spells: [
@@ -415,7 +415,7 @@ var NIVEL3 = {
   "Grimório de Gravidade": fu(2, "Leveza Forçada", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, o inimigo flutua por 1 turno, com deslocamento 0 e -3 de Defesa."),
   "Grimório do Tempo": fu(2, "Eco do Tempo", 2, "médio", "Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana."),
   "Grimório de Lâminas": fu(2, "Corte Perfurante", 2, "médio", "d20 + Destreza, dano 1d8. O golpe ignora a redução de dano do alvo."),
-  "Grimório de Sangue": fu(2, "Lâmina de Sangue", 2, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
+  "Grimório de Sangue": fu(2, "Lâmina de Sangue", 3, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
   "Grimório do Gelo": fu(2, "Lança Gélida", 3, "médio", "d20 + Destreza, dano 2d6. Se o alvo estiver lento ou molhado, ele fica congelado por 1 turno.", { aplica: ["Congelado"] }),
   "Grimório da Luz Vingativa": fu(2, "Escudo Penitente", 2, "médio", "Um aliado ganha +2 de Defesa até o fim da próxima rodada. Quem o atacar sofre 1d4 de dano radiante."),
   "Grimório do Som": fu(2, "Onda Sonora", 2, "médio", "Os inimigos em um cone de 3 casas sofrem 1d6 e são empurrados 1 casa."),

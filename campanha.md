@@ -62,6 +62,7 @@
 - **Máxima:** 10, mais 1 a cada 2 pontos de Inteligência.
 - **Custo:** cada feitiço tem o seu próprio custo (a maioria entre 1 e 4, mas pode ser mais ou menos).
 - **Recuperação:** 1 por turno em combate, ou tudo em um descanso.
+- **Mana no fim:** com 1 ou 0 de mana, todas as suas ações e rolagens (ataques e testes) são feitas com desvantagem, até você recuperar mana.
 
 ### Deslocamento
 
@@ -310,8 +311,8 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 *elemento: Metal*
 - **Chicote de Corrente (1 mana, ataque simples):** d20 + Inteligência, dano 1d4.
 - **Laço (1 mana, básico):** Teste de Inteligência contra a Defesa do inimigo. Se acertar, o alvo perde 3 de deslocamento. (aplica: Lento)
-- **Prisão de Aço (2 mana, médio):** Prende um inimigo por 1 turno (ele não age). Teste de Inteligência contra a Defesa dele. (aplica: Preso)
-- **Jaula Total (4 mana, ultimate):** Prende até 3 inimigos por 1 turno. (limite: 1 uso por combate; aplica: Preso)
+- **Prisão de Aço (2 mana, médio):** Teste de Inteligência contra a Defesa do inimigo. Se acertar, correntes prendem os braços dele por 1 turno (ele não age). O mesmo alvo não pode ser preso de novo no turno seguinte. (aplica: Preso)
+- **Jaula Total (4 mana, ultimate):** Até 3 inimigos próximos fazem teste de Poder contra 13. Quem falhar fica preso por 1 turno (não age). (limite: 1 uso por combate; aplica: Preso)
 - Marco 2, **Elo de Aço (2 mana, médio):** Liga você a um aliado por 2 turnos: o dano que ele sofrer é dividido entre vocês dois.
 - *Nota do mestre:* Jaula Total é muito forte, por isso já vale 1 uso por combate.
 
@@ -403,11 +404,11 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 
 ### Grimório de Sangue (dano, risco e recompensa, usa Poder)
 *elemento: Sangue*
-- **Corte Escarlate (1 ou 3 de Vida, básico):** d20 + Poder, dano 1d8. Pode pagar com 3 de Vida em vez de 1 de mana.
-- **Pacto Rubro (2 mana, médio):** Perde 3 de Vida e recupera 2 de mana.
-- **Frenesi (4 mana, ultimate):** Por 3 turnos, você recupera 2 de Vida por acerto e os alvos atingidos sangram (1 de dano por turno durante 2 turnos). (aplica: Sangrando)
-- Marco 2, **Lâmina de Sangue (2 mana, médio):** d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6.
-- *Nota do mestre:* Arriscado: vida baixa é perigo. Cuidado com novatos.
+- **Corte Escarlate (1 mana ou 3 de Vida, básico):** d20 + Poder, dano 1d8. Pode pagar com 3 de Vida em vez de 1 de mana.
+- **Pacto Rubro (3 de Vida, médio):** Paga 3 de Vida e recupera 2 de mana.
+- **Frenesi (4 mana, ultimate):** Por 3 turnos, seus ataques causam +1d4 de dano, você recupera 2 de Vida por acerto e os alvos atingidos sangram (1 de dano por turno durante 2 turnos). (aplica: Sangrando)
+- Marco 2, **Lâmina de Sangue (3 mana, médio):** d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6.
+- *Nota do mestre:* Arriscado: vida baixa é perigo. Cuidado com novatos. Regra da mesa: não dá para pagar Vida se isso deixar o jogador com menos de 1 de Vida.
 
 ### Grimório do Gelo (dano, dano e lentidão, usa Destreza)
 *elemento: Gelo*

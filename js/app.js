@@ -185,7 +185,7 @@ function viewRegras() {
 
   h += panel("Ataque com arma", "<p>Atacar com uma arma não gasta mana e usa a sua ação. Role d20 + <b>Poder</b> (arma corpo a corpo, pesada ou de duas mãos) ou d20 + <b>Destreza</b> (arma à distância, leve, de acuidade ou de arremesso) contra a Defesa do alvo. Se acertar, role o dado da arma (sem somar atributo, como nos feitiços). Você escolhe qual dos dois usar quando a arma for leve ou de acuidade.</p>");
 
-  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Mana máxima: 10, mais 1 a cada 2 pontos de Inteligência.</li><li>Custo: cada feitiço mostra o próprio custo no card. Eles variam: alguns custam mais, outros menos.</li><li>Recupera 1 por turno em combate, ou tudo em um descanso.</li></ul>");
+  h += "<h2>Mana</h2>" + panel("Custos e recuperação", "<ul><li>Mana máxima: 10, mais 1 a cada 2 pontos de Inteligência.</li><li>Custo: cada feitiço mostra o próprio custo no card. Eles variam: alguns custam mais, outros menos.</li><li>Recupera 1 por turno em combate, ou tudo em um descanso.</li><li><b>Mana no fim:</b> com 1 ou 0 de mana, todas as suas ações e rolagens (ataques e testes) são feitas com desvantagem, até você recuperar mana.</li></ul>");
 
   h += "<h2>Vida, queda e descanso</h2>" + panel(ic("coracao") + "Cair a 0 de Vida",
     "<ol><li>Ao chegar a <b>0 de Vida</b>, o personagem <b>cai</b>: fica inconsciente, não age e não se move.</li>" +
@@ -1709,7 +1709,7 @@ function invStats(d) {
 }
 function grimCurto(n) { return String(n || "").replace(/^Grimório (de |do |da |das |dos )?/, ""); }
 function invDono() { return MESTRE ? (typeof achaJog === "function" ? achaJog(invJogId) : null) : PUB.jogador; }
-function invLista(d) { return (d && d.inv) || []; }
+function invLista(d) { return ((d && d.inv) || []).filter(function (i) { return (parseInt(i.qtd, 10) || 0) > 0; }); }
 function invAchar(id) { var r = null; invLista(invDono()).forEach(function (i) { if (i.id === id) r = i; }); return r; }
 function invPeso(d) { var t = 0; invLista(d).forEach(function (i) { t += (Number(i.peso) || 0) * (parseInt(i.qtd, 10) || 0); }); return t; }
 function invCapacidade(d) { return 20 + 5 * Math.max(0, d ? atrTotal(d, "poder") : 0); }
@@ -1725,13 +1725,133 @@ function campoItem(rot, ifld, id, v, tipo, extra) {
   return "<label>" + rot + '<input class="sorteio-in" type="' + tipo + '" data-ifld="' + ifld + '" data-iid="' + id + '" value="' + esc(v) + '"' + (extra || "") + "></label>";
 }
 
+/* Ícones dos itens: imagens do WoW (as mesmas da Wowhead), guardadas em image/itens/. A tabela liga o id do item (campo ref) ao arquivo;
+   itens criados à mão usam o ícone da categoria. */
+var ICONES_ITEM = {
+  "dnd-adaga": "inv_weapon_shortblade_05",
+  "dnd-bordao": "inv_staff_08",
+  "dnd-clava": "inv_mace_01",
+  "dnd-lanca": "inv_spear_05",
+  "dnd-machadinha": "inv_axe_02",
+  "dnd-maca": "inv_mace_02",
+  "dnd-arco-curto": "inv_weapon_bow_02",
+  "dnd-besta-leve": "inv_weapon_crossbow_04",
+  "dnd-funda": "inv_weapon_rifle_01",
+  "dnd-dardo": "inv_throwingknife_02",
+  "dnd-espada-curta": "inv_sword_04",
+  "dnd-espada-longa": "inv_sword_01",
+  "dnd-montante": "inv_sword_27",
+  "dnd-cimitarra": "inv_sword_36",
+  "dnd-rapieira": "inv_sword_15",
+  "dnd-machado-grande": "inv_axe_09",
+  "dnd-machado-batalha": "inv_axe_06",
+  "dnd-martelo-guerra": "inv_hammer_05",
+  "dnd-macaestrela": "inv_mace_15",
+  "dnd-alabarda": "inv_weapon_halberd_04",
+  "dnd-arco-longo": "inv_weapon_bow_08",
+  "dnd-besta-pesada": "inv_weapon_crossbow_01",
+  "dnd-flechas": "inv_ammo_arrow_02",
+  "dnd-virotes": "inv_ammo_arrow_01",
+  "dnd-acolchoada": "inv_chest_cloth_04",
+  "dnd-couro": "inv_chest_leather_01",
+  "dnd-couro-batido": "inv_chest_leather_05",
+  "dnd-gibao-peles": "inv_chest_leather_09",
+  "dnd-camisa-malha": "inv_chest_chain_04",
+  "dnd-peitoral": "inv_chest_plate04",
+  "dnd-cota-malha": "inv_chest_chain_13",
+  "dnd-placas": "inv_chest_plate16",
+  "dnd-escudo": "inv_shield_04",
+  "dnd-mochila": "inv_misc_bag_10",
+  "dnd-saco-dormir": "inv_misc_bag_19",
+  "dnd-corda": "inv_misc_rope_01",
+  "dnd-tocha": "inv_torch_thrown",
+  "dnd-racao": "inv_misc_food_33",
+  "dnd-cantil": "inv_drink_05",
+  "dnd-pederneira": "inv_stone_sharpeningstone_01",
+  "dnd-lanterna": "inv_misc_lantern_01",
+  "dnd-oleo": "inv_potion_05",
+  "dnd-barraca": "inv_misc_bag_11",
+  "dnd-pe-cabra": "inv_misc_wrench_01",
+  "dnd-martelo": "inv_hammer_20",
+  "dnd-pitoes": "inv_ingot_iron",
+  "dnd-corrente": "inv_belt_18",
+  "dnd-espelho": "inv_misc_orb_03",
+  "dnd-cadeado": "inv_misc_key_03",
+  "dnd-algemas": "inv_misc_ahnqirajtrinket_05",
+  "dnd-aljava": "inv_misc_quiver_08",
+  "dnd-cobertor": "inv_fabric_linen_01",
+  "dnd-bolsa": "inv_misc_bag_07",
+  "dnd-frasco": "inv_potion_01",
+  "dnd-vela": "inv_misc_candle_01",
+  "dnd-giz": "inv_misc_stonetablet_01",
+  "dnd-pergaminho": "inv_scroll_03",
+  "dnd-tinta": "inv_inscription_inkblack01",
+  "dnd-lupa": "inv_misc_spyglass_02",
+  "dnd-kit-curandeiro": "inv_misc_bandage_15",
+  "dnd-ferramentas-ladrao": "inv_misc_key_08",
+  "dnd-kit-herbalismo": "inv_misc_herb_01",
+  "dnd-ferramentas-ferreiro": "inv_hammer_04",
+  "dnd-kit-disfarce": "inv_helmet_15",
+  "dnd-kit-veneno": "inv_misc_herb_16",
+  "dnd-ferramentas-navegador": "inv_misc_map_01",
+  "dnd-utensilios-cozinha": "inv_misc_cauldron_fire",
+  "dnd-alaude": "inv_misc_horn_01",
+  "dnd-dados": "inv_misc_dice_01",
+  "dnd-baralho": "inv_misc_book_01",
+  "dnd-pocao-cura": "inv_potion_51",
+  "dnd-antitoxina": "inv_potion_19",
+  "dnd-agua-benta": "inv_potion_97",
+  "dnd-fogo-alquimico": "inv_potion_17",
+  "dnd-acido": "inv_potion_24",
+  "dnd-abrolhos": "inv_misc_ammo_gunpowder_01",
+  "bc-pedra-mana": "inv_misc_gem_sapphire_02",
+  "bc-elixir-mana": "inv_potion_76",
+  "bc-erva-curativa": "inv_misc_herb_07",
+  "bc-tonico-forca": "inv_potion_50",
+  "bc-antidoto-folha-azul": "inv_potion_20",
+  "bc-frasco-nevoa": "inv_potion_37",
+  "bc-anel-reserva": "inv_jewelry_ring_05",
+  "bc-luva-conducao": "inv_gauntlets_04",
+  "bc-espada-condutora": "inv_sword_62",
+  "bc-botas-leves": "inv_boots_cloth_05",
+  "bc-manto-cinzento": "inv_misc_cape_07",
+  "bc-escudo-cristal": "inv_shield_09",
+  "bc-cinto-grimorio": "inv_belt_03",
+  "bc-vassoura": "inv_misc_bag_cenarionherbbag",
+  "bc-bolsa-sem-fundo": "inv_misc_bag_enchantedmageweave",
+  "bc-algema-anulante": "inv_misc_enggizmos_27",
+  "bc-pedra-comunicacao": "inv_misc_gem_pearl_03",
+  "bc-pingente-purificador": "inv_jewelry_necklace_07",
+  "bc-pagina-grimorio": "inv_misc_book_09",
+  "bc-presa-lobo": "inv_misc_monsterfang_01",
+  "bc-pena-corvo": "inv_feather_08",
+  "bc-pele-lobo": "inv_misc_pelt_wolf_01",
+  "bc-palha-mana": "inv_misc_herb_10",
+  "bc-couro-javali": "inv_misc_pelt_boar_ruin_01",
+  "bc-coracao-devorador": "inv_misc_organ_11",
+  "bc-carapaca": "inv_misc_shell_01",
+  "bc-escama-serpente": "inv_misc_monsterscales_05",
+  "bc-seda-aranha": "inv_fabric_silk_01",
+  "bc-pelo-sombrio": "inv_misc_pelt_bear_03",
+  "bc-galhada": "inv_misc_horn_02",
+  "bc-cristal-fragmento": "inv_misc_gem_crystal_02",
+  "bc-nucleo-guardiao": "inv_misc_gem_diamond_01",
+  "bc-emblema-vila": "inv_misc_token_argentdawn3"
+};
+var ICONE_CAT = { arma: "inv_sword_01", armadura: "inv_chest_plate04", aventura: "inv_misc_bag_10", ferramenta: "inv_hammer_20", consumivel: "inv_potion_51", magico: "inv_misc_gem_pearl_03", tesouro: "inv_misc_gem_diamond_01", outro: "inv_misc_questionmark" };
+function iconeItem(it) {
+  var f = iconeArq(it);
+  return '<img class="item-ico" src="image/itens/' + f + '.jpg" alt="" width="40" height="40" loading="lazy">';
+}
+function iconeArq(it) { return ICONES_ITEM[it.ref] || ICONES_ITEM[it.id] || ICONE_CAT[it.cat] || ICONE_CAT.outro; }
+
 function itemHTML(it, mestre, dono) {
   var id = it.id, aberto = !!invAbertos[id], q = parseInt(it.qtd, 10) || 0;
   var tags = '<span class="tag role">' + esc(catNome(it.cat)) + "</span>";
   if (it.raridade && it.raridade !== "comum") tags += '<span class="tag leg">' + esc(it.raridade) + "</span>";
   var h = '<article class="item' + (it.equip ? " equip" : "") + '" data-iid="' + id + '"><div class="item-topo">' +
     '<label class="item-eq" title="Marcar como equipado/em uso"><input type="checkbox" data-ieq="' + id + '"' + (it.equip ? " checked" : "") + '><span class="vh">Equipado</span><span aria-hidden="true">' + ic("escudo") + "</span></label>" +
-    '<button type="button" class="item-nome" data-itog="' + id + '" aria-expanded="' + aberto + '"><b>' + esc(it.nome) + "</b>" + (it.efeito ? "<small>" + esc(it.efeito) + "</small>" : "") + "</button>" +
+    iconeItem(it) + '<button type="button" class="item-nome" data-itog="' + id + '" aria-expanded="' + aberto + '"><b>' + esc(it.nome) + "</b>" + (it.efeito ? "<small>" + esc(it.efeito) + "</small>" : "") + "</button>" +
     '<span class="item-qtd"><button type="button" data-iqtd="' + id + '" data-d="-1" aria-label="Diminuir quantidade">−</button><b id="q-' + id + '">' + q + '</b><button type="button" data-iqtd="' + id + '" data-d="1" aria-label="Aumentar quantidade">+</button></span></div>';
   tags += '<span class="tag role">' + ic("mochila") + pesoItemTxt(it) + "</span>" + modsTags(it);
   h += '<div class="meta item-tags" id="it-tags-' + id + '">' + tags + "</div>";
@@ -1790,8 +1910,16 @@ function invResumoHTML(d, mestre) {
     '<p class="mdica">' + (st.fontes.length ? "Efeitos vindos de: " + esc(st.fontes.join(", ")) + "." : "Nenhum item equipado altera os seus números. Marque o escudo ao lado de um item para equipá-lo.") + " A base usa a sua ficha (Defesa 10 + Destreza, deslocamento 6 + 1 a cada 2 de Destreza).</p>" +
     '<div class="inv-moedas"><label>Ouro<input class="sorteio-in num" type="number" min="0" data-imoeda="po" value="' + (m.po || 0) + '"></label>' +
     '<label>Prata<input class="sorteio-in num" type="number" min="0" data-imoeda="pp" value="' + (m.pp || 0) + '"></label>' +
-    '<label>Cobre<input class="sorteio-in num" type="number" min="0" data-imoeda="pc" value="' + (m.pc || 0) + '"></label></div></section>';
+    '<label>Cobre<input class="sorteio-in num" type="number" min="0" data-imoeda="pc" value="' + (m.pc || 0) + '"></label></div>' + moedasLogHTML(d) + '</section>';
   return h;
+}
+/* Só o mestre recebe este histórico: quem mexeu nas moedas, quanto e por quê. */
+function moedasLogHTML(d) {
+  var l = (MESTRE && d && d.moedasLog) || [];
+  if (!l.length) return "";
+  return '<details class="mdica"><summary>Histórico de moedas (' + l.length + ')</summary><ul>' + l.slice(-10).reverse().map(function (e) {
+    return "<li>" + esc(String(e.em || "").slice(0, 10)) + " · " + esc(e.por) + ": " + e.de + " → " + e.para + " pc" + (e.motivo ? " · " + esc(e.motivo) : "") + "</li>";
+  }).join("") + "</ul></details>";
 }
 function statEquip(rot, total, delta, un) {
   return '<div class="stat"><b>' + total + (un || "") + '</b>' + rot + (delta ? ' <small class="' + (delta > 0 ? "buff-txt" : "pena-txt") + '">' + (delta > 0 ? "▲ " : "▼ ") + sinal(delta) + "</small>" : "") + "</div>";
@@ -1953,7 +2081,7 @@ function invMsgSet(t) { invMsg = t; var m = document.getElementById("invMsg"); i
 
 function invAplicar(r) {
   var d = invDono();
-  if (r && d) { d.inv = r.inv; d.moedas = r.moedas; }
+  if (r && d) { d.inv = r.inv; d.moedas = r.moedas; if (r.moedasLog) d.moedasLog = r.moedasLog; }
   return !!r;
 }
 
@@ -1993,11 +2121,15 @@ function invClick(b) {
       });
       return true;
     }
-    it.qtd = q;
-    var qe = document.getElementById("q-" + d.iqtd);
-    if (qe) qe.textContent = q;
-    invAtualizarResumo(); invAtualizarTags(it);
-    invOp("set", { id: it.id, campos: { qtd: q } });
+    var antes = parseInt(it.qtd, 10) || 0, motivoQ = "";
+    if (!MESTRE && q > antes) {
+      /* Ganhar mais de um item pede um motivo (o mestre vê). */
+      motivoQ = (window.prompt("Por que você ganhou mais " + it.nome + "? (obrigatório)") || "").trim();
+      if (motivoQ.length < 3) { invMsgSet("Para aumentar a quantidade, escreva o motivo."); return true; }
+    }
+    function mostrarQtd(v) { it.qtd = v; var qe = document.getElementById("q-" + d.iqtd); if (qe) qe.textContent = v; invAtualizarResumo(); invAtualizarTags(it); }
+    mostrarQtd(q);
+    invOp("set", { id: it.id, campos: { qtd: q }, motivo: motivoQ }).then(function (r) { if (!r) mostrarQtd(antes); });
     return true;
   }
   if (d.idel) {
@@ -2064,9 +2196,16 @@ function invChange(el) {
     var dono = invDono();
     if (!dono) return true;
     var m = extras({ po: 0, pp: 0, pc: 0 }, dono.moedas || {});
+    var velha = extras({ po: 0, pp: 0, pc: 0 }, dono.moedas || {});
     m[d.imoeda] = Math.max(0, Math.min(999999999, parseInt(el.value, 10) || 0));
+    var motivoM = "";
+    if (!MESTRE && m.po * 100 + m.pp * 10 + m.pc > velha.po * 100 + velha.pp * 10 + velha.pc) {
+      /* Ganhar dinheiro pede um motivo (gastar não). */
+      motivoM = (window.prompt("Por que você ganhou esse dinheiro? (obrigatório)") || "").trim();
+      if (motivoM.length < 3) { el.value = velha[d.imoeda]; invMsgSet("Para ganhar dinheiro, escreva o motivo."); return true; }
+    }
     dono.moedas = m;
-    invOp("moedas", { moedas: m });
+    invOp("moedas", { moedas: m, motivo: motivoM }).then(function (r) { if (!r) { dono.moedas = velha; el.value = velha[d.imoeda]; } else if (r.moedasLog) dono.moedasLog = r.moedasLog; });
     return true;
   }
   if (d.ifld) {
