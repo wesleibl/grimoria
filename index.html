@@ -477,11 +477,14 @@ body.sem-rolagem { overflow: hidden; }
 .tab-svg.editavel { touch-action: none; }
 .tab-box, .tab-svg { user-select: none; -webkit-user-select: none; }
 .tab-linha { fill: none; stroke: #fff; stroke-opacity: .55; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-.tab-box.sem-grade .tab-linha, .tab-box.sem-grade .menu-grid { position: absolute; z-index: 20; min-width: 210px; max-width: 280px; display: grid; padding: 4px; background: rgba(20, 30, 33, .96); border: 1px solid rgba(255, 255, 255, .4); border-radius: 8px; line-height: 1.3; box-shadow: 0 6px 20px rgba(0, 0, 0, .5); }
-.menu-grid-cab { padding: 6px 10px; font-size: .8rem; color: #cbd5d8; border-bottom: 1px solid rgba(255, 255, 255, .2); margin-bottom: 4px; }
-.menu-grid button { text-align: left; min-height: 36px; padding: 6px 10px; background: transparent; color: #fff; border: 0; border-radius: 6px; }
-.menu-grid button:hover, .menu-grid button:focus-visible { background: rgba(255, 255, 255, .18); }
-.tab-coord { display: none; }
+.tab-box.sem-grade .tab-linha, .tab-box.sem-grade .tab-coord { display: none; }
+.menu-grid { position: absolute; z-index: 20; width: 240px; max-width: calc(100% - 8px); display: block; padding: 0; background: rgba(20, 30, 33, .97); border: 1px solid rgba(255, 255, 255, .4); border-radius: 10px; line-height: 1.3; box-shadow: 0 8px 24px rgba(0, 0, 0, .55); overflow: hidden; text-align: left; }
+.menu-grid-cab { padding: 8px 12px; font-size: .8rem; font-weight: 700; color: #e8d9a8; background: rgba(255, 255, 255, .08); border-bottom: 1px solid rgba(255, 255, 255, .2); }
+.menu-grid-corpo { max-height: min(60vh, 340px); overflow-y: auto; padding: 4px; }
+.menu-grid-sec { padding: 8px 8px 2px; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: #9fb0b5; }
+.menu-grid button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 6px 8px; margin: 0; background: transparent; color: #fff; border: 0; border-radius: 6px; text-align: left; font-weight: 500; }
+.menu-grid button .mi { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--mc, #888); color: #fff; }
+.menu-grid button:hover, .menu-grid button:focus-visible { background: rgba(255, 255, 255, .16); }
 .tab-coord { fill: #fff; stroke: #000; stroke-width: .35px; paint-order: stroke; font-weight: 700; opacity: .85; pointer-events: none; font-family: system-ui, sans-serif; }
 .token { cursor: pointer; transition: transform .45s cubic-bezier(.4, 0, .2, 1); }
 .tab-svg.drag .token { transition: none !important; cursor: grabbing; }
@@ -570,6 +573,17 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 .tok-cab input[type="color"], .tok-painel input[type="color"] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
 .tok-painel label { display: block; color: var(--muted); font-size: .92rem; margin: 0 0 .5rem; }
 .tok-painel label.tok-num, .tok-painel label.rev-label { display: inline-flex; }
+.bf { margin: 0 0 .8rem; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); }
+.bf-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.bf-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.bf-tile { padding: 8px 6px; border-radius: 8px; text-align: center; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); }
+.bf-tile.vida { --c: #c0392b; } .bf-tile.def { --c: #2a6fc9; } .bf-tile.atq { --c: #d9700f; }
+.bf-tile .bf-rot { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.bf-tile b { display: block; font-size: 1.5rem; line-height: 1.2; color: var(--c); }
+.bf-dano { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; background: rgba(217, 112, 15, .14); font-size: 1.05rem; }
+.bf-dano b { color: #d9700f; }
+.bf-habs { margin: 0 0 8px; }
+.bf-txt { margin: 0 0 6px; font-size: .92rem; }
 .tok-grade { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: .4rem; }
 .tok-vida-btn { display: flex; gap: 6px; margin: 0 0 .6rem; }
 .tok-vida-btn button { flex: 1; padding: 4px 0; }

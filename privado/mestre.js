@@ -2503,12 +2503,35 @@ function tokListaHTML() {
   }).join("") + "</div>";
 }
 
+/* Ficha do inimigo do Bestiário, em destaque no painel do token: números grandes, habilidades e como ele age. */
+function fichaBestiarioHTML(t) {
+  var m = t.bestiario ? INIMIGOS.filter(function (x) { return x.nome === t.bestiario; })[0] : null;
+  if (!m) return "";
+  var vida = t.vida == null ? (t.vidaMax || m.vida) : t.vida;
+  function tile(cls, icone, rot, val, sub) {
+    return '<div class="bf-tile ' + cls + '"><span class="bf-rot">' + ic(icone) + rot + '</span><b>' + esc(String(val)) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</div>";
+  }
+  var h = '<div class="bf"><div class="bf-meta"><span class="tag role">' + esc(m.tipo) + '</span><span class="tag role">Nível ' + esc(m.nivel) + "</span>" +
+    (m.mana && m.mana !== "-" ? '<span class="tag role">' + ic("gota") + "Mana " + esc(m.mana) + "</span>" : "") + "</div>" +
+    '<div class="bf-tiles">' +
+    tile("vida", "coracao", "Vida", vida + "/" + (t.vidaMax || m.vida)) +
+    tile("def", "escudo", "Defesa", m.defesa) +
+    tile("atq", "espada", "Ataque", m.ataque) +
+    "</div>" +
+    '<div class="bf-dano">' + ic("espada") + "<span><b>Dano</b> " + esc(m.dano) + "</span></div>" +
+    (m.red ? '<div class="bf-dano">' + ic("escudo") + "<span><b>Redução de dano</b> " + esc(m.red) + "</span></div>" : "");
+  if (m.habs.length) h += '<ul class="spells bf-habs">' + m.habs.map(function (x) { return spellItem(x); }).join("") + "</ul>";
+  if (m.comp) h += '<p class="bf-txt"><b>Comportamento:</b> ' + esc(m.comp) + "</p>";
+  if (m.dica) h += '<p class="bnote">' + esc(m.dica) + "</p>";
+  return h + "</div>";
+}
+
 function tokPainelHTML() {
   var t = tokSel ? acharTok(tokSel) : null;
   if (!t) return '<section class="panel"><h3>Token</h3><p class="mdica">Clique num token no mapa ou na lista para editar.</p></section>';
   var trap = t.tipo === "armadilha";
   var h = '<section class="panel tok-painel"><h3>' + (trap ? ic("alerta") : "") + esc(t.nome || "Token") + "</h3>" +
-    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>';
+    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>' + fichaBestiarioHTML(t);
   if (trap) {
     h += '<label>Efeito<input class="sorteio-in" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="ex.: 2d6 de dano, Destreza contra 13"></label>' +
       '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (acionada(t) ? " (já acionada)" : "") + "</label>";
@@ -2627,15 +2650,16 @@ function menuGrid(ev, c) {
       enviarPos([t]); salvarAcao(); renderizar();
     };
   }
-  (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); }).forEach(function (j) {
-    var n = j.personagem || j.nome || "Jogador";
-    itens.push(["Jogador: " + n, criar(n, "jogador", { jog: j.id })]);
-  });
-  itens.push(["Aliado", criar("Aliado", "aliado")]);
-  itens.push(["Inimigo avulso", criar("Inimigo", "inimigo")]);
+  /* [seção, ícone, cor, rótulo, ação] */
+  (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); })
+    .map(function (j) { return { j: j, n: j.personagem || j.nome || "Jogador" }; })
+    .sort(function (x, y) { return x.n.localeCompare(y.n, "pt-BR"); })
+    .forEach(function (o) { itens.push(["Jogadores", "escudo", COR_TOKEN.jogador, o.n, criar(o.n, "jogador", { jog: o.j.id })]); });
+  itens.push(["Aliados", "coracao", COR_TOKEN.aliado, "Aliado", criar("Aliado", "aliado")]);
   var bs = document.getElementById("tokBestSel"), m0 = bs ? INIMIGOS[parseInt(bs.value, 10)] : null;
-  if (m0) itens.push(["Bestiário: " + m0.nome, criar(m0.nome, "inimigo", { vida: m0.vida, vidaMax: m0.vida, defesa: String(m0.defesa), bestiario: m0.nome })]);
-  itens.push(["Armadilha escondida", criar("Armadilha", "armadilha", { oculto: true, efeito: "" }, "Armadilha escondida criada. Escreva o efeito no painel do token.")]);
+  if (m0) itens.push(["Inimigos", "livro", COR_TOKEN.inimigo, "Bestiário: " + m0.nome, criar(m0.nome, "inimigo", { vida: m0.vida, vidaMax: m0.vida, defesa: String(m0.defesa), bestiario: m0.nome })]);
+  itens.push(["Inimigos", "espada", COR_TOKEN.inimigo, "Inimigo avulso", criar("Inimigo", "inimigo")]);
+  itens.push(["Armadilhas", "alerta", COR_TOKEN.armadilha, "Armadilha escondida", criar("Armadilha", "armadilha", { oculto: true, efeito: "" }, "Armadilha escondida criada. Escreva o efeito no painel do token.")]);
   var menu = document.createElement("div");
   menu.id = "menuGrid";
   menu.className = "menu-grid";
@@ -2644,17 +2668,29 @@ function menuGrid(ev, c) {
   cab.className = "menu-grid-cab";
   cab.textContent = "Adicionar em " + coordNome(c.x, c.y);
   menu.appendChild(cab);
+  var corpo = document.createElement("div");
+  corpo.className = "menu-grid-corpo";
+  menu.appendChild(corpo);
+  var secao = "";
   itens.forEach(function (it) {
+    if (it[0] !== secao) {
+      secao = it[0];
+      var h = document.createElement("div");
+      h.className = "menu-grid-sec";
+      h.textContent = secao;
+      corpo.appendChild(h);
+    }
     var b = document.createElement("button");
     b.type = "button";
     b.setAttribute("role", "menuitem");
-    b.textContent = it[0];
-    b.onclick = function (e) { e.stopPropagation(); fecharMenuGrid(); it[1](); };
-    menu.appendChild(b);
+    b.style.setProperty("--mc", it[2]);
+    b.innerHTML = '<span class="mi">' + ic(it[1]) + "</span><span>" + esc(it[3]) + "</span>";
+    b.onclick = function (e) { e.stopPropagation(); fecharMenuGrid(); it[4](); };
+    corpo.appendChild(b);
   });
   var r = box.getBoundingClientRect();
-  menu.style.left = Math.max(4, Math.min(ev.clientX - r.left, r.width - 230)) + "px";
-  menu.style.top = Math.max(4, Math.min(ev.clientY - r.top, r.height - 40 - itens.length * 38)) + "px";
+  menu.style.left = Math.max(4, Math.min(ev.clientX - r.left, r.width - 250)) + "px";
+  menu.style.top = Math.max(4, Math.min(ev.clientY - r.top, r.height - 60 - Math.min(itens.length, 8) * 40)) + "px";
   box.appendChild(menu);
 }
 document.addEventListener("pointerdown", function (e) {
@@ -2715,7 +2751,8 @@ function viewAcaoMestre() {
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
     '<button type="button" id="tokArmadilha">' + ic("alerta") + "Adicionar armadilha</button>" +
     '<button type="button" id="tokTurno">Zerar movimentos</button>' +
-    '<button type="button" class="perigo" id="acaoReset">Resetar ação</button></div>';
+    '<button type="button" class="perigo" id="acaoReset">Resetar ação</button>' +
+    '<button type="button" class="perigo" id="acaoResetTodas">Resetar TODAS as ações</button></div>';
   h += '<div class="controls"><label class="tok-best">Inimigo do Bestiário <select class="sorteio-in" id="tokBestSel">' + FASES.map(function (f) {
     var lista = INIMIGOS.map(function (m, i) { return [m, i]; }).filter(function (p) { return p[0].fase === f; });
     return lista.length ? '<optgroup label="' + esc(f) + '">' + lista.map(function (p) {
@@ -2980,6 +3017,33 @@ function inputAcao(el) {
   return false;
 }
 
+/* Recomeça a ação de TODOS os mapas: apaga os tokens do mapa atual e os guardados nos outros. */
+function resetarTodasAcoes() {
+  var a = acaoEst(), guardados = EST.cena_tokens || {}, ids = a.tokens.map(function (x) { return x.id; }), mapas = 0;
+  Object.keys(guardados).forEach(function (k) {
+    var ts = (guardados[k] || {}).tokens || [];
+    if (ts.length) mapas++;
+    ts.forEach(function (x) { ids.push(x.id); });
+  });
+  var ok = window.confirm("Resetar TODAS as ações?\n\n" +
+    "• Remove todos os tokens de todos os mapas (" + ids.length + (ids.length === 1 ? " token" : " tokens") + " no total, " + (mapas + (a.tokens.length ? 1 : 0)) + " mapa(s) com tokens)\n" +
+    "• Encerra o combate e apaga o registro de acontecimentos\n" +
+    "• Desliga a imersão (os jogadores deixam de ver a cena)\n\n" +
+    "O cenário e os mapas de grid não são afetados.\nNão dá para desfazer.");
+  if (!ok) return;
+  a.tokens = [];
+  tokSel = null;
+  a.ativo = false;
+  EST.cena_tokens = {};
+  salvarEstado("cena_tokens");
+  salvarAcao();
+  campoOp("resetar", { remover: ids }).then(function () {
+    renderAcaoUI();
+    infoTok("Todas as ações foram resetadas: sem tokens em nenhum mapa, sem combate e com a imersão desligada.");
+  });
+  renderizar();
+}
+
 /* Recomeça a ação do mapa atual. Só mexe na ação: o cenário, os mapas de grid e os tokens guardados de outros mapas ficam como estão. */
 function resetarAcao() {
   var a = acaoEst(), n = a.tokens.length;
@@ -3007,6 +3071,7 @@ function clickAcao(b) {
   if (b.id === "acaoRecarregar") { CENAS = null; renderizar(); return true; }
   if (b.id === "imersao") { a.ativo = !a.ativo; salvarAcao(); renderizar(); return true; }
   if (b.id === "acaoReset") { resetarAcao(); return true; }
+  if (b.id === "acaoResetTodas") { resetarTodasAcoes(); return true; }
   if (b.dataset.tsel) {
     selecionarTok(b.dataset.tsel);
     desenharAcaoMestre();
