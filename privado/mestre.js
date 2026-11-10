@@ -2516,7 +2516,7 @@ function fichaBestiarioHTML(t) {
     '<div class="bf-tiles">' +
     tile("vida", "coracao", "Vida", vida + "/" + (t.vidaMax || m.vida)) +
     tile("def", "escudo", "Defesa", m.defesa) +
-    tile("atq", "espada", "Ataque", m.ataque) +
+    tile("atq", "espada", "Ataque", "d20 " + m.ataque, "contra a Defesa do alvo") +
     "</div>" +
     '<div class="bf-dano">' + ic("espada") + "<span><b>Dano</b> " + esc(m.dano) + "</span></div>" +
     (m.red ? '<div class="bf-dano">' + ic("escudo") + "<span><b>Redução de dano</b> " + esc(m.red) + "</span></div>" : "");

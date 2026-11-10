@@ -992,8 +992,8 @@ function desenharTabuleiro(cfg) {
   /* Casas azuis: onde o token selecionado pode ir. */
   var alc = typeof cfg.alcance === "function" ? cfg.alcance(cols, rows) : (cfg.alcance || []);
   alc.forEach(function (c) {
-    h += '<rect class="alc" data-ax="' + c.x + '" data-ay="' + c.y + '" data-ad="' + c.d + '" x="' + (c.x * cw).toFixed(1) + '" y="' + (c.y * ch).toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + ch.toFixed(1) + '" rx="' + (menor * 0.08).toFixed(1) + '"><title>' +
-      coordNome(c.x, c.y) + ", " + c.d + (c.d === 1 ? " casa" : " casas") + "</title></rect>";
+    h += '<rect class="alc' + (c.d > 3 ? " longe" : "") + '" data-ax="' + c.x + '" data-ay="' + c.y + '" data-ad="' + c.d + '" x="' + (c.x * cw).toFixed(1) + '" y="' + (c.y * ch).toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + ch.toFixed(1) + '" rx="' + (menor * 0.08).toFixed(1) + '"><title>' +
+      coordNome(c.x, c.y) + ", " + c.d + (c.d === 1 ? " casa" : " casas") + (c.d > 3 ? " (longe)" : c.d > 1 ? " (perto)" : " (corpo a corpo)") + "</title></rect>";
   });
   var r = menor * 0.38;
   var chaveCena = img.src || "", novosPos = {}, deslizar = [], durMax = 0, idxTok = 0;

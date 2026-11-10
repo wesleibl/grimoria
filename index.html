@@ -491,6 +491,8 @@ body.sem-rolagem { overflow: hidden; }
 /* Casas azuis: onde o token selecionado pode ir */
 .alc { fill: rgba(120, 190, 255, .36); stroke: rgba(170, 220, 255, .95); stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer; transform-box: fill-box; transform-origin: center; animation: alc-in .28s ease-out both; }
 .alc:hover { fill: rgba(150, 210, 255, .68); }
+.alc.longe { fill: rgba(245, 200, 60, .34); stroke: rgba(255, 224, 120, .95); }
+.alc.longe:hover { fill: rgba(250, 215, 90, .66); }
 @keyframes alc-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
 @keyframes pulso { 0%, 100% { stroke-width: 4; } 50% { stroke-width: 7; } }
 @media (prefers-reduced-motion: reduce) { .tab.suave { transition: none; } .token { transition: none !important; } .alc, .token .halo, .token.sel circle, #tokInfo.aguardando { animation: none !important; } }
@@ -579,6 +581,7 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 .bf-tile { padding: 8px 6px; border-radius: 8px; text-align: center; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); }
 .bf-tile.vida { --c: #c0392b; } .bf-tile.def { --c: #2a6fc9; } .bf-tile.atq { --c: #d9700f; }
 .bf-tile .bf-rot { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.bf-tile small { display: block; font-size: .68rem; line-height: 1.2; color: var(--muted); }
 .bf-tile b { display: block; font-size: 1.5rem; line-height: 1.2; color: var(--c); }
 .bf-dano { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; background: rgba(217, 112, 15, .14); font-size: 1.05rem; }
 .bf-dano b { color: #d9700f; }
