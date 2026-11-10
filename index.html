@@ -477,6 +477,11 @@ body.sem-rolagem { overflow: hidden; }
 .tab-svg.editavel { touch-action: none; }
 .tab-box, .tab-svg { user-select: none; -webkit-user-select: none; }
 .tab-linha { fill: none; stroke: #fff; stroke-opacity: .55; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.tab-box.sem-grade .tab-linha, .tab-box.sem-grade .menu-grid { position: absolute; z-index: 20; min-width: 210px; max-width: 280px; display: grid; padding: 4px; background: rgba(20, 30, 33, .96); border: 1px solid rgba(255, 255, 255, .4); border-radius: 8px; line-height: 1.3; box-shadow: 0 6px 20px rgba(0, 0, 0, .5); }
+.menu-grid-cab { padding: 6px 10px; font-size: .8rem; color: #cbd5d8; border-bottom: 1px solid rgba(255, 255, 255, .2); margin-bottom: 4px; }
+.menu-grid button { text-align: left; min-height: 36px; padding: 6px 10px; background: transparent; color: #fff; border: 0; border-radius: 6px; }
+.menu-grid button:hover, .menu-grid button:focus-visible { background: rgba(255, 255, 255, .18); }
+.tab-coord { display: none; }
 .tab-coord { fill: #fff; stroke: #000; stroke-width: .35px; paint-order: stroke; font-weight: 700; opacity: .85; pointer-events: none; font-family: system-ui, sans-serif; }
 .token { cursor: pointer; transition: transform .45s cubic-bezier(.4, 0, .2, 1); }
 .tab-svg.drag .token { transition: none !important; cursor: grabbing; }

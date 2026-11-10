@@ -961,7 +961,7 @@ function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (C
 function tabuleiroHTML(src, alt) {
   return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div>' +
     '<div class="zoom-ctl"><button type="button" data-zoom="mais" aria-label="Aproximar o mapa">+</button><button type="button" data-zoom="menos" aria-label="Afastar o mapa">−</button>' +
-    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
     '<div class="tab-hud" id="tabHud" aria-live="polite"></div><div class="gire-dica">Gire o aparelho para o modo paisagem</div></div>';
 }
 
@@ -1081,6 +1081,10 @@ function origemTab(box) {
   return { x: r.left + (tab ? tab.offsetLeft : 0), y: r.top + (tab ? tab.offsetTop : 0) };
 }
 
+/* Mostrar/ocultar linhas e coordenadas do grid (só visual; as casas e os cliques seguem iguais). Lembrado no navegador. */
+var gradeOculta = false;
+try { gradeOculta = localStorage.getItem("grimoria_grade_oculta") === "1"; } catch (e) {}
+
 function aplicarZoom(suave) {
   var box = caixaTab(), tab = box && box.querySelector ? box.querySelector(".tab") : null;
   if (!box || !tab) return;
@@ -1090,6 +1094,9 @@ function aplicarZoom(suave) {
   tab.classList.toggle("suave", !!suave);
   tab.style.transform = z === 1 ? "" : "translate(" + zoomTab.tx.toFixed(1) + "px," + zoomTab.ty.toFixed(1) + "px) scale(" + z.toFixed(3) + ")";
   box.classList.toggle("zoom", z > 1);
+  box.classList.toggle("sem-grade", gradeOculta);
+  var bg = box.querySelector('[data-zoom="grade"]');
+  if (bg) { bg.setAttribute("aria-pressed", gradeOculta ? "false" : "true"); bg.style.opacity = gradeOculta ? ".6" : ""; bg.title = gradeOculta ? "Mostrar grid" : "Ocultar grid"; }
   var bt = box.querySelector('[data-zoom="reset"]');
   if (bt) bt.textContent = z === 1 ? "Ajustar" : String(z.toFixed(1)).replace(".", ",") + "×";
 }
@@ -1114,6 +1121,11 @@ function zoomBotao(k) {
   if (k === "mais") zoomPara(zoomTab.z * 1.5, cx, cy, true);
   else if (k === "menos") zoomPara(zoomTab.z / 1.5, cx, cy, true);
   else if (k === "reset") { zoomTab.z = 1; zoomTab.tx = 0; zoomTab.ty = 0; aplicarZoom(true); }
+  else if (k === "grade") {
+    gradeOculta = !gradeOculta;
+    try { localStorage.setItem("grimoria_grade_oculta", gradeOculta ? "1" : "0"); } catch (e) {}
+    aplicarZoom(false);
+  }
   else if (k === "cheia") { if (emTelaCheia(box)) sairTelaCheia(); else entrarTelaCheia(); }
 }
 

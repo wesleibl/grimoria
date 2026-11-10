@@ -2607,6 +2607,62 @@ function renderAcaoUI() {
   if (g) g.innerHTML = logHTML();
   desenharAcaoMestre();
 }
+/* Clique direito numa casa do grid: menu para criar algo exatamente ali. */
+function fecharMenuGrid() {
+  var m = document.getElementById("menuGrid");
+  if (m && m.parentNode) m.parentNode.removeChild(m);
+}
+function menuGrid(ev, c) {
+  fecharMenuGrid();
+  var a = acaoEst(), box = caixaTab();
+  if (!box) return;
+  var itens = [];
+  function pOn(t) { return a.tokens.some(function (x) { return x.x === c.x && x.y === c.y && x !== t; }); }
+  function criar(nome, tipo, extra, aviso) {
+    return function () {
+      var t = novoTok(nomeUnico(nome), tipo, extra);
+      t.x = c.x; t.y = c.y;
+      tokSel = t.id;
+      if (aviso) infoTok(aviso);
+      enviarPos([t]); salvarAcao(); renderizar();
+    };
+  }
+  (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); }).forEach(function (j) {
+    var n = j.personagem || j.nome || "Jogador";
+    itens.push(["Jogador: " + n, criar(n, "jogador", { jog: j.id })]);
+  });
+  itens.push(["Aliado", criar("Aliado", "aliado")]);
+  itens.push(["Inimigo avulso", criar("Inimigo", "inimigo")]);
+  var bs = document.getElementById("tokBestSel"), m0 = bs ? INIMIGOS[parseInt(bs.value, 10)] : null;
+  if (m0) itens.push(["Bestiário: " + m0.nome, criar(m0.nome, "inimigo", { vida: m0.vida, vidaMax: m0.vida, defesa: String(m0.defesa), bestiario: m0.nome })]);
+  itens.push(["Armadilha escondida", criar("Armadilha", "armadilha", { oculto: true, efeito: "" }, "Armadilha escondida criada. Escreva o efeito no painel do token.")]);
+  var menu = document.createElement("div");
+  menu.id = "menuGrid";
+  menu.className = "menu-grid";
+  menu.setAttribute("role", "menu");
+  var cab = document.createElement("div");
+  cab.className = "menu-grid-cab";
+  cab.textContent = "Adicionar em " + coordNome(c.x, c.y);
+  menu.appendChild(cab);
+  itens.forEach(function (it) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "menuitem");
+    b.textContent = it[0];
+    b.onclick = function (e) { e.stopPropagation(); fecharMenuGrid(); it[1](); };
+    menu.appendChild(b);
+  });
+  var r = box.getBoundingClientRect();
+  menu.style.left = Math.max(4, Math.min(ev.clientX - r.left, r.width - 230)) + "px";
+  menu.style.top = Math.max(4, Math.min(ev.clientY - r.top, r.height - 40 - itens.length * 38)) + "px";
+  box.appendChild(menu);
+}
+document.addEventListener("pointerdown", function (e) {
+  var m = document.getElementById("menuGrid");
+  if (m && !(e.target.closest && e.target.closest("#menuGrid"))) fecharMenuGrid();
+}, true);
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenuGrid(); });
+
 function redesenharTokens() { renderAcaoUI(); }
 
 /* Enquanto a aba Ação está aberta, busca o campo a cada 2,5 s para ver o que os jogadores fizeram. */
@@ -2650,8 +2706,12 @@ function viewAcaoMestre() {
   }
   h += '<p class="mdica" id="tokInfo" role="status">' + esc(INFO_PADRAO) + "</p>";
   h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  var faltam = (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); });
+  h += '<div class="controls"><label class="tok-best">Jogador <select class="sorteio-in" id="tokJogSel"' + (faltam.length ? "" : " disabled") + ">" +
+    (faltam.length ? faltam.map(function (j) { return '<option value="' + esc(j.id) + '">' + esc(j.personagem || j.nome || "Jogador") + "</option>"; }).join("") : "<option>Todos já estão no mapa</option>") +
+    '</select></label><button type="button" id="tokJogador"' + (faltam.length ? "" : " disabled") + ">Adicionar jogador</button></div>";
   h += '<div class="controls">' +
-    '<button type="button" class="primary" id="tokJogadores">Adicionar jogadores</button>' +
+    '<button type="button" class="primary" id="tokJogadores">Adicionar todos os jogadores</button>' +
     '<button type="button" id="tokAliado">Adicionar aliado</button>' +
     '<button type="button" id="tokArmadilha">' + ic("alerta") + "Adicionar armadilha</button>" +
     '<button type="button" id="tokTurno">Zerar movimentos</button>' +
@@ -2785,6 +2845,11 @@ function ligarArraste() {
   svg.classList.add("editavel");
   svg.classList.toggle("esperando", !!tokSel);
   var arr = null, toque = null;
+  svg.oncontextmenu = function (ev) {
+    ev.preventDefault();
+    var c = celulaTab(svg, ev);
+    if (c) menuGrid(ev, c);
+  };
   svg.onpointerdown = function (ev) {
     var g = ev.target.closest ? ev.target.closest(".token") : null;
     if (!g) {
@@ -2951,15 +3016,24 @@ function clickAcao(b) {
   }
   if (b.dataset.cenir) { cenSel = parseInt(b.dataset.cenir, 10); location.hash = "#cenarios"; return true; }
   /* --- tokens --- */
+  if (b.id === "tokJogador") {
+    var sel = document.getElementById("tokJogSel"), jj = (jogs || []).filter(function (j) { return sel && String(j.id) === sel.value; })[0];
+    if (!jj || a.tokens.some(function (x) { return x.jog === jj.id; })) return true;
+    t = novoTok(nomeUnico(jj.personagem || jj.nome || "Jogador"), "jogador", { jog: jj.id });
+    tokSel = t.id;
+    enviarPos([t]); salvarAcao(); renderizar();
+    infoTok(t.nome + " adicionado ao mapa.");
+    return true;
+  }
   if (b.id === "tokJogadores") {
     var novos = [];
     (jogs || []).forEach(function (j) {
       if (a.tokens.some(function (t) { return t.jog === j.id; })) return;
       novos.push(novoTok(nomeUnico(j.personagem || j.nome || "Jogador"), "jogador", { jog: j.id }));
     });
+    if (novos.length) { enviarPos(novos); salvarAcao(); renderizar(); }
+    else renderAcaoUI();
     infoTok(novos.length ? novos.length + " jogadores adicionados." : "Todos os jogadores já estão no mapa.");
-    if (novos.length) { enviarPos(novos); salvarAcao(); }
-    renderAcaoUI();
     return true;
   }
   if (b.id === "tokBest") {
