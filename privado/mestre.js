@@ -2767,8 +2767,21 @@ function viewAcaoMestre() {
   return h;
 }
 
+/* Visão do jogador (só olhar): o mestre vê o grid como os jogadores veem, sem ocultos, armadilhas escondidas, vida nem alcance. */
+var visaoJog = false;
+try { visaoJog = localStorage.getItem("grimoria_visao_jogador") === "1"; } catch (e) {}
+
 function desenharAcaoMestre() {
   var a = acaoEst(), g = gridDe(a);
+  if (visaoJog) {
+    var vis = a.tokens.filter(function (t) { return !(t.oculto && !revelado(t)) && !(t.tipo === "armadilha" && !revelado(t) && !acionada(t)); }).map(function (t) {
+      var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
+      if (j && j.img) c.foto = j.img;
+      return c;
+    });
+    desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: vis, atual: atualId(), mestre: false, depois: ligarArraste });
+    return;
+  }
   var tokens = a.tokens.map(function (t) {
     var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
     c.oculto = !!t.oculto && !revelado(t);
@@ -2876,9 +2889,40 @@ function moverTok(t, c, ox, oy, desdeArrasto) {
 }
 
 /* Arrastar com mouse ou dedo. Também dá para tocar num token e depois na casa de destino. */
+/* Botão do olho nos controles do mapa (também na tela cheia): alterna entre a visão do mestre e a do jogador. */
+function botaoVisao() {
+  var ctl = document.querySelector(".tab-box .zoom-ctl");
+  if (!ctl) return;
+  var b = ctl.querySelector("[data-visao]");
+  if (!b) {
+    b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("data-visao", "1");
+    b.innerHTML = ic("olho");
+    b.onclick = function () {
+      visaoJog = !visaoJog;
+      try { localStorage.setItem("grimoria_visao_jogador", visaoJog ? "1" : "0"); } catch (e) {}
+      fecharMenuGrid();
+      desenharAcaoMestre();
+    };
+    ctl.insertBefore(b, ctl.firstChild);
+  }
+  b.setAttribute("aria-pressed", visaoJog ? "true" : "false");
+  b.setAttribute("aria-label", visaoJog ? "Voltar à visão do mestre" : "Ver como jogador");
+  b.title = visaoJog ? "Visão do jogador (clique para voltar ao mestre)" : "Ver como jogador";
+  b.style.background = visaoJog ? "var(--accent)" : "";
+  b.style.color = visaoJog ? "var(--accent-ink)" : "";
+}
+
 function ligarArraste() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
+  botaoVisao();
+  if (visaoJog) {
+    svg.classList.remove("editavel", "esperando");
+    svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = svg.onpointerleave = svg.oncontextmenu = null;
+    return;
+  }
   svg.classList.add("editavel");
   svg.classList.toggle("esperando", !!tokSel);
   var arr = null, toque = null;
