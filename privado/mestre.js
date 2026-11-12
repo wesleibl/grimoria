@@ -901,9 +901,24 @@ function acoesLib(b) {
 
 var filtroBest = "todos";
 
+/* Imagens do Bestiário: ícones do WoW (os mesmos da Wowhead) guardados em image/bestiario/. O nome do arquivo é genérico de propósito,
+   para não entregar os inimigos secretos pelo endereço da imagem. */
+var IMAGEM_INIMIGO = {
+  "Bandido do Reino": "inv_misc_bandana_03", "Capitão Bandido": "inv_helmet_08", "Corvo de Mana": "ability_hunter_pet_vulture", "Lobo de Mana": "ability_hunter_pet_wolf",
+  "Espantalho de Mana": "spell_shadow_possession", "Javali de Mana": "ability_hunter_pet_boar", "Devorador de Colheitas": "ability_hunter_pet_ravager",
+  "Marujo Afogado": "spell_shadow_raisedead", "Caranguejo Blindado": "ability_hunter_pet_crab", "Polvo da Maré": "spell_frost_summonwaterelemental", "Serpente das Marés": "ability_hunter_pet_windserpent",
+  "Aranha Tecelã": "ability_hunter_pet_spider", "Raposa Sombria": "ability_hunter_pet_cat", "Árvore Desperta": "ability_druid_forceofnature", "Cervo Ancestral": "spell_nature_naturetouchgrow",
+  "Morcego-Cristal": "ability_hunter_pet_bat", "Verme das Rochas": "ability_hunter_pet_worm", "Golem de Entulho": "spell_nature_stoneskintotem", "Guardião das Ruínas": "inv_misc_enggizmos_02",
+  "Elemental Instável": "spell_fire_elemental_totem", "Bandoleiro Veterano": "inv_axe_01", "Mago Renegado": "spell_arcane_blast", "Quimera de Mana": "ability_hunter_pet_chimera", "Titã Corrompido": "spell_shadow_summoninfernal",
+  "Capanga Marcado": "spell_shadow_charm", "Fera Marcada": "ability_hunter_pet_hyena", "Cavaleiro Controlado": "inv_shield_05", "Infiltrado (modelo de chefe)": "inv_misc_eye_01",
+  "Grande Mago Dominado": "spell_shadow_antimagicshell", "Líder da Organização (modelo)": "spell_shadow_demonform"
+};
+function imagemInimigo(m) {
+  return '<img class="mon-ico" src="image/bestiario/' + (IMAGEM_INIMIGO[m.nome] || "inv_misc_questionmark") + '.jpg" alt="" width="40" height="40" loading="lazy">';
+}
 function monstroCard(m) {
   var v8 = m.tipo === "capanga" ? "use o dobro de unidades" : "8 jogadores: " + (m.vida * 2);
-  var h = '<article class="panel monstro"><h3>' + m.nome + '</h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
+  var h = '<article class="panel monstro"><h3 class="mon-tit">' + imagemInimigo(m) + "<span>" + m.nome + '</span></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
     '<div class="stat-line">' +
     "<span>" + ic("coracao") + "<b>Vida</b> " + m.vida + " <small>(" + v8 + ")</small></span>" +
     "<span>" + ic("escudo") + "<b>Defesa</b> " + m.defesa + "</span>" +
@@ -2511,7 +2526,7 @@ function fichaBestiarioHTML(t) {
   function tile(cls, icone, rot, val, sub) {
     return '<div class="bf-tile ' + cls + '"><span class="bf-rot">' + ic(icone) + rot + '</span><b>' + esc(String(val)) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</div>";
   }
-  var h = '<div class="bf"><div class="bf-meta"><span class="tag role">' + esc(m.tipo) + '</span><span class="tag role">Nível ' + esc(m.nivel) + "</span>" +
+  var h = '<div class="bf"><div class="bf-meta">' + imagemInimigo(m) + '<span class="tag role">' + esc(m.tipo) + '</span><span class="tag role">Nível ' + esc(m.nivel) + "</span>" +
     (m.mana && m.mana !== "-" ? '<span class="tag role">' + ic("gota") + "Mana " + esc(m.mana) + "</span>" : "") + "</div>" +
     '<div class="bf-tiles">' +
     tile("vida", "coracao", "Vida", vida + "/" + (t.vidaMax || m.vida)) +
@@ -2768,8 +2783,7 @@ function viewAcaoMestre() {
 }
 
 /* Visão do jogador (só olhar): o mestre vê o grid como os jogadores veem, sem ocultos, armadilhas escondidas, vida nem alcance. */
-var visaoJog = false;
-try { visaoJog = localStorage.getItem("grimoria_visao_jogador") === "1"; } catch (e) {}
+var visaoJog = false; /* não é lembrada: toda vez que a Ação abre, você começa na visão do mestre */
 
 function desenharAcaoMestre() {
   var a = acaoEst(), g = gridDe(a);
@@ -2901,12 +2915,12 @@ function botaoVisao() {
     b.innerHTML = ic("olho");
     b.onclick = function () {
       visaoJog = !visaoJog;
-      try { localStorage.setItem("grimoria_visao_jogador", visaoJog ? "1" : "0"); } catch (e) {}
       fecharMenuGrid();
       desenharAcaoMestre();
     };
     ctl.insertBefore(b, ctl.firstChild);
   }
+  b.innerHTML = ic("olho") + (visaoJog ? " Visão do jogador · voltar ao mestre" : "");
   b.setAttribute("aria-pressed", visaoJog ? "true" : "false");
   b.setAttribute("aria-label", visaoJog ? "Voltar à visão do mestre" : "Ver como jogador");
   b.title = visaoJog ? "Visão do jogador (clique para voltar ao mestre)" : "Ver como jogador";
