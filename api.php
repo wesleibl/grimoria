@@ -23,6 +23,7 @@ try {
     match ("$metodo $acao") {
         'GET inicio' => acaoInicio(),
         'GET mestre.js' => acaoMestreJs(),
+        'GET arte' => acaoArte(),
         'GET img' => acaoImg(),
         'GET acao' => acaoAcao(),
         'GET cenas' => acaoCenas(),
@@ -182,6 +183,20 @@ function acaoMestreJs(): never
     header('Content-Type: application/javascript; charset=utf-8');
     header('Cache-Control: private, no-store');
     readfile(PRIVADO . '/mestre.js');
+    exit;
+}
+
+/* Arte do Bestiário: fica em privado/arte/ (pasta bloqueada) e só sai daqui para o mestre. */
+function acaoArte(): never
+{
+    exigirMestre();
+    $id = (string)($_GET['id'] ?? '');
+    $arq = PRIVADO . '/arte/' . $id . '.jpg';
+    if (!preg_match('/^m\d{2}$/', $id) || !is_file($arq)) erro('Imagem não encontrada.', 404);
+    header('Content-Type: image/jpeg');
+    header('Cache-Control: private, max-age=86400');
+    header('X-Content-Type-Options: nosniff');
+    readfile($arq);
     exit;
 }
 

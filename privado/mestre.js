@@ -474,163 +474,220 @@ function mo(nome, fase, tipo, nivel, vida, def, atq, dano, mana, habs, comp, dic
 }
 var INIMIGOS = [
   /* Sessão 1 */
-  mo("Bandido do Reino", "Sessão 1", "capanga", "1", 10, 10, "+2", "1d6 + 1 (média 4,5)", "-", [],
-    "Ataca o jogador mais próximo. Foge se ficar com 3 de vida ou menos.",
-    "Com 8 jogadores, use de 6 a 8 bandidos."),
+  mo("Bandido do Reino", "Sessão 1", "capanga", "1", 10, 10, "+2", "1d6 + 1 (média 4,5)", "-", [
+    sp("Em Bando", "passiva", "passiva", "Ataca com +1 se outro bandido estiver ao lado do alvo."),
+    sp("Covarde", "passiva", "passiva", "Com 3 de vida ou menos, foge no próximo turno em vez de atacar. Se não tiver para onde fugir, larga a arma e se rende.")
+  ], "Ataca o jogador mais próximo e tenta cercá-lo com os outros bandidos.",
+    "Com 8 jogadores, use de 6 a 8 bandidos. Quem se rende pode virar informante da campanha."),
   mo("Capitão Bandido", "Sessão 1", "normal", "1", 18, 12, "+3", "1d8 + 1 (média 5,5)", "-", [
-    sp("Grito de Comando", "passiva", "passiva", "No primeiro turno dele, os bandidos próximos ganham +1 nas rolagens de ataque até o próximo turno do capitão.")
-  ], "Fica atrás dos capangas. Se ficar sozinho, foge.",
-    "Bom para liderar o encontro dos bandidos."),
+    sp("Grito de Comando", "passiva", "passiva", "No primeiro turno dele, os bandidos próximos ganham +1 nas rolagens de ataque por 2 rodadas."),
+    sp("Escudo de Capanga", "reação", "reação", "Quando for atacado, um bandido ao lado dele recebe o golpe no lugar.", { limite: "1 uso por combate" }),
+    sp("Assobio de Reforço", "passiva", "habilidade", "Quando chegar à metade da vida, chama 2 bandidos, que entram na luta no turno seguinte.", { limite: "1 uso por combate" })
+  ], "Fica atrás dos capangas e usa o escudo cedo. Se ficar sozinho, foge.",
+    "Bom para liderar o encontro dos bandidos. Derrubar o capitão primeiro tira o +1 do bando."),
   mo("Corvo de Mana", "Sessão 1", "capanga", "1", 6, 12, "+2", "1d4 + 1 (média 3,5)", "-", [
-    sp("Bicada Distraída", "passiva", "passiva", "Se acertar, o alvo fica com -1 no próximo ataque dele.")
+    sp("Bicada Distraída", "passiva", "passiva", "Se acertar, o alvo fica com -1 no próximo ataque dele."),
+    sp("Ladrão de Brilhos", "passiva", "habilidade", "Se acertar, o alvo faz teste de Destreza contra 12 ou perde um item pequeno que esteja solto (escolha do mestre). O corvo foge com ele. Derrubá-lo devolve o item.", { limite: "1 item por corvo" })
   ], "Voa e ataca quem está mais longe dos aliados.",
-    "Bom para encher o campo e testar a mira dos jogadores."),
+    "Bom para encher o campo e testar a mira. O item roubado vira gancho para perseguir o corvo até o ninho."),
   mo("Lobo de Mana", "Sessão 1", "normal", "1", 16, 13, "+3", "1d8 + 1 (média 5,5)", "6", [
-    sp("Uivo Sombrio", 2, "habilidade", "Todos os jogadores fazem teste de Inteligência contra 12. Quem falhar fica atordoado e perde a próxima ação.", { aplica: ["Atordoado"] })
+    sp("Uivo Sombrio", 2, "habilidade", "Os jogadores próximos fazem teste de Inteligência contra 12. Quem falhar fica atordoado e perde a próxima ação.", { aplica: ["Atordoado"], limite: "1 uso por combate" }),
+    sp("Faro de Sangue", "passiva", "passiva", "Causa +1d4 de dano em alvo com menos da metade da vida.")
   ], "Usa o uivo no primeiro turno e depois ataca quem tem menos vida.",
-    "Com 8 jogadores, use dois lobos, ou um lobo com 32 de vida."),
+    "Com 8 jogadores, use dois lobos, ou um lobo com 32 de vida. Um tank que provoca protege o aliado ferido."),
 
   /* Arco 1: Vale das Colheitas */
   mo("Espantalho de Mana", "Arco 1: Vale das Colheitas", "normal", "2", 22, 11, "+3", "1d8 + 1 (média 5,5)", "4", [
-    sp("Olhar Vazio", 2, "habilidade", "Um jogador faz teste de Inteligência contra 12 ou perde o turno de medo."),
-    sp("Palha Seca", "passiva", "passiva", "Fraco a fogo: o dano de fogo contra ele causa +1d4 e o deixa em chamas (2 de dano por turno, 2 turnos). Quem estiver ao lado dele também sofre 1d4.")
+    sp("Olhar Vazio", 2, "habilidade", "Um jogador faz teste de Inteligência contra 12 ou fica atordoado de medo (perde o turno).", { aplica: ["Atordoado"] }),
+    sp("Palha Seca", "passiva", "passiva", "Fraco a fogo: o dano de fogo contra ele causa +1d4 e o deixa em chamas (2 de dano por turno, 2 turnos). Quem estiver ao lado dele também sofre 1d4.", { aplica: ["Em chamas"] }),
+    sp("Nuvem de Palha", "reação", "reação", "Quando cair a 0 de vida, solta uma nuvem: quem estiver ao lado faz teste de Destreza contra 12 ou fica cego por 1 turno.", { aplica: ["Cego"] })
   ], "Fica parado até alguém se aproximar da plantação. Depois ataca o mais próximo.",
-    "Bom para ensinar o estado em chamas e as combinações de magias."),
+    "Bom para ensinar o estado em chamas. Se o fogo o derrubar, o fogo também alcança a plantação (pode virar problema)."),
   mo("Javali de Mana", "Arco 1: Vale das Colheitas", "normal", "2", 26, 12, "+4", "1d10 + 1 (média 6,5)", "-", [
-    sp("Investida", "passiva", "passiva", "Se andar 3 ou mais casas antes de atacar, causa +1d6 de dano e o alvo faz teste de Poder contra 12 ou cai.")
+    sp("Investida", "passiva", "passiva", "Se andar 3 ou mais casas antes de atacar, causa +1d6 de dano e o alvo faz teste de Poder contra 12 ou cai."),
+    sp("Cabeçada na Parede", "passiva", "passiva", "Se a investida errar e ele bater num obstáculo (cerca, árvore, pedra), fica atordoado por 1 turno."),
+    sp("Fúria Ferida", "passiva", "passiva", "Com metade da vida, ganha +1 de ataque, mas fica com -1 de Defesa (fica descuidado).")
   ], "Sempre se afasta antes de investir. Dá para provocar com um tank.",
-    "Um tank com Chamado da Fortaleza ou Ímã de Guerra brilha aqui."),
+    "Um tank com Chamado da Fortaleza ou Ímã de Guerra brilha aqui. Posicionar-se atrás de um obstáculo vira estratégia."),
   mo("Devorador de Colheitas", "Arco 1: Vale das Colheitas", "chefe", "2 a 3", 48, 13, "+5", "2d6 + 2 (média 9)", "8", [
-    sp("Mordida Voraz", "passiva", "passiva", "Recupera metade do dano que causar."),
+    sp("Mordida Voraz", "passiva", "passiva", "Recupera metade do dano que causar. Não recupera enquanto estiver em chamas."),
     sp("Rugido Faminto", 2, "habilidade", "Todos os jogadores próximos fazem teste de Poder contra 13 ou ficam com -2 nas rolagens por 1 turno."),
-    sp("Cavar", 2, "habilidade", "Some no chão e volta no próximo turno em outro lugar, atacando de surpresa com +1d6 de dano.")
-  ], "Cava para escapar de quem o cerca. Com metade da vida, solta o rugido sempre que puder.",
-    "Prender ou provocar impede que ele fuja cavando."),
+    sp("Cavar", 2, "habilidade", "Some no chão e volta no próximo turno em outro lugar, atacando de surpresa com +1d6 de dano. Preso ou provocado, não consegue cavar."),
+    sp("Enxame Faminto", 4, "habilidade", "Uma nuvem de gafanhotos cobre a área: os jogadores próximos fazem teste de Destreza contra 13 ou sofrem 1d6 e ficam com -1 nos ataques até o fim da próxima rodada.", { limite: "1 uso por combate" })
+  ], "Cava para escapar de quem o cerca. Com metade da vida, solta o rugido sempre que puder e usa o enxame.",
+    "Fogo corta a cura dele. Prender ou provocar impede que ele fuja cavando. É o primeiro chefe: deixe os jogadores descobrirem isso."),
 
   /* Arco 1: Porto Salgado */
   mo("Marujo Afogado", "Arco 1: Porto Salgado", "capanga", "2", 12, 10, "+3", "1d6 + 1 (média 4,5)", "-", [
-    sp("Corpo Encharcado", "passiva", "passiva", "Está molhado: é atingido com mais facilidade por choque (decisão do mestre).", { aplica: ["Molhado"] }),
-    sp("Arrastar", "passiva", "passiva", "Se acertar, o alvo faz teste de Poder contra 11 ou perde 2 de deslocamento.", { aplica: ["Lento"] })
+    sp("Corpo Encharcado", "passiva", "passiva", "Está molhado. Dano de raio contra ele causa +1d4, e metade desse dano também atinge um marujo ao lado.", { aplica: ["Molhado"] }),
+    sp("Arrastar", "passiva", "passiva", "Se acertar, o alvo faz teste de Poder contra 11 ou perde 2 de deslocamento.", { aplica: ["Lento"] }),
+    sp("Levanta de Novo", "reação", "reação", "O primeiro marujo derrubado levanta no próximo turno com 3 de vida. Dano de fogo ou de luz impede.", { limite: "1 uso por combate" })
   ], "Avança devagar, em grupo, sem recuar.",
     "Com 8 jogadores, use de 6 a 8 marujos. Ótimo para testar Raios contra inimigos molhados."),
   mo("Caranguejo Blindado", "Arco 1: Porto Salgado", "normal", "2", 24, 15, "+3", "1d8 (média 4,5)", "-", [
-    sp("Pinça Prendedora", "passiva", "passiva", "Se acertar, o alvo fica preso até passar em um teste de Poder contra 12 (um teste por turno).", { aplica: ["Preso"] })
+    sp("Pinça Prendedora", "passiva", "passiva", "Se acertar, o alvo fica preso até passar em um teste de Poder contra 12 (um teste por turno).", { aplica: ["Preso"] }),
+    sp("Casco Rachado", "passiva", "passiva", "Se sofrer 10 ou mais de dano na mesma rodada, o casco racha: a redução de dano dele cai para 0 até o fim do combate."),
+    sp("Recuar na Concha", "reação", "reação", "Ao sofrer dano, ganha +2 de Defesa até o próximo turno dele.", { limite: "1 uso por combate" })
   ], "Defende e agarra quem estiver sozinho.",
-    "A Defesa alta e a redução de dano pedem Poder alto ou feitiços sem rolagem de ataque.", { red: 2 }),
+    "A Defesa alta pede Poder alto ou feitiços sem rolagem de ataque. Dano concentrado numa rodada resolve.", { red: 2 }),
   mo("Polvo da Maré", "Arco 1: Porto Salgado", "elite", "2 a 3", 36, 13, "+4", "1d8 + 1 (média 5,5)", "6", [
     sp("Tentáculos", "passiva", "passiva", "Ataca duas vezes por turno, em alvos diferentes."),
-    sp("Tinta Negra", 2, "habilidade", "Os alvos na área fazem teste de Destreza contra 12 ou ficam cegos (-3 nas rolagens de ataque) até o fim da próxima rodada.", { aplica: ["Cego"] })
+    sp("Puxar para a Água", 1, "habilidade", "Um alvo próximo faz teste de Poder contra 13 ou é puxado até ficar ao lado do polvo."),
+    sp("Tinta Negra", 2, "habilidade", "Os alvos num raio de 3 casas do polvo fazem teste de Destreza contra 12 ou ficam cegos (-3 nas rolagens de ataque) até o fim da próxima rodada.", { aplica: ["Cego"] }),
+    sp("Fuga na Tinta", "reação", "reação", "Ao chegar a 1/3 da vida, solta tinta e mergulha. Se ninguém o prender nesse turno, ele foge.", { limite: "1 uso por combate" })
   ], "Prefere ficar na água e puxar alvos para perto.",
-    "Bom para a primeira luta contra um elite."),
+    "Bom para a primeira luta contra um elite. Prender o polvo impede a fuga."),
   mo("Serpente das Marés", "Arco 1: Porto Salgado", "chefe", "3", 55, 14, "+5", "2d6 + 2 (média 9)", "10", [
-    sp("Enrolar", 2, "habilidade", "d20 + 5 contra um alvo. Se acertar, o alvo fica preso por 2 turnos e sofre 1d6 por turno.", { aplica: ["Preso"], dot: dotRes("Poder", 13) }),
-    sp("Onda", 4, "habilidade", "Todos os jogadores próximos fazem teste de Poder contra 13 ou são arrastados 3 casas e ficam molhados.", { aplica: ["Molhado"] })
-  ], "Começa escondida na água. Usa Enrolar no jogador mais frágil.",
-    "Quem tiver Antimagia ou Correntes pode libertar o aliado preso."),
+    sp("Enrolar", 2, "habilidade", "d20 + 5 contra um alvo. Se acertar, o alvo fica preso por 2 turnos e sofre 1d6 por turno. Quem causar 8 ou mais de dano nela num só turno solta o alvo.", { aplica: ["Preso"], dot: dotRes("Poder", 13) }),
+    sp("Onda", 4, "habilidade", "Todos os jogadores próximos fazem teste de Poder contra 13 ou são arrastados 3 casas e ficam molhados.", { aplica: ["Molhado"] }),
+    sp("Escamas Molhadas", "passiva", "passiva", "Está molhada: dano de raio contra ela causa +1d6 e a deixa eletrizada (o teste de atordoar do estado vale).", { aplica: ["Molhado"] }),
+    sp("Mergulho", 2, "habilidade", "Com metade da vida, mergulha: ganha +2 de Defesa e não pode ser atacada corpo a corpo até o próximo turno dela. Volta usando Onda ou Enrolar.", { limite: "1 uso por combate" })
+  ], "Começa escondida na água. Usa Enrolar no jogador mais frágil e mergulha quando está ferida.",
+    "Quem tiver Raios ganha vantagem; quem tiver Antimagia ou Correntes liberta o aliado. Dano alto num turno também solta o preso."),
 
   /* Arco 1: Floresta dos Cedros */
   mo("Aranha Tecelã", "Arco 1: Floresta dos Cedros", "normal", "3", 22, 13, "+4", "1d6 + 2 (média 5,5)", "4", [
     sp("Veneno", "passiva", "passiva", "Se acertar, o alvo fica envenenado (1 de dano por turno, 2 turnos).", { aplica: ["Envenenado"], dot: dotRes("Poder", 12) }),
-    sp("Teia", 2, "habilidade", "Um alvo faz teste de Destreza contra 13 ou fica preso por 1 turno.", { aplica: ["Preso"] })
+    sp("Teia", 2, "habilidade", "Um alvo faz teste de Destreza contra 13 ou fica preso por 1 turno.", { aplica: ["Preso"] }),
+    sp("Descer do Fio", "passiva", "passiva", "Ataca com vantagem (role dois dados e fique com o melhor) alvos que estejam presos na teia dela."),
+    sp("Teia Inflamável", "passiva", "passiva", "Fogo queima a teia: os presos na área se soltam e a aranha sofre 1d4.")
   ], "Prende primeiro, ataca depois.",
-    "Bom para treinar o lembrete de dano contínuo."),
+    "Bom para treinar o lembrete de dano contínuo. Uma faísca resolve a teia, mas queima a floresta."),
   mo("Raposa Sombria", "Arco 1: Floresta dos Cedros", "normal", "2 a 3", 18, 14, "+4", "1d6 + 2 (média 5,5)", "2", [
-    sp("Passo Sombrio", 1, "habilidade", "Fica invisível até atacar. O primeiro ataque dela depois de invisível causa o dobro de dano.")
+    sp("Passo Sombrio", 1, "habilidade", "Fica invisível até atacar. O primeiro ataque dela depois de invisível causa o dobro de dano. Quem quiser mirar nela invisível faz teste de Inteligência contra 13; se falhar, ataca com desvantagem."),
+    sp("Virar Fumaça", "reação", "reação", "Ao ser acertada, o dano é reduzido à metade e ela se afasta 2 casas.", { limite: "1 uso por combate" }),
+    sp("Fraca à Luz", "passiva", "passiva", "Feitiços de luz a revelam: ela perde a invisibilidade na hora.")
   ], "Ataca o jogador com a menor Defesa.",
-    "Boa para pressionar o Suporte do grupo."),
+    "Boa para pressionar o Suporte do grupo. Grimório de Luz ou área revelam a raposa."),
   mo("Árvore Desperta", "Arco 1: Floresta dos Cedros", "elite", "3", 40, 12, "+4", "1d10 + 2 (média 7,5)", "4", [
     sp("Raízes", 2, "habilidade", "Um alvo faz teste de Destreza contra 13 ou fica preso por 1 turno.", { aplica: ["Preso"] }),
-    sp("Regenerar", "passiva", "passiva", "Recupera 3 de vida no início de cada turno dela, a não ser que tenha sofrido dano de fogo desde o turno anterior.")
-  ], "Fica imóvel. Só ataca quem está perto.",
-    "Um combate de posição: quem tem fogo vira a estrela."),
+    sp("Regenerar", "passiva", "passiva", "Recupera 3 de vida no início de cada turno dela, a não ser que tenha sofrido dano de fogo desde o turno anterior."),
+    sp("Fraca a Fogo", "passiva", "passiva", "Dano de fogo causa +1d4 e a deixa em chamas (2 de dano por turno, 2 turnos).", { aplica: ["Em chamas"] }),
+    sp("Floresta Viva", 4, "habilidade", "Raízes brotam em volta: os jogadores próximos fazem teste de Destreza contra 13 ou ficam presos por 1 turno.", { aplica: ["Preso"], limite: "1 uso por combate" })
+  ], "Fica imóvel. Só ataca quem está perto, até a metade da vida; depois usa Floresta Viva.",
+    "Um combate de posição: quem tem fogo vira a estrela, quem não tem fica fora do alcance. O fogo pode espalhar pela mata."),
   mo("Cervo Ancestral", "Arco 1: Floresta dos Cedros", "chefe", "3", 58, 14, "+5", "2d6 + 2 (média 9)", "10", [
     sp("Chifres Radiantes", 2, "habilidade", "d20 + 5, dano 2d6. O alvo faz teste de Destreza contra 13 ou fica cego por 1 turno.", { aplica: ["Cego"] }),
-    sp("Chamado da Mata", 4, "habilidade", "Invoca 2 Raposas Sombrias.")
-  ], "Mantém distância e usa o chamado cedo.",
-    "A mata foi corrompida: o cervo não é mau, está sofrendo."),
+    sp("Chamado da Mata", 4, "habilidade", "Invoca 2 Raposas Sombrias.", { limite: "1 uso por combate" }),
+    sp("Passo da Mata", 2, "habilidade", "Atravessa as árvores e reaparece a até 6 casas, sem ser atacado no caminho."),
+    sp("Dor Ancestral", "passiva", "passiva", "Com metade da vida, a corrupção se solta: o cervo ganha +1d6 de dano, mas fica com -2 de Defesa.")
+  ], "Mantém distância e usa o chamado cedo. Com metade da vida, passa a atacar sem pensar.",
+    "O cervo não é mau, está sofrendo. Acalmar: um jogador gasta a ação e faz teste de Inteligência contra 14. Com 3 sucessos no total, a luta termina sem matá-lo."),
 
   /* Arco 1: Pedra Velha */
   mo("Morcego-Cristal", "Arco 1: Pedra Velha", "capanga", "3", 8, 12, "+3", "1d4 + 1 (média 3,5)", "-", [
-    sp("Guincho", "passiva", "passiva", "Se acertar, o alvo faz teste de Inteligência contra 12 ou fica atordoado (perde a próxima ação).", { aplica: ["Atordoado"] })
+    sp("Guincho", "passiva", "passiva", "Se acertar, o alvo faz teste de Inteligência contra 12 ou fica com -2 no próximo ataque dele. Se 3 ou mais morcegos acertarem o mesmo alvo na mesma rodada, ele fica atordoado (só uma vez por rodada).", { aplica: ["Atordoado"] }),
+    sp("Cristais Frágeis", "reação", "reação", "Ao cair, estilhaça: quem estiver ao lado dele sofre 1 de dano.")
   ], "Voa em bando e ataca de cima.",
-    "Com 8 jogadores, use de 8 a 10 morcegos."),
+    "Com 8 jogadores, use de 8 a 10 morcegos. Feitiços de área limpam o bando, mas os estilhaços machucam quem está perto."),
   mo("Verme das Rochas", "Arco 1: Pedra Velha", "normal", "3", 28, 12, "+4", "1d10 + 1 (média 6,5)", "4", [
     sp("Emboscada", "passiva", "passiva", "Surge do chão: no primeiro turno, ataca com vantagem (role dois dados e fique com o melhor)."),
-    sp("Rocha Cuspida", 1, "habilidade", "d20 + 4, dano 1d6, alcance longo.")
-  ], "Foge para o chão quando ferido e volta em outro ponto.",
-    "Ensina os jogadores a vigiarem o chão."),
+    sp("Tremor", "passiva", "passiva", "Quando surge, o chão treme: quem estiver ao lado faz teste de Destreza contra 12 ou cai."),
+    sp("Rocha Cuspida", 1, "habilidade", "d20 + 4, dano 1d6, alcance longo."),
+    sp("Engolir", 2, "habilidade", "Se o alvo estiver caído, o verme o engole: o alvo fica preso, sofre 1d4 por turno e escapa ao causar 6 de dano nele.", { aplica: ["Preso"], limite: "1 uso por combate" })
+  ], "Foge para o chão quando ferido e volta em outro ponto. Prefere derrubar antes de engolir.",
+    "Ensina os jogadores a vigiarem o chão. Quem foi derrubado pelo tremor precisa de um aliado por perto."),
   mo("Golem de Entulho", "Arco 1: Pedra Velha", "elite", "3 a 4", 45, 14, "+5", "2d6 + 1 (média 8)", "6", [
     sp("Pedregulho", 2, "habilidade", "d20 + 5, dano 2d6, alcance longo."),
-    sp("Ponto Fraco", "passiva", "passiva", "Feitiços do Grimório do Som e do Grimório de Gravidade causam +1d6 de dano nele.")
+    sp("Ponto Fraco", "passiva", "passiva", "Feitiços do Grimório do Som e do Grimório de Gravidade causam +1d6 de dano nele."),
+    sp("Entulho Solto", "reação", "reação", "Ao sofrer 8 ou mais de dano de uma vez, perde pedaços: quem estiver ao lado sofre 1d4 e ele perde a redução de dano até o próximo turno dele."),
+    sp("Reagrupar", 4, "habilidade", "Junta o entulho em volta e recupera 8 de vida. Feitiços de Som ou Gravidade impedem.", { limite: "1 uso por combate" })
   ], "Avança em linha reta e esmaga o mais próximo.",
-    "Um bom lugar para os grimórios de Som e Gravidade brilharem.", { red: 2 }),
+    "Um bom lugar para os grimórios de Som e Gravidade brilharem. Dano concentrado tira a defesa dele.", { red: 2 }),
   mo("Guardião das Ruínas", "Arco 1: Pedra Velha", "chefe", "4", 62, 15, "+6", "2d8 + 2 (média 11)", "12", [
     sp("Runa de Selamento", 2, "habilidade", "Um jogador faz teste de Inteligência contra 14 ou fica com -2 em todas as rolagens por 2 turnos."),
     sp("Colapso", 4, "habilidade", "Os jogadores próximos sofrem 2d6 (teste de Destreza contra 13 para sofrer metade)."),
-    sp("Selo Antigo", "passiva", "passiva", "Tem redução de dano 3 contra ataques físicos. Feitiços ignoram essa redução.")
+    sp("Selo Antigo", "passiva", "passiva", "Tem redução de dano 3 contra ataques físicos. Feitiços ignoram essa redução."),
+    sp("Barreira de Runas", "reação", "reação", "Reduz à metade o dano de um golpe que sofrer.", { limite: "1 uso por combate" }),
+    sp("Despertar", "passiva", "passiva", "Com metade da vida, as runas brilham: a Runa de Selamento passa a atingir 2 jogadores ao mesmo tempo.")
   ], "Protege a entrada da mina. Fica parado até perder metade da vida, quando começa a usar o colapso.",
-    "É a explicação do tremor que lacrou a mina.", { red: 3 }),
+    "É a explicação do tremor que lacrou a mina. Feitiços ignoram a redução do selo, então vale incentivar magias.", { red: 3 }),
 
   /* Arco 2 */
   mo("Elemental Instável", "Arco 2", "normal", "4", 30, 13, "+5", "1d8 + 2 (média 6,5)", "8", [
-    sp("Forma Instável", "passiva", "passiva", "No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (eletrizado), 4 gelo (lento).")
+    sp("Forma Instável", "passiva", "passiva", "No início do turno dele, role d4: 1 fogo (o ataque deixa em chamas), 2 água (molhado), 3 raio (eletrizado), 4 gelo (lento)."),
+    sp("Oposto Dói", "passiva", "passiva", "Dano do elemento oposto à forma dele causa +1d6 e muda a forma na hora (água contra fogo, fogo contra gelo, raio contra água)."),
+    sp("Estouro Final", "reação", "reação", "Ao cair, explode conforme a forma atual: quem estiver ao lado sofre 1d6 e recebe o estado dela.")
   ], "Ataca o mais próximo, trocando de forma a cada turno.",
-    "Perfeito para testar as combinações de magias."),
+    "Perfeito para testar as combinações de magias. Ensine os jogadores a ler a forma antes de agir."),
   mo("Bandoleiro Veterano", "Arco 2", "normal", "4", 30, 14, "+5", "1d8 + 3 (média 7,5)", "-", [
-    sp("Golpe Sujo", "passiva", "passiva", "Uma vez por combate, o alvo faz teste de Destreza contra 13 ou perde 2 de deslocamento e fica com -1 de Defesa por 1 turno."),
-    sp("Voz de Comando", "passiva", "passiva", "Capangas próximos ganham +1 nas rolagens de ataque.")
-  ], "Usa o terreno e protege os capangas.",
-    "Um inimigo humano sem magia, para variar."),
+    sp("Golpe Sujo", "passiva", "passiva", "Uma vez por combate, o alvo faz teste de Destreza contra 13 ou perde 2 de deslocamento e fica com -1 de Defesa por 1 turno.", { limite: "1 uso por combate" }),
+    sp("Voz de Comando", "passiva", "passiva", "Capangas próximos ganham +1 nas rolagens de ataque."),
+    sp("Tiro de Advertência", "passiva", "habilidade", "d20 + 5, dano 1d6, alcance longo. Se o alvo estiver longe dos aliados, ele faz teste de Destreza contra 13 ou perde o movimento do próximo turno."),
+    sp("Bomba de Fumaça", "passiva", "habilidade", "Ele e os capangas próximos ficam com +2 de Defesa contra ataques à distância por 1 rodada, e ele recua 3 casas.", { limite: "1 uso por combate" })
+  ], "Usa o terreno e protege os capangas. Quando está ferido, solta a fumaça e recua.",
+    "Um inimigo humano sem magia, para variar. Mostra que nem toda luta é contra feitiço."),
   mo("Mago Renegado", "Arco 2", "normal", "4", 28, 13, "+5", "1d8 + 2 (feitiço)", "10", [
-    sp("Feitiços de um grimório", "passiva", "passiva", "Escolha um grimório do catálogo e use 2 dos feitiços dele: um de 1 mana e um de 2 mana. Troque o grimório a cada mago para variar.")
-  ], "Fica longe e usa o feitiço de controle primeiro.",
-    "Deixa os jogadores verem como é enfrentar o poder de um grimório."),
+    sp("Feitiços de um grimório", "passiva", "passiva", "Escolha um grimório do catálogo e use 2 dos feitiços dele: um de 1 mana e um de 2 mana. Troque o grimório a cada mago para variar."),
+    sp("Barreira Instável", 2, "reação", "Anula o primeiro feitiço que o atingir, mas a barreira estoura e ele sofre 1d4.", { limite: "1 uso por combate" }),
+    sp("Sobrecarga", 3, "habilidade", "O próximo feitiço dele causa o dobro de dano, mas a mana dele cai para 1 (daí em diante age com desvantagem).", { limite: "1 uso por combate" }),
+    sp("Corpo Frágil", "passiva", "passiva", "Tem pouca resistência: um golpe corpo a corpo acertado o obriga a testar Inteligência contra 12 ou perder a concentração (o feitiço falha).")
+  ], "Fica longe e usa o feitiço de controle primeiro. Quando está ferido, arrisca a sobrecarga.",
+    "Deixa os jogadores verem como é enfrentar o poder de um grimório. O grimório dele pode cair como item (drop do mestre)."),
   mo("Quimera de Mana", "Arco 2", "chefe", "4", 50, 15, "+6", "2d8 + 2 (média 11)", "12", [
     sp("Três cabeças", "passiva", "passiva", "Cada cabeça tem 18 de Vida e Defesa 14, e pode ser atacada à parte. Por turno, escolha até 2 cabeças vivas para fazerem o ataque especial. Uma cabeça derrotada para de atacar."),
     sp("Cabeça de Fogo", "passiva", "ataque", "Sopro em cone: 2d6 e o alvo fica em chamas (2 de dano por turno, 2 turnos).", { aplica: ["Em chamas"], dot: dotRes("Destreza", 13) }),
     sp("Cabeça de Raio", "passiva", "ataque", "d20 + 6 contra um alvo, dano 2d6 e o alvo fica eletrizado.", { aplica: ["Eletrizado"] }),
-    sp("Cabeça de Gelo", "passiva", "ataque", "Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada.", { aplica: ["Lento"] })
+    sp("Cabeça de Gelo", "passiva", "ataque", "Um alvo faz teste de Destreza contra 13 ou fica lento e com -2 de Defesa até o fim da próxima rodada.", { aplica: ["Lento"] }),
+    sp("Fúria das Cabeças", "passiva", "passiva", "Quando uma cabeça é derrotada, as que restam causam +1d4 de dano."),
+    sp("Cauda de Serpente", "reação", "reação", "Quem terminar o movimento ao lado do corpo dela sofre 1d4 e fica envenenado por 1 turno.", { aplica: ["Envenenado"] })
   ], "Usa 2 cabeças vivas por turno, as que alcançam mais jogadores.",
-    "Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (36 cada): todos têm algo para atacar."),
+    "Com 8 jogadores, dobre a Vida do corpo e de cada cabeça (36 cada): todos têm algo para atacar. Cortar a cabeça de fogo primeiro livra o grupo das chamas."),
 
   /* Arco final */
   mo("Titã Corrompido", "Arco final", "chefe", "5", 90, 16, "+7", "3d6 + 3 (média 13,5)", "16", [
     sp("Pisada Sísmica", 2, "habilidade", "Os jogadores próximos fazem teste de Destreza contra 14 ou caem (-2 de Defesa até o fim da próxima rodada) e sofrem 2d6."),
     sp("Punho Colossal", 4, "habilidade", "d20 + 7 contra um alvo, dano 4d6. O alvo faz teste de Poder contra 15 ou é arremessado 4 casas."),
-    sp("Corpo de Pedra", "passiva", "passiva", "Redução de dano 2. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada.")
-  ], "Usa a pisada quando os jogadores se juntam e o punho no tank.",
-    "Um combate longo, para fechar o arco antes do final.", { red: 2 }),
+    sp("Corpo de Pedra", "passiva", "passiva", "Redução de dano 2. Um ataque de Antimagia (Corte Nulo) remove a redução por 1 rodada."),
+    sp("Escombros", 2, "habilidade", "d20 + 7 contra um alvo longe, dano 2d6. Quem estiver ao lado do alvo sofre 1d4."),
+    sp("Cristal Rachado", "passiva", "passiva", "Se sofrer 20 ou mais de dano numa só rodada, o cristal do peito racha: ele perde o movimento e a ação do próximo turno dele (uma vez por fase)."),
+    sp("Fúria Final", "passiva", "passiva", "Com 1/3 da vida, a Pisada Sísmica custa 1 de mana e ele pode usá-la duas vezes por turno.")
+  ], "Usa a pisada quando os jogadores se juntam e o punho no tank. Na fase final, não para de pisar.",
+    "Um combate longo, para fechar o arco antes do final. Espalhar o grupo contra a pisada e concentrar dano para rachar o cristal são as ideias do combate.", { red: 2 }),
 
   /* Segredos da organização (aparecem na aba Mestre) */
   mo("Capanga Marcado", "Segredo", "capanga", "2 a 4", 14, 12, "+4", "1d8 + 2 (média 6,5)", "-", [
-    sp("Marca", "passiva", "passiva", "Tem a marca da organização. Em vez de derrotá-lo, os jogadores podem libertá-lo (dificuldade 12). Se libertado, solta a arma e desmaia.")
+    sp("Marca", "passiva", "passiva", "Tem a marca da organização. Em vez de derrotá-lo, os jogadores podem libertá-lo (dificuldade 12). Se libertado, solta a arma e desmaia."),
+    sp("Sem Medo", "passiva", "passiva", "Não foge nem se rende. Ignora o efeito de assustar."),
+    sp("Marca Pulsante", "reação", "reação", "Quando um capanga marcado cai, a marca dos outros pulsa: eles ganham +1 no ataque até o fim da próxima rodada."),
+    sp("Lembrança", "passiva", "passiva", "Ao ser libertado, acorda e conta uma lembrança curta: pista de quem o marcou.")
   ], "Luta sem medo e sem recuar.",
-    "Com 8 jogadores, use de 6 a 8. Bom para mostrar a marca pela primeira vez.", { segredo: true }),
+    "Com 8 jogadores, use de 6 a 8. Bom para mostrar a marca pela primeira vez. Libertar um deles rende uma pista.", { segredo: true }),
   mo("Fera Marcada", "Segredo", "normal", "3 a 4", 30, 13, "+5", "1d10 + 2 (média 7,5)", "-", [
-    sp("Fúria Marcada", "passiva", "passiva", "Com metade da vida, ganha +1d4 de dano e a marca brilha. Se a marca for quebrada, a fera se acalma.")
+    sp("Fúria Marcada", "passiva", "passiva", "Com metade da vida, ganha +1d4 de dano e a marca brilha. Se a marca for quebrada, a fera se acalma."),
+    sp("Marca Escondida", "passiva", "passiva", "A marca fica escondida sob o pelo. Um jogador que gaste a ação e passe num teste de Inteligência contra 13 a encontra."),
+    sp("Dor da Marca", "reação", "reação", "Ao ser acertada na marca, a fera solta um grito: os jogadores próximos fazem teste de Inteligência contra 12 ou perdem o movimento.")
   ], "Ataca o mais próximo, sem estratégia.",
-    "Uma criatura que parece normal, mas tem a marca escondida.", { segredo: true }),
+    "Uma criatura que parece normal, mas tem a marca escondida. Descobrir a marca antes do fim evita o abate.", { segredo: true }),
   mo("Cavaleiro Controlado", "Segredo", "elite", "4", 45, 15, "+6", "2d6 + 2 (média 9)", "8", [
     sp("Feitiços de um grimório", "passiva", "passiva", "Escolha um grimório do catálogo e use 2 dos feitiços dele."),
-    sp("Olhos Vazios", "passiva", "passiva", "Não fala. Só reage se alguém disser o nome de quem ele já foi (+2 no teste de libertar).")
+    sp("Olhos Vazios", "passiva", "passiva", "Não fala. Só reage se alguém disser o nome de quem ele já foi (+2 no teste de libertar)."),
+    sp("Treino da Ordem", "reação", "reação", "Quando um aliado ao lado dele for atacado, ele reduz o dano em 2.", { limite: "1 uso por rodada" }),
+    sp("Juramento Quebrado", "passiva", "passiva", "Se o nome dele for dito, ele hesita e perde a reação do próximo turno, e o teste de libertar fica com +2.")
   ], "Protege uma área e não recua.",
-    "Um membro da ordem, para mostrar que o problema já está lá dentro.", { segredo: true }),
+    "Um membro da ordem, para mostrar que o problema já está lá dentro. Reconhecer o rosto dele é a chave da luta.", { segredo: true }),
   mo("Infiltrado (modelo de chefe)", "Segredo", "chefe", "3 a 5", 60, 14, "+6", "2d6 + 3 (média 10)", "12", [
     sp("Grimório do infiltrado", "passiva", "passiva", "Escolha um grimório do catálogo e use os 4 feitiços dele."),
     sp("Máscara", "passiva", "passiva", "No primeiro combate, usa só o ataque simples e o feitiço de apoio. Revela o resto no terceiro momento."),
-    sp("Elo da Marca", 4, "habilidade", "Todos os marcados próximos ganham +2 nas rolagens por 2 turnos.")
-  ], "Revela o poder aos poucos.",
-    "Use este modelo para os 5 infiltrados e mude o grimório de cada um.", { segredo: true }),
+    sp("Elo da Marca", 4, "habilidade", "Todos os marcados próximos ganham +2 nas rolagens por 2 turnos.", { limite: "1 uso por combate" }),
+    sp("Ajuda de Fachada", "reação", "reação", "No primeiro combate, usa a ação para receber um golpe no lugar de um jogador (para manter a fachada).", { limite: "1 uso" }),
+    sp("Fuga Preparada", "passiva", "passiva", "Quando for desmascarado, tenta fugir em vez de lutar até o fim, a não ser que esteja encurralado.")
+  ], "Revela o poder aos poucos. Foge quando é desmascarado.",
+    "Use este modelo para os 5 infiltrados e mude o grimório de cada um. O primeiro combate dele deve parecer ajuda de verdade.", { segredo: true }),
   mo("Grande Mago Dominado", "Segredo", "chefe", "5", 110, 16, "+7", "2d8 + 3 (média 12)", "16", [
     sp("Dois grimórios", "passiva", "passiva", "Usa feitiços de dois grimórios do catálogo (um de Dano e um de Suporte)."),
-    sp("Dominado", "passiva", "passiva", "O objetivo é libertá-lo, não matá-lo. Com metade da vida, os jogadores podem tentar quebrar a marca."),
-    sp("Fúria da Marca", 4, "habilidade", "Quando a marca é atacada, ele solta uma onda: 2d6 em todos os jogadores próximos.")
+    sp("Dominado", "passiva", "passiva", "O objetivo é libertá-lo, não matá-lo. Com metade da vida, os jogadores podem tentar quebrar a marca (Inteligência contra 15)."),
+    sp("Fúria da Marca", 4, "habilidade", "Quando a marca é atacada, ele solta uma onda: 2d6 em todos os jogadores próximos.", { limite: "1 uso por combate" }),
+    sp("Resistência da Mente", "passiva", "passiva", "Cada vez que o teste de quebrar a marca falhar, ele ganha +1 de ataque, até no máximo +3."),
+    sp("Marca Aberta", "passiva", "passiva", "Quando a marca é quebrada, o mago cai de joelhos e para de atacar, mas fica sem poder por 1 dia.")
   ], "Luta sem emoção e para quando a marca é quebrada.",
-    "É o grande mago que a organização queria controlar.", { segredo: true }),
+    "É o grande mago que a organização queria controlar. O objetivo é salvá-lo: use os testes de Inteligência como o fim da luta.", { segredo: true }),
   mo("Líder da Organização (modelo)", "Segredo", "chefe", "5", 150, 17, "+8", "3d8 + 3 (média 16,5)", "20", [
     sp("Ritual de Controle", 4, "habilidade", "Prepara por 3 turnos. Se concluir o ritual sobre um personagem vulnerável (marca no estágio 3), ele é controlado. Os jogadores interrompem atacando o líder ou quebrando a marca."),
     sp("Mestre dos Grimórios", "passiva", "passiva", "Usa os 4 feitiços de três grimórios do catálogo à sua escolha."),
-    sp("Defesa Final", "passiva", "passiva", "Com 1/3 da vida, invoca 2 Capangas Marcados por turno.")
+    sp("Defesa Final", "passiva", "passiva", "Com 1/3 da vida, invoca 2 Capangas Marcados por turno."),
+    sp("Véu de Sombra", "reação", "reação", "Quando for acertado por um ataque, reduz o dano em 3.", { limite: "1 uso por rodada" }),
+    sp("Última Marca", "passiva", "passiva", "Com 1/3 da vida, escolhe um jogador: ele faz teste de Inteligência contra 15 no turno dele, ou perde a ação (a marca tenta dominá-lo).", { aplica: ["Atordoado"] })
   ], "A detalhar quando você definir o líder.",
     "Este é só um modelo de números. O líder e o plano dele ainda estão em aberto.", { segredo: true })
 ];
@@ -945,11 +1002,11 @@ var ARTE_INIMIGO = {
   "Grande Mago Dominado": "m29",
   "Líder da Organização (modelo)": "m30"
 };
-/* Arte do inimigo: image/bestiario/arte/mNN.jpg (número da tabela ARTE_INIMIGO; veja prompts-bestiario.md). Enquanto o arquivo não existe,
-   a imagem cai no ícone. O número não revela o inimigo pelo endereço. */
+/* Arte do inimigo: privado/arte/mNN.jpg (número da tabela ARTE_INIMIGO; veja prompts-bestiario.md), servida só ao mestre por api.php?a=arte.
+   Enquanto o arquivo não existe, a imagem cai no ícone. */
 function imagemInimigo(m) {
   var ico = "image/bestiario/" + (IMAGEM_INIMIGO[m.nome] || "inv_misc_questionmark") + ".jpg", id = ARTE_INIMIGO[m.nome];
-  return '<img class="mon-ico" src="' + (id ? "image/bestiario/arte/" + id + ".jpg" : ico) + '" data-ico="' + ico + '" alt="" width="72" height="72" loading="lazy">';
+  return '<img class="mon-ico" src="' + (id ? API + "?a=arte&id=" + id : ico) + '" data-ico="' + ico + '" alt="" width="72" height="72" loading="lazy">';
 }
 /* A CSP não deixa onerror inline: o erro de carregamento não borbulha, então escuta na captura. */
 document.addEventListener("error", function (e) {

@@ -4,10 +4,10 @@ Como usar:
 
 1. Gere uma imagem por inimigo com o prompt abaixo (cada um já leva o estilo base).
 2. Proporção **1:1** (quadrada). Se a ferramenta gerar maior, corte no centro. Tamanho bom: 512×512 ou 768×768.
-3. Salve como **JPG** em `image/bestiario/arte/` com o nome da coluna **Arquivo** (por exemplo `m04.jpg`).
+3. Salve como **JPG** em `privado/arte/` com o nome da coluna **Arquivo** (por exemplo `m04.jpg`).
 4. Pronto. O site já procura esses arquivos. Enquanto um arquivo não existir, aparece o ícone antigo.
 
-Os nomes são números de propósito: o endereço da imagem não entrega os inimigos secretos aos jogadores.
+A pasta `privado/arte/` é bloqueada no servidor: só o mestre logado recebe as imagens (por `api.php?a=arte`).
 
 ## Estilo base (já incluído em todos os prompts)
 
