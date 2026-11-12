@@ -1013,9 +1013,32 @@ document.addEventListener("error", function (e) {
   var im = e.target;
   if (im && im.tagName === "IMG" && im.classList.contains("mon-ico") && !im.classList.contains("mon-fb")) { im.classList.add("mon-fb"); im.src = im.dataset.ico; }
 }, true);
+/* Clicar no nome (ou na miniatura) do inimigo abre a imagem grande. */
+var bestDlg = null;
+function abrirImagemInimigo(nome) {
+  var m = INIMIGOS.filter(function (x) { return x.nome === nome; })[0];
+  if (!m) return;
+  if (!bestDlg) {
+    bestDlg = document.createElement("dialog");
+    bestDlg.className = "mon-dlg";
+    document.body.appendChild(bestDlg);
+    bestDlg.addEventListener("click", function (e) {
+      if (e.target === bestDlg || (e.target.closest && e.target.closest("[data-bfechar]"))) { if (bestDlg.close) bestDlg.close(); else bestDlg.removeAttribute("open"); }
+    });
+  }
+  var ico = "image/bestiario/" + (IMAGEM_INIMIGO[m.nome] || "inv_misc_questionmark") + ".jpg", id = ARTE_INIMIGO[m.nome];
+  bestDlg.setAttribute("aria-label", m.nome);
+  bestDlg.innerHTML = '<img class="mon-ico mon-zoom" src="' + (id ? API + "?a=arte&id=" + id : ico) + '" data-ico="' + ico + '" alt="' + esc(m.nome) + '">' +
+    '<div class="mon-dlg-leg"><div><b>' + esc(m.nome) + '</b><small>' + esc(m.tipo) + " · Nível " + esc(m.nivel) + '</small></div><button type="button" class="btn" data-bfechar autofocus>Fechar</button></div>';
+  if (bestDlg.showModal) bestDlg.showModal(); else bestDlg.setAttribute("open", "");
+}
+document.addEventListener("click", function (e) {
+  var b = e.target.closest ? e.target.closest("[data-bimg]") : null;
+  if (b) abrirImagemInimigo(b.getAttribute("data-bimg"));
+});
 function monstroCard(m) {
   var v8 = m.tipo === "capanga" ? "use o dobro de unidades" : "8 jogadores: " + (m.vida * 2);
-  var h = '<article class="panel monstro"><h3 class="mon-tit">' + imagemInimigo(m) + "<span>" + m.nome + '</span></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
+  var h = '<article class="panel monstro"><h3 class="mon-tit"><button type="button" class="mon-nome" data-bimg="' + esc(m.nome) + '" aria-label="Ver a imagem de ' + esc(m.nome) + '">' + imagemInimigo(m) + "<span>" + m.nome + '</span></button></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
     '<div class="stat-line">' +
     "<span>" + ic("coracao") + "<b>Vida</b> " + m.vida + " <small>(" + v8 + ")</small></span>" +
     "<span>" + ic("escudo") + "<b>Defesa</b> " + m.defesa + "</span>" +
@@ -2623,7 +2646,7 @@ function fichaBestiarioHTML(t) {
   function tile(cls, icone, rot, val, sub) {
     return '<div class="bf-tile ' + cls + '"><span class="bf-rot">' + ic(icone) + rot + '</span><b>' + esc(String(val)) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</div>";
   }
-  var h = '<div class="bf"><div class="bf-meta">' + imagemInimigo(m) + '<span class="tag role">' + esc(m.tipo) + '</span><span class="tag role">Nível ' + esc(m.nivel) + "</span>" +
+  var h = '<div class="bf"><div class="bf-meta"><button type="button" class="mon-nome" data-bimg="' + esc(m.nome) + '" aria-label="Ver a imagem de ' + esc(m.nome) + '">' + imagemInimigo(m) + '</button><span class="tag role">' + esc(m.tipo) + '</span><span class="tag role">Nível ' + esc(m.nivel) + "</span>" +
     (m.mana && m.mana !== "-" ? '<span class="tag role">' + ic("gota") + "Mana " + esc(m.mana) + "</span>" : "") + "</div>" +
     '<div class="bf-tiles">' +
     tile("vida", "coracao", "Vida", vida + "/" + (t.vidaMax || m.vida)) +
