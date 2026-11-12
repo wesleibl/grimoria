@@ -913,9 +913,49 @@ var IMAGEM_INIMIGO = {
   "Capanga Marcado": "spell_shadow_charm", "Fera Marcada": "ability_hunter_pet_hyena", "Cavaleiro Controlado": "inv_shield_05", "Infiltrado (modelo de chefe)": "inv_misc_eye_01",
   "Grande Mago Dominado": "spell_shadow_antimagicshell", "Líder da Organização (modelo)": "spell_shadow_demonform"
 };
+var ARTE_INIMIGO = {
+  "Bandido do Reino": "m01",
+  "Capitão Bandido": "m02",
+  "Corvo de Mana": "m03",
+  "Lobo de Mana": "m04",
+  "Espantalho de Mana": "m05",
+  "Javali de Mana": "m06",
+  "Devorador de Colheitas": "m07",
+  "Marujo Afogado": "m08",
+  "Caranguejo Blindado": "m09",
+  "Polvo da Maré": "m10",
+  "Serpente das Marés": "m11",
+  "Aranha Tecelã": "m12",
+  "Raposa Sombria": "m13",
+  "Árvore Desperta": "m14",
+  "Cervo Ancestral": "m15",
+  "Morcego-Cristal": "m16",
+  "Verme das Rochas": "m17",
+  "Golem de Entulho": "m18",
+  "Guardião das Ruínas": "m19",
+  "Elemental Instável": "m20",
+  "Bandoleiro Veterano": "m21",
+  "Mago Renegado": "m22",
+  "Quimera de Mana": "m23",
+  "Titã Corrompido": "m24",
+  "Capanga Marcado": "m25",
+  "Fera Marcada": "m26",
+  "Cavaleiro Controlado": "m27",
+  "Infiltrado (modelo de chefe)": "m28",
+  "Grande Mago Dominado": "m29",
+  "Líder da Organização (modelo)": "m30"
+};
+/* Arte do inimigo: image/bestiario/arte/mNN.jpg (número da tabela ARTE_INIMIGO; veja prompts-bestiario.md). Enquanto o arquivo não existe,
+   a imagem cai no ícone. O número não revela o inimigo pelo endereço. */
 function imagemInimigo(m) {
-  return '<img class="mon-ico" src="image/bestiario/' + (IMAGEM_INIMIGO[m.nome] || "inv_misc_questionmark") + '.jpg" alt="" width="40" height="40" loading="lazy">';
+  var ico = "image/bestiario/" + (IMAGEM_INIMIGO[m.nome] || "inv_misc_questionmark") + ".jpg", id = ARTE_INIMIGO[m.nome];
+  return '<img class="mon-ico" src="' + (id ? "image/bestiario/arte/" + id + ".jpg" : ico) + '" data-ico="' + ico + '" alt="" width="72" height="72" loading="lazy">';
 }
+/* A CSP não deixa onerror inline: o erro de carregamento não borbulha, então escuta na captura. */
+document.addEventListener("error", function (e) {
+  var im = e.target;
+  if (im && im.tagName === "IMG" && im.classList.contains("mon-ico") && !im.classList.contains("mon-fb")) { im.classList.add("mon-fb"); im.src = im.dataset.ico; }
+}, true);
 function monstroCard(m) {
   var v8 = m.tipo === "capanga" ? "use o dobro de unidades" : "8 jogadores: " + (m.vida * 2);
   var h = '<article class="panel monstro"><h3 class="mon-tit">' + imagemInimigo(m) + "<span>" + m.nome + '</span></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
