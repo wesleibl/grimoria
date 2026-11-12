@@ -1,0 +1,16 @@
+# Copie este arquivo para deploy.conf e preencha. O deploy.conf fica fora do Git (não vai para o GitHub).
+SSH_HOST="exemplo.com.br"
+SSH_USER="usuario"
+SSH_PORT="22"
+SSH_KEY="$HOME/.ssh/grimoria_deploy"
+
+# Pasta do repositório no servidor (onde você rodava o git pull).
+REMOTE_DIR="/home/usuario/public_html"
+
+# Opcional: se no servidor a pasta privada fica FORA da raiz pública (grimoria_privado),
+# o git pull não a atualiza. Informe o destino e o script copia privado/ para lá depois do pull.
+# Deixe vazio se a pasta privado/ fica dentro do repositório.
+PRIVADO_DEST=""
+
+# Opcional: endereço do site, para o script conferir se respondeu depois do deploy.
+SITE_URL=""

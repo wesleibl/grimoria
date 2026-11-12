@@ -3,3 +3,4 @@ privado/.schema-v*
 .env.php
 
 sessoes/
+deploy.conf
