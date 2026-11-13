@@ -1721,6 +1721,9 @@ function viewJogador(j) {
 }
 
 /* Ficha do jogador, editável pelo mestre: nível, base (travada para o jogador depois de salva) e bônus. */
+var perAberto = false;
+/* O bloco de perícias é refeito a cada marcação; lembra se estava aberto para não fechar na cara do mestre. */
+document.addEventListener("toggle", function (e) { if (e.target.dataset && e.target.dataset.jperdet) perAberto = e.target.open; }, true);
 function fichaJog(j) {
   var n = nivelJog(j);
   return '<fieldset class="pj-acesso"><legend>Ficha (atributos)</legend>' +
@@ -1729,7 +1732,7 @@ function fichaJog(j) {
       return "<tr><td>" + a[1] + '</td><td><input class="sorteio-in num" type="number" min="0" max="10" data-jatr="' + a[0] + '" value="' + atrBase(j, a[0]) + '"></td>' +
         '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
     }).join("") + "</tbody></table></div>" +
-    '<details><summary>Perícias (' + perUsado(j.pericias || {}) + " de " + perOrcamento(j) + ' proficientes, bônus ' + sinal(profBonus(j)) + ')</summary><div class="scroll"><table><thead><tr><th>Perícia</th><th>Atributo</th><th>Proficiente</th><th>Total</th></tr></thead><tbody>' + PERICIAS.map(function (p) {
+    '<details data-jperdet="1"' + (perAberto ? " open" : "") + '><summary>Perícias (' + perUsado(j.pericias || {}) + " de " + perOrcamento(j) + ' proficientes, bônus ' + sinal(profBonus(j)) + ')</summary><div class="scroll"><table><thead><tr><th>Perícia</th><th>Atributo</th><th>Proficiente</th><th>Total</th></tr></thead><tbody>' + PERICIAS.map(function (p) {
       return "<tr><td>" + p[1] + "</td><td>" + PER_ABR[p[2]] + '</td><td><input type="checkbox" data-jper="' + p[0] + '"' + (perProf(j, p[0]) ? " checked" : "") + '></td><td><b>' + sinal(atrTotal(j, p[2]) + perBonus(j, p[0])) + "</b></td></tr>";
     }).join("") + "</tbody></table></div></details>" +
     '<label>Caminho de mana<select class="sorteio-in" data-jf="caminho"><option value="">Nenhum</option>' + CAMINHOS.map(function (c) { return '<option value="' + c.id + '"' + (j.caminho === c.id ? " selected" : "") + ">" + c.nome + "</option>"; }).join("") + "</select></label>" +
