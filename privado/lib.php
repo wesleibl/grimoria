@@ -405,6 +405,8 @@ function listarCenasEnviadas(): array
    grimório e vilarejo continuam nas mãos do mestre. */
 const CAMPOS_PERFIL = ['personagem' => 60, 'altura' => 20, 'descricao' => 2000, 'sonho' => 2000, 'medo' => 2000];
 const ATRIBUTOS = ['poder', 'destreza', 'inteligencia'];
+/* Perícias do D&D. Sabedoria e Carisma não existem aqui: valem Inteligência. O jogador marca em quais é proficiente. */
+const PERICIAS = ['acrobacia', 'adestrar', 'arcanismo', 'atletismo', 'atuacao', 'enganacao', 'furtividade', 'historia', 'intimidacao', 'intuicao', 'investigacao', 'medicina', 'natureza', 'percepcao', 'persuasao', 'prestidigitacao', 'religiao', 'sobrevivencia'];
 /* Questionário do grimório: quantas alternativas (A, B, C, D) cada uma das 5 perguntas tem. O servidor só guarda as respostas; a tabela de pontos fica no arquivo do mestre. */
 const QUESTIONARIO_OPCOES = [4, 3, 4, 4, 4];
 

@@ -51,6 +51,7 @@ try {
         'POST perfil_salvar' => acaoPerfilSalvar(),
         'POST perfil_atributos' => acaoPerfilAtributos(),
         'POST perfil_bonus' => acaoPerfilBonus(),
+        'POST perfil_pericias' => acaoPerfilPericias(),
         'POST perfil_img' => acaoPerfilImg(),
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
         'POST inv_op' => acaoInvOp(),
@@ -161,7 +162,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -403,6 +404,19 @@ function acaoPerfilBonus(): never
     $bonus = [];
     foreach (ATRIBUTOS as $k) $bonus[$k] = max(-5, min(10, (int)($in[$k] ?? 0)));
     salvarCamposJogador($jog['id'], ['bonus' => $bonus], false);
+    responder(['ok' => true]);
+}
+
+/* Perícias proficientes: o jogador marca e corrige à vontade; a quantidade por nível é conferida pelo mestre. */
+function acaoPerfilPericias(): never
+{
+    $jog = jogadorDaConta();
+    $in = (array)(corpo()['pericias'] ?? []);
+    $per = [];
+    foreach (PERICIAS as $k) {
+        if ((int)($in[$k] ?? 0) > 0) $per[$k] = 1; /* proficiente ou não */
+    }
+    salvarCamposJogador($jog['id'], ['pericias' => (object)$per], false);
     responder(['ok' => true]);
 }
 

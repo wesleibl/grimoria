@@ -547,6 +547,14 @@ body.sem-rolagem { overflow: hidden; }
 .atr-barra [hidden] { display: none !important; }
 .atr-barra > button:not(.primary) { min-height: 52px; padding: 8px 16px; touch-action: manipulation; }
 .atr-barra .atr-estado { flex: 1 1 160px; }
+.per-lista { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin: .8rem 0 1rem; }
+.per-linha { display: grid; grid-template-columns: 30px 1fr 56px; gap: 10px; align-items: center; background: var(--surface2); border: 1px solid var(--line); border-left: 5px solid var(--cor, var(--accent)); border-radius: 10px; padding: 10px 12px; cursor: pointer; min-height: 56px; touch-action: manipulation; }
+.per-linha.tem { background: var(--surface); border-color: var(--cor, var(--accent)); }
+.per-chk { width: 26px; height: 26px; accent-color: var(--cor, var(--accent)); }
+.per-nome b { display: block; }
+.per-tot { text-align: center; line-height: 1.1; }
+.per-tot b { font-size: 1.3rem; display: block; }
+@media (max-width: 720px) { .per-lista { grid-template-columns: 1fr; } }
 .info-barra { margin: 1rem 0 0; border-radius: 10px; border: 1px solid var(--line); border-top: 2px solid var(--accent); }
 nav a .pt { color: var(--poder); font-size: .8em; margin-left: 4px; }
 .atr-barra .primary { min-height: 52px; padding: 8px 22px; font-size: 1.1rem; flex: 1 1 200px; touch-action: manipulation; }

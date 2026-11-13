@@ -158,6 +158,9 @@ function viewRegras() {
     ["<b>Inteligência</b>", "Suporte, cura, controle, conhecimento, percepção e manter feitiços de efeito contínuo (barreiras, auras, invocações)."]
   ]);
 
+  h += "<h2>Perícias</h2>" + panel("Perícias do D&D", "<p>Teste de perícia: d20 + atributo, mais o bônus de proficiência se você for proficiente na perícia. O bônus é +2 nos níveis 1 e 2, e +3 do nível 3 em diante. Você é proficiente em 4 perícias no nível 1, mais 1 por nível. Marque no Perfil.</p>" +
+    "<p>Sabedoria e Carisma viram Inteligência; Força e Constituição viram Poder. <b>Poder:</b> Atletismo. <b>Destreza:</b> Acrobacia, Furtividade, Prestidigitação. <b>Inteligência:</b> todas as outras.</p>");
+
   h += "<h2>Criar o personagem</h2>" + panel("Números", "<ul>" +
     "<li><b>Treino prévio:</b> distribua +5 pontos entre os atributos, no máximo +3 em um. Isso é feito antes de ver o grimório.</li>" +
     "<li><b>Vida:</b> 20.</li><li><b>Mana:</b> 10, mais 1 a cada 2 pontos de Inteligência.</li>" +
@@ -645,6 +648,62 @@ function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k); }
 function manaJog(j) { return 10 + Math.floor(atrTotal(j, "inteligencia") / 2); }
 function sinal(n) { return (n >= 0 ? "+" : "") + n; }
 
+/* Perícias do D&D. Aqui só existem 3 atributos: Força e Constituição = Poder, Destreza = Destreza, Inteligência, Sabedoria e Carisma = Inteligência.
+   Teste de perícia: d20 + atributo + pontos da perícia. */
+var PERICIAS = [
+  ["acrobacia", "Acrobacia", "destreza"], ["adestrar", "Adestrar Animais", "inteligencia"], ["arcanismo", "Arcanismo", "inteligencia"],
+  ["atletismo", "Atletismo", "poder"], ["atuacao", "Atuação", "inteligencia"], ["enganacao", "Enganação", "inteligencia"],
+  ["furtividade", "Furtividade", "destreza"], ["historia", "História", "inteligencia"], ["intimidacao", "Intimidação", "inteligencia"],
+  ["intuicao", "Intuição", "inteligencia"], ["investigacao", "Investigação", "inteligencia"], ["medicina", "Medicina", "inteligencia"],
+  ["natureza", "Natureza", "inteligencia"], ["percepcao", "Percepção", "inteligencia"], ["persuasao", "Persuasão", "inteligencia"],
+  ["prestidigitacao", "Prestidigitação", "destreza"], ["religiao", "Religião", "inteligencia"], ["sobrevivencia", "Sobrevivência", "inteligencia"]
+];
+var PER_ABR = { poder: "POD", destreza: "DES", inteligencia: "INT" };
+/* Proficiência, como no D&D: o personagem é proficiente em algumas perícias e soma o bônus de proficiência nelas.
+   Bônus: +2 nos níveis 1 e 2, +3 do nível 3 em diante. Perícias proficientes: 4 no nível 1, mais 1 por nível. */
+function profBonus(j) { return nivelJog(j) <= 2 ? 2 : 3; }
+function perOrcamento(j) { return 4 + nivelJog(j) - 1; }
+function perProf(j, id) { return (parseInt(j.pericias && j.pericias[id], 10) || 0) > 0; }
+function perBonus(j, id) { return perProf(j, id) ? profBonus(j) : 0; }
+function perUsado(o) { return PERICIAS.reduce(function (s, p) { return s + ((parseInt(o[p[0]], 10) || 0) > 0 ? 1 : 0); }, 0); }
+var perRasc = null, salvandoPer = false, perMsg = "";
+function perCopia(j) { var o = {}; PERICIAS.forEach(function (p) { o[p[0]] = perProf(j, p[0]) ? 1 : 0; }); return o; }
+function perSuja() {
+  var j = PUB.jogador;
+  return !!(j && perRasc && PERICIAS.some(function (p) { return perRasc[p[0]] !== (perProf(j, p[0]) ? 1 : 0); }));
+}
+function periciasHTML(j) {
+  if (!j.atrTravado) return "";
+  if (!perRasc) perRasc = perCopia(j);
+  var orc = perOrcamento(j), usado = perUsado(perRasc), bp = profBonus(j), sujo = perSuja(), resta = orc - usado;
+  var h = '<h2>Perícias</h2><section class="panel ficha"><p class="mdica">Teste de perícia: <b>d20 + atributo</b>, e mais o <b>bônus de proficiência (' + sinal(bp) + ")</b> se você for proficiente. Você é proficiente em <b>" + orc + " perícias</b> (4 no nível 1, mais 1 por nível). " +
+    "Aqui só existem três atributos: Sabedoria e Carisma viram <b>Inteligência</b>, e Força e Constituição viram <b>Poder</b>. O mestre confere.</p>" +
+    '<div class="per-lista">';
+  PERICIAS.forEach(function (p) {
+    var v = perRasc[p[0]], tot = atrTotal(j, p[2]) + (v ? bp : 0);
+    h += '<label class="per-linha' + (v ? " tem" : "") + '" style="--cor:var(--' + p[2] + ')"><input type="checkbox" class="per-chk" data-per="' + p[0] + '"' + (v ? " checked" : "") + (salvandoPer ? " disabled" : "") + '>' +
+      '<span class="per-nome"><b>' + p[1] + '</b><span class="mdica">' + PER_ABR[p[2]] + (v ? " + proficiência" : "") + '</span></span>' +
+      '<span class="per-tot"><span class="mdica">Total</span><b>' + sinal(tot) + "</b></span></label>";
+  });
+  return h + "</div>" +
+    '<div class="atr-barra"><span class="atr-estado' + (sujo || resta < 0 ? " sujo" : "") + '" role="status">' +
+    (salvandoPer ? "Salvando…" : (resta < 0 ? "Passou " + (-resta) + " do limite de " + orc : (sujo ? "Alterações não salvas. " : (perMsg ? perMsg + " " : "")) + "Restam " + resta + " de " + orc)) + "</span>" +
+    '<button type="button" id="perfilDescartarPer"' + (sujo && !salvandoPer ? "" : " hidden") + ">Desfazer</button>" +
+    '<button type="button" class="primary" id="perfilSalvarPer"' + (sujo && !salvandoPer ? "" : " disabled") + ">" + (salvandoPer ? "Salvando…" : "Salvar perícias") + "</button></div></section>";
+}
+function salvarPericias() {
+  var j = PUB.jogador;
+  if (!j || !perRasc || salvandoPer || !perSuja()) return;
+  var copia = {}; PERICIAS.forEach(function (p) { copia[p[0]] = perRasc[p[0]] ? 1 : 0; });
+  salvandoPer = true; perMsg = ""; renderizar();
+  gravar("perfil_pericias", { pericias: copia }).then(function (r) {
+    salvandoPer = false;
+    if (r) { j.pericias = copia; perMsg = "Perícias salvas."; }
+    else perMsg = "Não foi possível salvar. Veja o aviso no topo.";
+    renderizar();
+  });
+}
+
 function statCaixa(rot, v) { return '<div class="stat"><b>' + v + "</b>" + rot + "</div>"; }
 
 /* Status do personagem: os números derivados seguem as regras (Defesa 10 + Destreza, redução de dano = Poder / 2,
@@ -660,7 +719,7 @@ function atrIcone(k) { return ic(ATTR_ICON[k]); }
 /* Caixas com os números derivados (Defesa, mana...). Enquanto o jogador distribui os pontos, mostram a PRÉVIA do que ele escolheu. */
 function statsHTML(ref) {
   var n = nivelJog(ref), dex = atrTotal(ref, "destreza");
-  return '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(ref)) +
+  return '<div class="stats">' + statCaixa("Nível", n) + statCaixa("Vida máx.", VIDA_NIVEL[n - 1]) + statCaixa("Mana", manaJog(ref)) + statCaixa("Proficiência", sinal(profBonus(ref))) +
     statCaixa("Defesa", 10 + dex) + statCaixa("Redução de dano", reducaoDano(ref)) + statCaixa("Deslocamento", 6 + Math.floor(dex / 2)) + "</div>";
 }
 
@@ -768,7 +827,7 @@ function viewPerfil() {
   rascunhos();
   var url = j.img ? imgUrl(j.img) : "";
   var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. O que você muda só vale depois de apertar o botão <b>Salvar</b> de cada parte (atributos e informações), e o mestre vê tudo.</p>' +
-    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + qHTML(j) + statusHTML(j) + "<h2>Personagem</h2>";
+    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + qHTML(j) + statusHTML(j) + periciasHTML(j) + "<h2>Personagem</h2>";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="perfilImg"><label class="btn" for="perfilImg">' + (url ? "Trocar retrato" : "Escolher retrato") + "</label>" +
@@ -803,7 +862,7 @@ function bonusSujo() {
   var j = PUB.jogador;
   return !!(j && bonusRasc && ATRS.some(function (a) { return bonusRasc[a[0]] !== atrBonus(j, a[0]); }));
 }
-function perfilSujo() { return infoSuja() || bonusSujo(); }
+function perfilSujo() { return infoSuja() || bonusSujo() || perSuja(); }
 
 /* Estado do botão "Salvar informações" e do aviso ao lado dele, sem refazer a tela (para não tirar o foco de quem digita). */
 function atualizarBarraInfo() {
@@ -1563,7 +1622,7 @@ function carregar(aposLogin) {
       });
     }
     PUB = { jogador: d.jogador, grimorio: d.grimorio, locais: d.locais || [], vilaBonus: d.vilaBonus || "" };
-    perfilRasc = null; bonusRasc = null; infoMsg = ""; bonusMsg = ""; kitSel = {}; kitMsg = ""; qSel = [null, null, null, null, null]; qMsg = "";
+    perfilRasc = null; bonusRasc = null; perRasc = null; perMsg = ""; infoMsg = ""; bonusMsg = ""; kitSel = {}; kitMsg = ""; qSel = [null, null, null, null, null]; qMsg = "";
     renderizar();
   }).catch(function (e) {
     app.innerHTML = '<div class="lock"><h1>Sem conexão</h1><p>' + esc(e.message) + '</p><p><button type="button" class="primary" id="tentarDeNovo">Tentar de novo</button></p></div>';
@@ -2331,7 +2390,12 @@ app.addEventListener("change", function (e) {
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
   else if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
-
+  else if (e.target.dataset && e.target.dataset.per && PUB.jogador && PUB.jogador.atrTravado && !salvandoPer) {
+    if (!perRasc) perRasc = perCopia(PUB.jogador);
+    perRasc[e.target.dataset.per] = e.target.checked ? 1 : 0;
+    perMsg = "";
+    renderizar();
+  }
 });
 
 app.addEventListener("input", function (e) {
@@ -2370,6 +2434,8 @@ app.addEventListener("click", function (e) {
     renderizar();
     return;
   }
+  if (b.id === "perfilSalvarPer") { salvarPericias(); return; }
+  if (b.id === "perfilDescartarPer") { perRasc = PUB.jogador ? perCopia(PUB.jogador) : null; perMsg = ""; renderizar(); return; }
   if (b.dataset.bonusStep && PUB.jogador && PUB.jogador.atrTravado && !salvandoBonus) {
     /* O toque muda só o rascunho (a tela atualiza na hora). Nada é enviado até apertar "Salvar atributos". */
     rascunhos();

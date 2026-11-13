@@ -1729,6 +1729,9 @@ function fichaJog(j) {
       return "<tr><td>" + a[1] + '</td><td><input class="sorteio-in num" type="number" min="0" max="10" data-jatr="' + a[0] + '" value="' + atrBase(j, a[0]) + '"></td>' +
         '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
     }).join("") + "</tbody></table></div>" +
+    '<details><summary>Perícias (' + perUsado(j.pericias || {}) + " de " + perOrcamento(j) + ' proficientes, bônus ' + sinal(profBonus(j)) + ')</summary><div class="scroll"><table><thead><tr><th>Perícia</th><th>Atributo</th><th>Proficiente</th><th>Total</th></tr></thead><tbody>' + PERICIAS.map(function (p) {
+      return "<tr><td>" + p[1] + "</td><td>" + PER_ABR[p[2]] + '</td><td><input type="checkbox" data-jper="' + p[0] + '"' + (perProf(j, p[0]) ? " checked" : "") + '></td><td><b>' + sinal(atrTotal(j, p[2]) + perBonus(j, p[0])) + "</b></td></tr>";
+    }).join("") + "</tbody></table></div></details>" +
     '<label>Caminho de mana<select class="sorteio-in" data-jf="caminho"><option value="">Nenhum</option>' + CAMINHOS.map(function (c) { return '<option value="' + c.id + '"' + (j.caminho === c.id ? " selected" : "") + ">" + c.nome + "</option>"; }).join("") + "</select></label>" +
     '<label>Técnicas aprendidas<select class="sorteio-in" data-jf="caminhoTec">' + [0, 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + (String(j.caminhoTec || 0) === String(v) ? " selected" : "") + ">" + v + " de 3</option>"; }).join("") + "</select></label>" +
     '<label class="rev-label"><input type="checkbox" data-jtrav="1"' + (j.atrTravado ? " checked" : "") + '> Atributos travados (o jogador não altera mais a base)</label>' +
@@ -3909,6 +3912,15 @@ MESTRE = {
         if (cp === "atr" && !jf.atrTravado) jf.atrTravado = true;
         salvarJog(jf, true, [cp, "atrTravado"]);
         if (EST.acao) salvarAcao();
+        renderizar();
+      }
+    }
+    else if (d.jper) {
+      var jp = achaJog(jogSel);
+      if (jp) {
+        jp.pericias = jp.pericias || {};
+        jp.pericias[d.jper] = el.checked ? 1 : 0;
+        salvarJog(jp, true, ["pericias"]);
         renderizar();
       }
     }
