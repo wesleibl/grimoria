@@ -676,14 +676,14 @@ function periciasHTML(j) {
   if (!j.atrTravado) return "";
   if (!perRasc) perRasc = perCopia(j);
   var orc = perOrcamento(j), usado = perUsado(perRasc), bp = profBonus(j), sujo = perSuja(), resta = orc - usado;
-  var h = '<h2>Perícias</h2><section class="panel ficha"><p class="mdica">Teste de perícia: <b>d20 + atributo</b>, e mais o <b>bônus de proficiência (' + sinal(bp) + ")</b> se você for proficiente. Você é proficiente em <b>" + orc + " perícias</b> (4 no nível 1, mais 1 por nível). " +
+  var h = '<h2>Perícias</h2><section class="panel ficha"><p class="mdica">Teste de perícia: <b>d20 + atributo</b>, e mais o <b>bônus de proficiência (' + sinal(bp) + ")</b> se você for proficiente. A coluna Bônus mostra só o que a proficiência soma (zero se não for proficiente). Você é proficiente em <b>" + orc + " perícias</b> (4 no nível 1, mais 1 por nível). " +
     "Aqui só existem três atributos: Sabedoria e Carisma viram <b>Inteligência</b>, e Força e Constituição viram <b>Poder</b>. O mestre confere.</p>" +
     '<div class="per-lista">';
   PERICIAS.forEach(function (p) {
-    var v = perRasc[p[0]], tot = atrTotal(j, p[2]) + (v ? bp : 0);
+    var v = perRasc[p[0]], tot = v ? bp : 0;
     h += '<label class="per-linha' + (v ? " tem" : "") + '" style="--cor:var(--' + p[2] + ')"><input type="checkbox" class="per-chk" data-per="' + p[0] + '"' + (v ? " checked" : "") + (salvandoPer ? " disabled" : "") + '>' +
       '<span class="per-nome"><b>' + p[1] + '</b><span class="mdica">' + PER_ABR[p[2]] + (v ? " + proficiência" : "") + '</span></span>' +
-      '<span class="per-tot"><span class="mdica">Total</span><b>' + sinal(tot) + "</b></span></label>";
+      '<span class="per-tot"><span class="mdica">Bônus</span><b>' + sinal(tot) + "</b></span></label>";
   });
   return h + "</div>" +
     '<div class="atr-barra"><span class="atr-estado' + (sujo || resta < 0 ? " sujo" : "") + '" role="status">' +
