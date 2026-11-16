@@ -836,9 +836,11 @@ button.perigo:hover { background: var(--poder); color: #fff; }
 .item-tags { margin: 4px 0 0 54px; }
 .item-corpo { margin-top: 12px; }
 .item-grade { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-.drop-entrega { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.drop-entrega label { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
-.drop-entrega .drop-msg { font-size: .92rem; }
+.drop-entrega { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.drop-entrega label { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 0; font-size: .92rem; color: var(--muted); white-space: nowrap; }
+.drop-entrega select { width: 100%; min-width: 0; }
+.drop-entrega .drop-msg { font-size: .92rem; min-height: 0; }
+.drop-entrega .drop-msg:empty { display: none; }
 .aprim-pedidos { display: grid; gap: 16px; margin-top: 14px; }
 .aprim-pedido { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; background: var(--surface2); }
 .aprim-pedido .aprim-quem { margin: 0; color: var(--muted); }
