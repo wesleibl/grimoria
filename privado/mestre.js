@@ -3920,60 +3920,86 @@ function inputItens(el) {
 
 /* ============================ PERSONAGENS (NPCs) ============================ */
 
-/* Elenco de apoio do Reino de Alvorada: vilões, gente dos vilarejos, comerciantes, Ordem e estradas. Cada um tem o que o mestre precisa
+/* Elenco de apoio de Grimória (outono de 1400), alinhado com o Notion (Mundo mágico, NPC, Ordem Oculta, Ordem dos Cavaleiros e os contos): vilões, gente dos vilarejos, comerciantes, Ordem e estradas. Cada um tem o que o mestre precisa
    para interpretar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história.
    "segredo" é só do mestre (esta aba nunca vai para os jogadores). "sexo" é m ou f. */
-var GRUPOS_NPC = ["Organização", "Vale das Colheitas", "Porto Salgado", "Floresta dos Cedros", "Pedra Velha", "Encruzilhada", "Alta Lumen e Ordem", "Estradas"];
+var GRUPOS_NPC = ["Ordem Oculta", "Família Jimmer e Arkonte", "Vale das Colheitas", "Porto Salgado", "Floresta dos Cedros", "Pedra Velha", "Encruzilhada", "Alta Lumen e Cavaleiros", "Estradas"];
 var PERSONAGENS = [
-  /* ---- A organização (SPOILER) ---- */
-  { nome: "Benedita Sarrão", sexo: "f", idade: 54, papel: "Curandeira itinerante (infiltrada 1)", origem: "Vale das Colheitas", grupo: "Organização",
+  /* ---- Ordem Oculta (SPOILER) ---- */
+  { nome: "Benedita Sarrão", sexo: "f", idade: 54, papel: "Curandeira itinerante (infiltrada 1 da Ordem Oculta)", origem: "Vale das Colheitas", grupo: "Ordem Oculta",
     aparencia: "Baixa e redonda, mãos manchadas de verde pelas ervas, lenço cor de açafrão na cabeça e um cesto de vime que nunca larga. Pulseira grossa de fibra trançada no pulso esquerdo. Sorriso de avó e olhos que não sorriem junto.",
     humor: "Maternal e provocador: trata todo mundo como criança desnutrida (\"menino, com essa cor você precisa é de sopa\") e ri baixinho das próprias receitas.",
     fala: "Senta aí que esse corte eu fecho antes de a sopa esfriar. Não, não é mágica. É alho.",
     uso: "Aparece logo depois do ataque aos campos, cuida dos feridos de graça e ganha a confiança de todos. É a primeira 'ajuda' da organização.",
     segredo: "Soltou o Devorador pela Fenda de Mana. A marca fica debaixo da pulseira de fibra. Pista: sabe o nome do fazendeiro ferido antes de alguém dizer. Nunca usa o grimório na frente dos jogadores." },
-  { nome: "Capitão Rufo Maravalha", sexo: "m", idade: 47, papel: "Mercador marítimo e capitão (infiltrado 2)", origem: "Porto Salgado", grupo: "Organização",
+  { nome: "Capitão Rufo Maravalha", sexo: "m", idade: 47, papel: "Mercador marítimo e capitão (infiltrado 2 da Ordem Oculta)", origem: "Porto Salgado", grupo: "Ordem Oculta",
     aparencia: "Barba ruiva trançada com argolas de cobre, casaco comprido de couro de foca, dente de ouro à esquerda. Arrasta um pouco o pé esquerdo (ferida antiga). Anel de sinete pesado na mão direita, que ele gira quando mente.",
     humor: "Exagerado: toda história de mar cresce a cada versão, e ele é o primeiro a gargalhar da própria mentira.",
-    fala: "O peixe tinha o tamanho desta mesa. Desta taberna. Tá bom, do cais. Mas tinha dentes, isso eu juro.",
+    fala: "Eu naveguei com o Barto, na Lágrima de Nemus. Tá bom, naveguei perto. Tá bom, vi de longe. Mas vi, isso eu juro.",
     uso: "Chega com suprimentos e informações sobre o navio misterioso, 'sem querer nada em troca'. Oferece passagem e mapas.",
-    segredo: "O Navio Silencioso é dele; a tripulação inteira é marcada. A marca está gravada por dentro do anel de sinete. Pista: sabe quantos tripulantes o navio tem, e ninguém desceu dele." },
-  { nome: "Ísolde Varanó", sexo: "f", idade: 36, papel: "Caçadora-guia (infiltrada 3)", origem: "Floresta dos Cedros", grupo: "Organização",
+    segredo: "O Navio Silencioso é dele; a tripulação inteira é marcada e faz a ponte com a Ilha Nebulosa. A marca está gravada por dentro do anel de sinete. Nunca navegou com Barto: usa a lenda da Lágrima de Nemus para ganhar o porto. Pista: sabe quantos tripulantes o navio tem, e ninguém desceu dele." },
+  { nome: "Ísolde Varanó", sexo: "f", idade: 36, papel: "Caçadora-guia (infiltrada 3 da Ordem Oculta)", origem: "Floresta dos Cedros", grupo: "Ordem Oculta",
     aparencia: "Alta e magra, cabelo raspado de um lado e trançado do outro, cicatriz de galho no queixo. Anda descalça na mata e carrega um arco curto de cedro. Marca de 'queimadura' fina atrás da orelha, escondida pela trança.",
     humor: "Seco e econômico: uma frase, no máximo duas, e um riso pelo nariz quando alguém erra o caminho.",
     fala: "Pisou no galho. O cervo já sabe que vocês estão aqui. Eu também soube, a duzentos passos.",
     uso: "Oferece guiar os jogadores pela mata atrás dos caçadores sumidos. É boa de verdade, e salva alguém de uma armadilha no caminho.",
-    segredo: "Mandou marcar os caçadores no ritual da Clareira do Cervo. Pista: conhece atalhos que 'ninguém' conhece e nunca se perde à noite. Pode ser a que se redime, se a mesa criar laço com ela." },
-  { nome: "Mestre Aurélio Pensamonte", sexo: "m", idade: 61, papel: "Estudioso de ruínas e magia antiga (infiltrado 4)", origem: "Alta Lumen (mora em Pedra Velha)", grupo: "Organização",
+    segredo: "Mandou marcar os caçadores no ritual da Clareira do Cervo e é o elo da Ordem Oculta com a tribo Arkonte (foi ela que levou a proposta ao pai de Lucian). Pista: conhece atalhos que 'ninguém' conhece e nunca se perde à noite. Pode ser a que se redime, se a mesa criar laço com ela." },
+  { nome: "Mestre Aurélio Pensamonte", sexo: "m", idade: 61, papel: "Estudioso de ruínas e magia antiga (infiltrado 4 da Ordem Oculta)", origem: "Alta Lumen (mora em Pedra Velha)", grupo: "Ordem Oculta",
     aparencia: "Magro, curvado, óculos de aro de latão remendados com arame, dedos azuis de tinta. Túnica cinza com bolsos cheios de lascas de pedra que tilintam quando anda. Um caderno encadernado em couro escuro que nunca abre perto de ninguém.",
     humor: "Pedante e distraído: trocadilhos eruditos que só ele acha graça, seguidos de um 'não entenderam, claro'.",
-    fala: "Esse símbolo é anterior ao reino. Anterior a mim, inclusive, o que é dizer muito.",
+    fala: "Esse símbolo é anterior a Alta Lumen. É de quando os livros ainda chegavam de Manthus sem pedir licença. Anterior a mim, inclusive, o que é dizer muito.",
     uso: "Traduz os símbolos das Ruínas Antigas para os jogadores e pede 'só uma olhadinha' na mina lacrada. Ajuda de verdade a passar pelo guardião.",
-    segredo: "Quer o altar da Câmara Selada para fortalecer o ritual de controle. Pista: o caderno dele já tinha os símbolos desenhados antes de ele 'descobri-los'. A marca fica na palma da mão, sob a tinta." },
-  { nome: "Comandante Lúcia Valmorada", sexo: "f", idade: 42, papel: "Oficial da Ordem dos Cavaleiros Mágicos (infiltrada 5)", origem: "Alta Lumen", grupo: "Organização",
+    segredo: "Quer o altar da Câmara Selada para o ritual de controle absoluto dos marcados. Sabe que há 15 anos um bebê foi deixado na entrada da mina (Elena) e procura os registros disso. Pista: o caderno dele já tinha os símbolos desenhados antes de ele 'descobri-los'. A marca fica na palma da mão, sob a tinta." },
+  { nome: "Comandante Lúcia Valmorada", sexo: "f", idade: 42, papel: "Comandante dos Cavaleiros de Grimória (infiltrada 5 da Ordem Oculta)", origem: "Alta Lumen", grupo: "Ordem Oculta",
     aparencia: "Capa azul-escura da Ordem, armadura polida demais para quem diz viver na estrada, cabelo preto num coque militar, cicatriz fina atravessando a mão direita. Postura perfeita. Luva só na mão direita.",
     humor: "Ironia elegante: provoca com classe, ri da burocracia da Ordem e dos nobres, e faz os jogadores se sentirem os únicos competentes do reino.",
-    fala: "A Ordem vai chegar. Daqui a três semanas, com dois estagiários e um formulário. Enquanto isso, temos vocês.",
+    fala: "Os Cavaleiros vão chegar. Daqui a três semanas, com dois estagiários e um formulário. Otimus faz o que pode. Enquanto isso, temos vocês.",
     uso: "É o apoio dos jogadores dentro da Ordem: defende os relatórios deles, consegue autorizações, abre portas na capital. A traição mais dolorosa.",
-    segredo: "É por ela que a Ordem nunca percebe nada: filtra e some com os relatórios dos vilarejos. A marca está na mão direita, sob a luva. Boa candidata a redenção: foi marcada contra a vontade e luta por dentro." },
-  { nome: "Dom Caliste Umbrão", sexo: "m", idade: 70, papel: "Líder da organização (oculto até o arco final)", origem: "Torre Quebrada (criado pelos guardiões do primeiro grimório)", grupo: "Organização",
+    segredo: "É uma das infiltradas que arruinaram a fama dos Cavaleiros: filtra e some com os relatórios dos vilarejos, e é por ela que Otimus nunca vê nada. A marca está na mão direita, sob a luva. Boa candidata a redenção: foi marcada contra a vontade há anos, na guerra contra os Jimmer, e luta por dentro." },
+  { nome: "Dom Caliste Umbrão", sexo: "m", idade: 70, papel: "Líder da Ordem Oculta (oculto até o arco final)", origem: "Extremo norte, junto da grande torre dos primeiros magos", grupo: "Ordem Oculta",
     aparencia: "Até o arco final, só uma voz calma e uma silhueta na névoa. Quando aparece: cabelo prateado comprido, olhos leitosos de cego, manto cor de cinza, um aro de ferro na testa que esconde a marca original, a primeira de todas.",
     humor: "Calmo e paternal, nunca levanta a voz. Humor de 'pai decepcionado': ironias suaves sobre a pequenez das pessoas e piadas filosóficas que ninguém ri.",
-    fala: "Oito grimórios sorteados ao acaso, e o reino chama isso de ordem. Eu só quero dar ao acaso uma direção.",
-    uso: "Cérebro do plano. Aparece em sonhos ou pela boca dos marcados antes de aparecer em pessoa. Chefe do arco final, no Santuário da Ilha Nebulosa.",
-    segredo: "Acredita que o reino só evitou guerras porque os grandes magos sempre foram poucos, e que uma única vontade (a dele) os manterá sob controle para sempre. Quer marcar os jogadores, que são os próximos grandes magos. (Motivação a confirmar com o mestre.)" },
-  { nome: "Tião Serrote", sexo: "m", idade: 29, papel: "Capanga marcado (ex-lenhador)", origem: "Floresta dos Cedros", grupo: "Organização",
+    fala: "Manthus escolhe ao acaso e Grimória chama isso de cerimônia. Eu só quero dar ao acaso uma direção. O meu grimório concorda.",
+    uso: "Cérebro do plano. Fala pela boca dos marcados antes de aparecer em pessoa. Chefe do arco final, no Santuário da Ilha Nebulosa. Quer de volta 'a cobaia': o Primeiro Marcado (Caspian), que tocou Manthus quando foi marcado.",
+    segredo: "Há décadas é controlado pelo próprio grimório, que só quer poder; ele acredita que é o contrário. Objetivo da Ordem Oculta: concluir o ritual que controla todos os marcados de uma vez e governar Grimória com um exército de magos. Os grandes senhores de Alta Lumen que o financiaram no começo hoje têm medo dele. (Nome e rosto a confirmar: o Notion ainda não nomeia o líder.)" },
+  { nome: "Tião Serrote", sexo: "m", idade: 29, papel: "Capanga marcado (ex-lenhador)", origem: "Floresta dos Cedros", grupo: "Ordem Oculta",
     aparencia: "Enorme, ombros de lenhador, barba por fazer, machado de cabo comprido. Olhos vidrados. Emblema da marca pendurado no pescoço, por fora da camisa, como se fosse honra.",
     humor: "O que sobrou: repete as piadas que contava antes, sem rir e no tom errado, como se lesse de um papel.",
     fala: "Por que o lenhador não... não... Eu contava essa. Era engraçada.",
     uso: "O rosto dos capangas marcados: mostra o que a marca faz com alguém. Pode ser libertado (dificuldade 12) e virar aliado, com memória cheia de buracos.",
-    segredo: "Foi um dos caçadores sumidos na Clareira do Cervo. Se libertado, lembra da voz de Ísolde no ritual." },
-  { nome: "Nerissa Dobra-Maré", sexo: "f", idade: 25, papel: "Marinheira marcada do Navio Silencioso", origem: "Porto Salgado", grupo: "Organização",
+    segredo: "Foi um dos caçadores sumidos na Clareira do Cervo. Se libertado, lembra da voz de Ísolde no ritual e de um cheiro forte de mana arcana (os Arkonte estavam lá)." },
+  { nome: "Nerissa Dobra-Maré", sexo: "f", idade: 25, papel: "Marinheira marcada do Navio Silencioso", origem: "Porto Salgado", grupo: "Ordem Oculta",
     aparencia: "Pele queimada de sol, cabelo encaracolado cheio de sal, tatuagem de âncora no antebraço e, por cima dela, a marca. Pés descalços, calça arregaçada. Cantava nas tabernas: a voz ainda é bonita.",
     humor: "Antes da marca: piadas de marinheiro e canções de deboche. Agora só cantarola, e às vezes a melodia certa escapa com a letra errada.",
     fala: "(cantarolando) ...e o mar guardou o nome dela... O nome. Qual era o nome?",
     uso: "Primeira marcada que os jogadores podem conhecer de perto. Mãe Zefa, da taberna, a conhece desde criança e pede ajuda.",
     segredo: "Subiu no navio de Rufo por um contrato de trabalho. Se libertada, sabe o caminho pela névoa até a Ilha Nebulosa." },
+
+  /* ---- Família Jimmer e tribo Arkonte (SPOILER) ---- */
+  { nome: "Altergon Jimmer", sexo: "m", idade: 66, papel: "Patriarca da família Jimmer", origem: "Ilha Jimmer, ao lado da Ilha Nebulosa", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Muito alto, cabelo grisalho comprido e liso, casaco de pele branca com neve que nunca derrete. Cicatriz funda no braço direito (o tiro de canhão de Barto, em 1390). O ar esfria quando ele se irrita.",
+    humor: "Desprezo frio: ri sem som, chama todo mundo de 'isso' e acha graça em ver gente pobre tentar ser educada.",
+    fala: "Uma frota inteira dos Cavaleiros veio me prender. Voltou em pedaços de gelo. Vocês são oito. Façam as contas.",
+    uso: "O poder que ninguém enfrenta: destruiu uma frota da Ordem e matou Barto. Chefe de arco próprio ou aliado de conveniência da Ordem Oculta, que o quer marcado também. Pai de Escanor, avô de Elena.",
+    segredo: "O grimório dele foi feito para ele, o que o torna o alvo mais cobiçado do ritual. Não sabe que Elena, a filha de Escanor, está viva. Se descobrir, vai querê-la de volta na família, pelo bem ou pelo mal." },
+  { nome: "Sável Jimmer", sexo: "m", idade: 34, papel: "Filho mais velho de Altergon", origem: "Ilha Jimmer", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Cópia mais jovem do pai, sem a cicatriz e com o dobro de anéis. Luvas de seda, cabelo preso num rabo com fio de prata, sorriso ensaiado. Cospe no chão antes de falar com plebeu.",
+    humor: "Sádico e teatral: faz piada da pobreza alheia, bate palmas devagar e imita o sotaque dos vilarejos.",
+    fala: "Sapatos remendados. Que coragem. Meu pai congela gente por menos. Eu sou o filho bonzinho: só congelo os sapatos.",
+    uso: "A cara da família que o povo odeia. Primeiro Jimmer que os jogadores encontram (num porto, numa cobrança, numa festa do prefeito). Poder quase igual ao do pai: use primeiro como ameaça social, não como combate.",
+    segredo: "Odiava o irmão Escanor por ter 'escolhido os pobres' e foi quem entregou o esconderijo dele à Ordem Oculta há 15 anos. Se Elena descobrir, é o vilão pessoal dela." },
+  { nome: "Harkon Ashmore", sexo: "m", idade: 58, papel: "Chefe da tribo Arkonte (corrompido pela Ordem Oculta)", origem: "Tribo Arkonte, na mata perto dos Cedros", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Peito largo pintado de ocre, colar de dentes de javali, cabelo trançado com penas de coruja, olhos injetados. Uma faixa de couro cobre o pulso esquerdo (a marca).",
+    humor: "Rude e orgulhoso: ri alto das 'pessoas de parede' (quem mora em casa) e trata toda pergunta como desafio de força.",
+    fala: "A mata era nossa antes de vocês aprenderem a fechar porta. O cervo, o rio, o grimório do menino: tudo nosso.",
+    uso: "Explica por que a tribo, que era livre, virou braço da Ordem Oculta: rouba artefatos da natureza sem saber o valor e caça os jovens de Cedros antes da Primeira Conexão. Convenceu o filho a atacar o irmão de River.",
+    segredo: "Foi marcado por Ísolde em troca de 'manter a tribo no poder'. Já não distingue a própria vontade da marca. Se libertado, entrega Lucian e chora pelo filho." },
+  { nome: "Lucian Ashmore", sexo: "m", idade: 19, papel: "Jovem promissor da tribo Arkonte, Grimório do Arcano", origem: "Tribo Arkonte", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Magro e rápido, pintura arcana azul nos braços que brilha quando conjura, cabelo preto curto, cicatriz de adaga no antebraço (do irmão de River). Grimório roxo preso por uma corrente à cintura.",
+    humor: "Arrogante e nervoso: provoca quando está em vantagem e fica mudo quando não está. Ri alto demais das próprias ameaças.",
+    fala: "Reflexos bons o seu irmão tinha. Costas largas também. Foi fácil mirar.",
+    uso: "O vilão pessoal de River: matou o irmão dele com uma rajada de mísseis arcanos, pelas costas, junto ao rio dos Cedros. Chefe do arco da Floresta, antes ou depois de Ísolde cair.",
+    segredo: "Não é marcado: faz tudo por medo do pai e por orgulho. Isso o torna o único vilão do arco que pode escolher parar, se River lhe der o motivo (ou a chance)." },
 
   /* ---- Vale das Colheitas ---- */
   { nome: "Dona Rosalva Terrabranda", sexo: "f", idade: 63, papel: "Fazendeira e matriarca do vilarejo", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
@@ -4039,7 +4065,7 @@ var PERSONAGENS = [
     humor: "Enigmático: conta fábulas sem final e diz 'o fim você termina'. Ri quando alguém se irrita com isso.",
     fala: "Um caçador seguiu um cervo branco até a clareira. O cervo olhou para ele e disse... Bom. O resto você vai me contar quando voltar.",
     uso: "Autoriza a entrada na mata e conhece a lenda do Cervo. Pede que tragam os caçadores vivos, 'mesmo que não pareçam vivos'.",
-    segredo: "Sabe que o cervo da clareira é sagrado e está sofrendo. Prefere que o libertem a que o matem." },
+    segredo: "Sabe que o cervo da clareira é sagrado e está sofrendo, e prefere que o libertem a que o matem. Sabe também que o cheiro de mana arcana na noite em que o irmão de River morreu era da tribo Arkonte, e tem medo de dizer o nome Ashmore em voz alta." },
   { nome: "Mira Passo-Leve", sexo: "f", idade: 22, papel: "Caçadora, irmã de um caçador sumido", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
     aparencia: "Pequena e rápida, cabelo escuro curto, carvão pintado sob os olhos, faca de osso na coxa, botas com sola de pele. Mordida de lobo cicatrizada no antebraço.",
     humor: "Competitiva: aposta tudo ('aposto que não acerta aquele galho'), comemora alto e cobra as apostas que ganha.",
@@ -4065,7 +4091,7 @@ var PERSONAGENS = [
     humor: "Grosso: xinga em dialeto de mina, faz piada de desabamento e ri como quem tosse.",
     fala: "Lacrei a mina eu mesmo, com estas mãos. Se vocês abrirem, abram sabendo que o que tá lá dentro bateu na porta primeiro.",
     uso: "Dono da decisão de lacrar a mina. Orgulhoso, culpado e teimoso: só libera a entrada se os jogadores provarem que valem a pena.",
-    segredo: "Ouviu o 'tremor estranho' de dentro da Câmara Selada: não foi tremor, foi uma batida ritmada, como um coração." },
+    segredo: "Foi ele quem achou o bebê na entrada da mina há 15 anos, numa noite de confronto. Guarda o manto bordado com o nome 'Elena Jimmer' numa caixa de ferramentas e nunca contou o sobrenome a ninguém: ninguém quer encrenca com os Jimmer nem com a Ordem Oculta. Também ouviu o 'tremor estranho' da Câmara Selada: foi uma batida ritmada, como um coração." },
   { nome: "Beatriz Lanterna", sexo: "f", idade: 17, papel: "Guardiã das lanternas da mina", origem: "Pedra Velha", grupo: "Pedra Velha",
     aparencia: "Magra, cabelo preso num pano cheio de fuligem, dedos queimados de óleo, um chaveiro enorme de lanternas penduradas. Olhos acostumados ao escuro.",
     humor: "Nerd de túnel: conta tudo em números (passos, metros, litros de óleo) e acha graça quando os outros não acompanham.",
@@ -4095,15 +4121,15 @@ var PERSONAGENS = [
   { nome: "Bruna Cantoneira", sexo: "f", idade: 33, papel: "Chefe da guarda da cidade", origem: "Encruzilhada", grupo: "Encruzilhada",
     aparencia: "Nariz quebrado duas vezes, cabelo raspado dos lados, cota de malha remendada, lança curta. Mastiga raiz de gengibre para ficar acordada.",
     humor: "Sarcasmo de quartel: curto, seco e sempre contra quem está no comando (inclusive ela mesma).",
-    fala: "Pedi reforço à Ordem na primavera. Mandaram um selo bonito. Eu emoldurei.",
-    uso: "A primeira a dizer em voz alta que a Ordem não dá conta. Aliada prática dos jogadores na Sessão 1: entrega o primeiro combate (os bandidos) e os guarda nas costas.",
+    fala: "Pedi reforço aos Cavaleiros na primavera. Mandaram um selo bonito. Eu emoldurei.",
+    uso: "A primeira a dizer em voz alta que os Cavaleiros não dão conta e que 'tem gente podre lá dentro'. Aliada prática dos jogadores na Sessão 1: entrega o primeiro combate (os bandidos) e os guarda nas costas.",
     segredo: "" },
-  { nome: "Sr. Évaro", sexo: "m", idade: 68, papel: "Cerimonialista dos grimórios", origem: "Encruzilhada", grupo: "Encruzilhada",
+  { nome: "Sr. Évaro", sexo: "m", idade: 68, papel: "Cerimonialista da Primeira Conexão", origem: "Encruzilhada", grupo: "Encruzilhada",
     aparencia: "Alto e ossudo, túnica branca bordada de dourado já amarelada, bastão com um livro de pedra na ponta. Fala com pausas longas e olhos fechados. Cheira a incenso.",
     humor: "Solene e teatral em público, com pausas dramáticas. Em particular, adora uma fofoca e ri com a mão na boca.",
-    fala: "O grimório... escolhe. (pausa) Não o contrário. (pausa) Agora me conta, o filho da Rosalva foi mesmo sorteado com Sangue?",
-    uso: "Conduz a cerimônia da Sessão 1 e explica os grimórios. Sabe onde fica o Cemitério de Grimórios e o que dorme lá.",
-    segredo: "Guardou o card do Antimagia fora do sorteio por ordem antiga que ele não entende. Sabe que Caliste existiu: eram aprendizes juntos na Torre Quebrada." },
+    fala: "Manthus... escolhe. (pausa) Na segunda semana do outono. (pausa) Agora me conta, o filho da Rosalva foi mesmo sorteado com Sangue?",
+    uso: "Conduz a Primeira Conexão da Sessão 1 e explica os grimórios: a ponte com Manthus, os 15 anos de conjuração, o grimório que pode usar o mago. Sabe onde fica o Cemitério de Grimórios e o que dorme lá.",
+    segredo: "Guardou o card do Antimagia fora do sorteio por ordem antiga que ele não entende. Sabe que a Ordem Oculta existe e, como todo sábio de Alta Lumen, finge que não sabe. Conheceu o líder dela quando os dois eram aprendizes no norte." },
   { nome: "Pipa", sexo: "f", idade: 12, papel: "Garota de recados (e de bolsos alheios)", origem: "Encruzilhada", grupo: "Encruzilhada",
     aparencia: "Pequena, suja de propósito, cabelo cortado com faca, casaco de adulto com as mangas dobradas quatro vezes. Corre mais do que qualquer guarda.",
     humor: "Rápida e insolente: xingamentos criativos ('cara de pão dormido') e imitações cruéis dos adultos.",
@@ -4118,36 +4144,36 @@ var PERSONAGENS = [
     segredo: "" },
 
   /* ---- Alta Lumen e a Ordem ---- */
-  { nome: "Capitão-Geral Teobaldo Ferrolho", sexo: "m", idade: 61, papel: "Comandante da Ordem dos Cavaleiros Mágicos", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
-    aparencia: "Imponente, manto branco e ouro, bigode grisalho enorme e encerado, bastão de comando que ele bate no chão para pontuar frases. Cicatrizes antigas no rosto que ele não esconde.",
-    humor: "Nenhum, e isso é a piada: diz 'não vejo a graça' com toda a seriedade. Uma vez por sessão deixa escapar uma ironia seca, e nega.",
-    fala: "A Ordem é uma. Sempre foi uma. Dividi-la é dividir a espada ao meio e esperar que corte o dobro.",
-    uso: "Resiste à divisão em esquadrões. Tradicionalista, honesto e sobrecarregado. Pode ser o próximo alvo da marca, ou o chefe controlado de um arco.",
-    segredo: "Confia cegamente em Lúcia Valmorada. É por isso que nunca viu os relatórios." },
-  { nome: "Cavaleira Serena Alvorecer", sexo: "f", idade: 24, papel: "Cavaleira jovem da Ordem", origem: "Alta Lumen (filha de lavadeira)", grupo: "Alta Lumen e Ordem",
+  { nome: "Otimus", sexo: "m", idade: 58, papel: "Líder dos Cavaleiros de Grimória", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Ombros largos sob um tabardo branco desbotado que ele se recusa a trocar, barba curta grisalha, mãos cheias de calos de espada, olheiras de quem dorme no quartel. Sem joias, sem capa de gala. Grimório gasto preso ao peito.",
+    humor: "Seco e autodepreciativo: ri da própria fama ('o mago exemplar que chega atrasado') e das piadas que o povo faz dos Cavaleiros, porque sabe que são merecidas.",
+    fala: "Eu sei o que dizem de nós. Que chegamos tarde. Que tem ladrão de tabardo. Tudo verdade. Por isso eu ainda estou aqui, e não na minha cama.",
+    uso: "O mago exemplar que combate o mal sem a admiração de ninguém. Sobrecarregado: poucos cavaleiros íntegros para um reino inteiro. É quem, no fim, reconhece que a Ordem única não dá conta e aceita os esquadrões.",
+    segredo: "Confia em Lúcia Valmorada como em ninguém: é por isso que nunca vê os relatórios. Há 15 anos lutou ao lado de Aurora e Escanor contra os Jimmer e acha que a filha deles morreu. Alvo óbvio do ritual da Ordem Oculta." },
+  { nome: "Cavaleira Serena Alvorecer", sexo: "f", idade: 24, papel: "Cavaleira jovem da Ordem", origem: "Alta Lumen (filha de lavadeira)", grupo: "Alta Lumen e Cavaleiros",
     aparencia: "Cabelo loiro curto, armadura leve com marcas de uso real (não polida), mapa dobrado sempre no cinto, sorriso fácil. Grimório de capa gasta na bolsa.",
     humor: "Autodepreciativo: ri dos próprios erros antes que os outros riam, e conta cada vexame como história de guerra.",
     fala: "Na minha primeira missão eu salvei a vila errada. Ficou todo mundo grato. A vila certa também sobreviveu, então... empate?",
-    uso: "A aliada que defende a divisão em esquadrões. Plebeia na Ordem, entende os jogadores. É quem propõe que eles liderem no final.",
+    uso: "A aliada que defende a divisão em esquadrões. Plebeia entre os Cavaleiros, entende os jogadores. É quem propõe que eles liderem no final.",
     segredo: "Foi quem apresentou os jogadores a Lúcia. Vai se sentir culpada na revelação." },
-  { nome: "Escrivão Pascoal Tinteiro", sexo: "m", idade: 40, papel: "Escrivão-chefe da Ordem", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+  { nome: "Escrivão Pascoal Tinteiro", sexo: "m", idade: 40, papel: "Escrivão-chefe dos Cavaleiros", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
     aparencia: "Magro, nervoso, tinta nas mangas, nos dedos e numa bochecha, óculos escorregando, pilhas de papel que ele carrega como escudo. Treme a perna quando sentado.",
     humor: "Riso nervoso no fim de cada frase e piadas de papelada ('isso precisa de três vias, inclusive a piada').",
     fala: "Três ofícios de Porto Salgado? Eu protocolei. Eu lembro. Eles... não estão aqui. Ha ha. Não estão aqui.",
     uso: "A pista contra Lúcia: os relatórios dos vilarejos entram no arquivo e somem. Ele lembra de cada um e tem medo de dizer para quem os entregou.",
     segredo: "" },
-  { nome: "Marquesa Doroteia Vinhedo-Alto", sexo: "f", idade: 50, papel: "Nobre patrona da Ordem", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+  { nome: "Marquesa Doroteia Vinhedo-Alto", sexo: "f", idade: 50, papel: "Grande senhora de Alta Lumen, patrona dos Cavaleiros", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
     aparencia: "Vestido cor de vinho, pescoço longo, colar de safiras, leque que ela abre quando alguém a aborrece. Penteado alto que nunca se move.",
     humor: "Crueldade elegante: insultos embrulhados em elogios ('que armadura interessante, é de verdade?').",
     fala: "Plebeus com grimórios. Que época encantadora. Por favor, não toquem nas cortinas.",
-    uso: "Financia a Ordem e despreza os vilarejos. Obstáculo político: pode cortar o apoio aos jogadores. Não é da organização, só é desagradável.",
-    segredo: "Odeia Caliste Umbrão por um motivo antigo de família. Pode virar aliada improvável no arco final." },
-  { nome: "Rei Adalberto II", sexo: "m", idade: 71, papel: "Rei de Alvorada", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+    uso: "Financia os Cavaleiros e despreza os vilarejos. Uma dos grandes senhores que sabem da Ordem Oculta e fingem que não: o assunto é proibido na mesa dela. Obstáculo político, não vilã.",
+    segredo: "Foi um dos grandes senhores que encomendaram a marca à Ordem Oculta para manipular Alta Lumen, há 15 anos, e hoje tem pavor do que ajudou a criar. Pode virar aliada improvável no arco final, por medo." },
+  { nome: "Rei Adalberto II", sexo: "m", idade: 71, papel: "Rei de Grimória (opcional)", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
     aparencia: "Cansado, magro dentro das vestes largas, coroa que ele tira e põe na mesa quando ninguém está olhando. Olhos bondosos. Mãos trêmulas segurando sempre uma xícara.",
     humor: "Piadas de pai cansado, quase todas sobre o peso da coroa e sobre não lembrar nomes ('você é o do fogo, não é? Todos são do fogo').",
-    fala: "Me disseram que vocês desobedeceram a Ordem para salvar um vilarejo. Me contem de novo. Devagar. Eu gosto dessa parte.",
-    uso: "Quer paz e sabe que a Ordem única não alcança o reino. É quem nomeia os esquadrões na cerimônia final.",
-    segredo: "Foi marcado há anos; a marca nunca foi ativada porque Caliste o considera inofensivo. Pode virar reviravolta se o mestre quiser." },
+    fala: "Me disseram que vocês desobedeceram os Cavaleiros para salvar um vilarejo. Me contem de novo. Devagar. Eu gosto dessa parte.",
+    uso: "Quer paz e sabe que os Cavaleiros, sozinhos, não alcançam o reino. É quem nomeia os esquadrões na cerimônia final. (O Notion fala em 'grandes senhores' e não num rei: se preferir, troque por um conselho e use a Marquesa como voz dele.)",
+    segredo: "Ideia opcional: foi marcado há anos e a marca nunca foi ativada porque a Ordem Oculta o considera inofensivo. Reviravolta, se o mestre quiser." },
 
   /* ---- Estradas e lugares estranhos ---- */
   { nome: "Zacarias Bugigangas", sexo: "m", idade: 60, papel: "Mascate das estradas", origem: "Nenhum lugar (nasceu numa carroça entre o Vale e o Porto)", grupo: "Estradas",
@@ -4160,14 +4186,14 @@ var PERSONAGENS = [
     aparencia: "Alaúde às costas, botas de dois pares diferentes, cabelo comprido com fitas que as moças dos vilarejos deram, sorriso de quem nunca pagou uma conta inteira.",
     humor: "Rima tudo, canta o que não devia e faz canções de deboche sobre nobres, prefeitos e, se pagarem, sobre os próprios jogadores.",
     fala: "Oito plebeus com livros no cinto / um fez um feitiço, os outros fingiram... ei, é rascunho, calma.",
-    uso: "Leva notícias entre os vilarejos (mais rápido que a Ordem). As canções dele contam o que os jogadores fizeram e viram os primeiros 'lemas' dos esquadrões.",
+    uso: "Leva notícias entre os vilarejos (mais rápido que os Cavaleiros). Canta a balada da Lágrima de Nemus e de Barto em todo cais. As canções dele contam o que os jogadores fizeram e viram os primeiros 'lemas' dos esquadrões.",
     segredo: "Sem saber, é espião da organização: Rufo paga as bebidas dele e ouve tudo o que ele canta." },
   { nome: "Esmeralda do Lago", sexo: "f", idade: 44, papel: "Eremita do Lago Espelhado", origem: "Pedra Velha (sumiu da vila aos 20)", grupo: "Estradas",
     aparencia: "Cabelo comprido escuro sempre molhado nas pontas, vestido cinza simples, pés descalços na margem, olhos da cor da água. Não se sabe onde dorme.",
     humor: "Responde perguntas com perguntas e ri de um jeito que parece eco. Acha graça em quem tem pressa.",
     fala: "Você quer saber que grimório o lago mostra? E se ele mostrar o que você já tem? Vai ficar decepcionado ou aliviado?",
     uso: "Para a cena do Lago Espelhado (sem segredo definido): oráculo, descanso ou espelho do que cada jogador tem medo de ser. O mestre preenche.",
-    segredo: "A decidir. Ideia: foi a primeira pessoa que Caliste tentou marcar, e a marca não pegou. O lago a protege." }
+    segredo: "A decidir. Ideia: descende do povo de Atlantus sem saber; a chave de Nemus brilharia para ela. Pode ser o elo de Tara com a cidade submersa." }
 ];
 
 var filtroNpc = { grupo: "todos", sexo: "todos" };
@@ -4175,7 +4201,7 @@ var filtroNpc = { grupo: "todos", sexo: "todos" };
 function viewPersonagens() {
   var m = PERSONAGENS.filter(function (p) { return p.sexo === "m"; }).length;
   return "<h1>Personagens</h1>" +
-    '<p class="lead">O elenco do Reino de Alvorada para o mestre usar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história. São ' + PERSONAGENS.length + " personagens (" + m + " homens e " + (PERSONAGENS.length - m) + " mulheres). Esta aba é só do mestre: os vilões e os segredos estão aqui.</p>" +
+    '<p class="lead">O elenco de Grimória (outono de 1400) para o mestre usar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história. São ' + PERSONAGENS.length + " personagens (" + m + " homens e " + (PERSONAGENS.length - m) + " mulheres). Esta aba é só do mestre: a Ordem Oculta, os Jimmer e os segredos estão aqui. Os personagens dos contos do Notion (Caspian, Tara, Ketysuru, Dante, Emellyn, River, Elena) são dos jogadores e não entram.</p>" +
     '<div class="controls"><div class="fgroup"><span>Grupo</span><div class="chips" id="fNpcGrupo">' +
     ["todos"].concat(GRUPOS_NPC).map(function (g) {
       return '<button type="button" class="chip" data-npcgrupo="' + esc(g) + '" aria-pressed="' + (filtroNpc.grupo === g) + '">' + (g === "todos" ? "Todos" : esc(g)) + "</button>";
@@ -4188,11 +4214,12 @@ function viewPersonagens() {
     panel("Como usar", "<ul><li>Os <b>infiltrados</b> seguem a regra dos 3 momentos (ajuda, pista pequena, revelação). A pista de cada um está no segredo.</li>" +
       "<li>A <b>marca</b> aparece sempre num lugar coberto: pulseira, anel, luva, trança, tinta. Repetir esse detalhe é o que faz a traição parecer justa depois.</li>" +
       "<li>Os moradores com <b>uso</b> ligado a um infiltrado (Celina, Pascoal, Beatriz, Vó Ludmila, Pipa) são as pistas que os jogadores podem achar sozinhos.</li>" +
-      "<li>Mira, Joca, Serena e Bruna são bons <b>futuros membros de esquadrão</b>.</li></ul>");
+      "<li>Mira, Joca, Serena e Bruna são bons <b>futuros membros de esquadrão</b>.</li>" +
+      "<li>Ganchos dos contos: Dário guarda o manto de <b>Elena</b>; Lucian e Harkon são o alvo de <b>River</b>; o líder da Ordem Oculta quer <b>Caspian</b> de volta; Esmeralda e a chave de Nemus ligam a <b>Tara</b>; Rufo mente sobre a Lágrima de Nemus (<b>Ketysuru</b>).</li></ul>");
 }
 
 function npcCard(p) {
-  var vilao = p.grupo === "Organização";
+  var vilao = p.grupo === "Ordem Oculta";
   return '<article class="panel npc' + (vilao ? " npc-vilao" : "") + '"><h3>' + ic(p.sexo === "f" ? "grupo" : "grupo") + esc(p.nome) + ' <small>' + p.idade + " anos</small></h3>" +
     '<p class="npc-papel"><b>' + esc(p.papel) + "</b><br><small>Cresceu em: " + esc(p.origem) + "</small></p>" +
     "<p><b>Aparência:</b> " + esc(p.aparencia) + "</p>" +
@@ -4210,7 +4237,7 @@ function desenharPersonagens() {
     var lista = PERSONAGENS.filter(function (p) { return p.grupo === g && (filtroNpc.sexo === "todos" || p.sexo === filtroNpc.sexo); });
     if (!lista.length) return;
     total += lista.length;
-    h += "<h2>" + esc(g) + (g === "Organização" ? " <small>(spoiler)</small>" : "") + '</h2><div class="cols">' + lista.map(npcCard).join("") + "</div>";
+    h += "<h2>" + esc(g) + ((g === "Ordem Oculta" || g === "Família Jimmer e Arkonte") ? " <small>(spoiler)</small>" : "") + '</h2><div class="cols">' + lista.map(npcCard).join("") + "</div>";
   });
   cont.innerHTML = h || '<p class="mdica">Nenhum personagem com esse filtro.</p>';
   if (conta) conta.textContent = total + (total === 1 ? " personagem." : " personagens.");
