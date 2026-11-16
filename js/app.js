@@ -1178,7 +1178,7 @@ function desenharTabuleiro(cfg) {
     /* Seta sobre a borda do círculo, visível também por cima da seleção e da foto. */
     var seta = "", ang = { n: 0, l: 90, s: 180, o: 270 }[t.dir];
     if (ang !== undefined && t.tipo !== "armadilha") {
-      seta = '<polygon class="dir" transform="rotate(' + ang + ')" points="0,' + (-r * 1.3).toFixed(1) + " " + (r * 0.52).toFixed(1) + "," + (-r * 0.56).toFixed(1) + " " + (-r * 0.52).toFixed(1) + "," + (-r * 0.56).toFixed(1) + '"/>';
+      seta = '<polygon class="dir" transform="rotate(' + ang + ')" points="0,' + (-r * 1.6).toFixed(1) + " " + (r * 0.5).toFixed(1) + "," + (-r * 0.92).toFixed(1) + " " + (-r * 0.5).toFixed(1) + "," + (-r * 0.92).toFixed(1) + '"/>';
     }
     var barra = "";
     if (cfg.mestre && t.vidaMax && t.tipo !== "armadilha") {
@@ -1199,10 +1199,11 @@ function desenharTabuleiro(cfg) {
     }
     /* Foto do personagem no lugar das iniciais (as iniciais ficam por baixo, para o caso de a imagem não carregar). */
     var fotoSvg = "";
-    if (t.foto && t.tipo !== "armadilha") {
+    var fotoUrl = t.foto ? API + "?a=img&amp;id=" + encodeURIComponent(t.foto) : (t.icone ? "image/bestiario/" + encodeURIComponent(t.icone) + ".jpg" : "");
+    if (fotoUrl && t.tipo !== "armadilha") {
       var cid = "cp" + (idxTok++);
       fotoSvg = '<clipPath id="' + cid + '"><circle r="' + r.toFixed(1) + '"/></clipPath>' +
-        '<image href="' + API + "?a=img&amp;id=" + encodeURIComponent(t.foto) + '" x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
+        '<image href="' + fotoUrl + '" x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
         '<circle class="anel" r="' + r.toFixed(1) + '"/>';
     }
     /* O token selecionado ganha um halo que pulsa para fora: é a pista de que ele aguarda o destino. */

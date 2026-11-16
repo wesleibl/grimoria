@@ -3095,6 +3095,7 @@ function desenharAcaoMestre() {
     var vis = a.tokens.filter(function (t) { return !(t.oculto && !revelado(t)) && !(t.tipo === "armadilha" && !revelado(t) && !acionada(t)); }).map(function (t) {
       var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
       if (j && j.img) c.foto = j.img;
+      if (!c.icone && t.bestiario && IMAGEM_INIMIGO[t.bestiario]) c.icone = IMAGEM_INIMIGO[t.bestiario];
       return c;
     });
     desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: vis, atual: atualId(), mestre: false, depois: ligarArraste });
@@ -3104,6 +3105,7 @@ function desenharAcaoMestre() {
     var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
     c.oculto = !!t.oculto && !revelado(t);
     if (j && j.img) c.foto = j.img; /* foto do personagem no lugar das iniciais */
+    if (!c.icone && t.bestiario && IMAGEM_INIMIGO[t.bestiario]) c.icone = IMAGEM_INIMIGO[t.bestiario];
     return c;
   });
   /* Nos turnos, o token selecionado mostra em azul até onde ainda pode ir. */
