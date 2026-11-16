@@ -229,6 +229,7 @@ function salvarCamposJogador(string $id, array $campos, bool $criar, bool $valid
     $atual = $st->fetchColumn();
     if ($atual === false && !$criar) { $pdo->rollBack(); return false; }
     $dados = $atual === false ? [] : (json_decode($atual, true) ?: []);
+    $anteriores = $dados;
     foreach ($campos as $k => $v) $dados[$k] = $v;
     $dados['nivel'] = nivelAtualJogador($dados);
     if ($validarBonus) {
@@ -238,6 +239,7 @@ function salvarCamposJogador(string $id, array $campos, bool $criar, bool $valid
         $gasto = 0;
         foreach (ATRIBUTOS as $k) {
             $v = (int)($dados['bonus'][$k] ?? 0);
+            if ($v < (int)($anteriores['bonus'][$k] ?? 0)) { $pdo->rollBack(); erro('Pontos de atributo já salvos não podem ser removidos. Peça ao mestre para corrigir a ficha.', 409); }
             $gasto += $v;
             if ((int)($dados['atr'][$k] ?? 0) + $v > $limite) { $pdo->rollBack(); erro('Um atributo ultrapassa o limite do nível ' . $dados['nivel'] . '.'); }
         }

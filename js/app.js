@@ -778,7 +778,8 @@ function statusHTML(j) {
   var lim = LIM_NIVEL[n - 1], jr = extras({}, j), sujo = bonusSujo();
   jr.bonus = bonusRasc || j.bonus;
   var pontosRestantes = Math.max(0, n - 1 - ATRS.reduce(function (s, a) { return s + atrBonus(jr, a[0]); }, 0));
-  return '<h2>Status</h2><section class="panel ficha">' + statsHTML(jr) + (sujo ? '<p class="mdica">Os números acima mostram a <b>prévia</b> do bônus, que ainda não foi salvo.</p>' : "") + "<h3>Atributos</h3>" +
+  return '<h2>Status</h2><section class="panel ficha">' + statsHTML(jr) + (sujo ? '<p class="mdica">Os números acima mostram a <b>prévia</b> do bônus, que ainda não foi salvo.</p>' : "") +
+    '<div class="atr-titulo"><h3>Atributos</h3><details class="atr-ajuda"><summary aria-label="Informações sobre atributos" title="Informações sobre atributos">ⓘ</summary><p>A base é fixa após a criação. Você ganha 1 ponto de bônus por nível, até o limite de +' + lim + ' por atributo. Itens equipados entram no total. Depois de salvar, só o mestre pode corrigir pontos aplicados.</p></details></div>' +
     '<p class="mdica"><b>' + pontosRestantes + (pontosRestantes === 1 ? ' ponto disponível' : ' pontos disponíveis') + '</b> para distribuir pelos atributos neste nível.</p>' +
     '<div class="atr-cards">' + ATRS.map(function (a) {
       var tot = atrTotal(jr, a[0]), bonus = atrBonus(jr, a[0]);
@@ -786,12 +787,11 @@ function statusHTML(j) {
         '<div class="atr-total"><span class="mdica">Total</span><div class="atr-grande">' + sinal(tot) + "</div></div>" +
         '<div class="atr-linhas"><div class="atr-base"><span class="mdica">Base (fixa)</span><b>' + sinal(atrBase(j, a[0])) + "</b></div>" +
         '<div class="atr-bonus"><span class="mdica">Bônus</span><div class="atr-passo pequeno">' +
-        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de bônus de ' + a[1] + '"' + (bonus <= -5 || salvandoBonus ? " disabled" : "") + ">−</button>" +
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto ainda não salvo de ' + a[1] + '"' + (bonus <= atrBonus(j, a[0]) || salvandoBonus ? " disabled" : "") + ">−</button>" +
         '<b class="atr-valor" aria-live="polite">' + sinal(bonus) + "</b>" +
         '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 || atrBase(j, a[0]) + bonus >= lim || pontosRestantes <= 0 || salvandoBonus ? " disabled" : "") + ">+</button></div></div></div>" +
         (atrBase(j, a[0]) + bonus > lim ? '<p class="atr-aviso">Bônus acima do limite de +' + lim + " do seu nível. O mestre confere.</p>" : "") + "</section>";
     }).join("") + "</div>" +
-    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. Você ganha 1 ponto de <b>bônus</b> a cada nível, até o limite de +' + lim + " em cada atributo. Os itens equipados também aparecem no total. <b>Aperte Salvar atributos</b> para valer.</p>" +
     '<div class="atr-barra"><span class="atr-estado' + (sujo ? " sujo" : "") + '" role="status">' + esc(salvandoBonus ? "Salvando…" : (sujo ? "Alterações não salvas" : (bonusMsg || "Tudo salvo"))) + "</span>" +
     '<button type="button" id="perfilDescartarBonus"' + (sujo && !salvandoBonus ? "" : " hidden") + ">Desfazer</button>" +
     '<button type="button" class="primary" id="perfilSalvarBonus"' + (sujo && !salvandoBonus ? "" : " disabled") + ">" + (salvandoBonus ? "Salvando…" : "Salvar atributos") + "</button></div></section>";
@@ -936,8 +936,8 @@ function salvarBonus() {
   if (!j || !bonusRasc || salvandoBonus || !bonusSujo()) return;
   var copia = { poder: bonusRasc.poder, destreza: bonusRasc.destreza, inteligencia: bonusRasc.inteligencia };
   var gasto = copia.poder + copia.destreza + copia.inteligencia, lim = LIM_NIVEL[nivelJog(j) - 1];
-  if (gasto > nivelJog(j) - 1 || ATRS.some(function (a) { return atrBase(j, a[0]) + copia[a[0]] > lim; })) {
-    bonusMsg = "Distribua apenas os pontos liberados e respeite o limite de cada atributo.";
+  if (gasto > nivelJog(j) - 1 || ATRS.some(function (a) { return copia[a[0]] < atrBonus(j, a[0]) || atrBase(j, a[0]) + copia[a[0]] > lim; })) {
+    bonusMsg = "Use apenas os pontos liberados. Pontos já salvos só podem ser corrigidos pelo mestre.";
     renderizar();
     return;
   }
@@ -2843,7 +2843,8 @@ app.addEventListener("click", function (e) {
   if (b.dataset.bonusStep && PUB.jogador && PUB.jogador.atrTravado && !salvandoBonus) {
     /* O toque muda só o rascunho (a tela atualiza na hora). Nada é enviado até apertar "Salvar atributos". */
     rascunhos();
-    bonusRasc[b.dataset.bonusStep] = Math.max(-5, Math.min(10, bonusRasc[b.dataset.bonusStep] + parseInt(b.dataset.d, 10)));
+    var chaveBonus = b.dataset.bonusStep, minimo = atrBonus(PUB.jogador, chaveBonus);
+    bonusRasc[chaveBonus] = Math.max(minimo, Math.min(10, bonusRasc[chaveBonus] + parseInt(b.dataset.d, 10)));
     bonusMsg = "";
     renderizar();
     return;
