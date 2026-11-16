@@ -3912,6 +3912,62 @@ function migrarPresaJavali() {
   enviarEstado("itens").then(function (r) { if (r) concluir(); });
 }
 
+/* Cenários genéricos (taverna, caverna, sala…) para usar em qualquer sessão. Nascem com uma imagem provisória
+   e ocultos; o mestre troca a foto em Cenários > Trocar a foto. Os prompts estão em cenarios-genericos.md. */
+var CENARIOS_GENERICOS = [
+  ["Caverna Comum", "Uma caverna natural de pedra úmida, com gotas pingando e pouca luz.", "Entrada estreita que se abre numa câmara com estalactites e uma poça d'água. Serve de covil de lobos ou bandidos, abrigo de tempestade ou entrada de uma rede maior de túneis. Ideias: pegadas frescas no barro, ossos roídos, uma passagem baixa atrás da poça."],
+  ["Sala de Pedra", "Uma sala quadrada de pedra, fria e quase vazia.", "Câmara de pedra com uma porta de madeira reforçada, tochas nos suportes e poeira no chão. Serve de sala de guarda, antecâmara ou depósito esquecido. Ideias: uma alavanca disfarçada, marcas de arrasto no piso, um baú trancado no canto."],
+  ["Taverna", "Salão cheio de mesas, barris e uma lareira acesa. Sempre há alguém ouvindo a conversa dos outros.", "Salão principal com balcão, lareira e palco pequeno. Ponto de encontro: rumores, missões, brigas e informantes. Ideias: um bardo tocando, um encapuzado no canto, uma aposta de braço de ferro, o taverneiro que sabe mais do que diz."],
+  ["Pousada", "Uma pousada de estrada com salão aconchegante, escada para os quartos e cheiro de sopa.", "Casa de dois andares à beira da estrada, com estábulo ao lado. Descanso longo e abrigo seguro (até certo ponto). Ideias: viajantes com segredos, quarto com um barulho estranho, cavalo desaparecido, dono endividado."],
+  ["Quarto de Pousada", "Um quarto simples com duas camas, um baú e uma janela para a rua.", "Quarto pequeno de pousada: camas, baú, lamparina e janela. Para cenas de descanso, conversa em grupo, interrogatórios ou emboscada durante a noite. Ideias: alçapão sob a cama, bilhete embaixo da porta, janela com marcas de arranhões."],
+  ["Estrada de Terra", "Uma estrada de terra batida cortando campos e bosques, com marcas de carroça.", "Estrada comum entre vilarejos. Para viagens, emboscadas e encontros com viajantes. Ideias: carroça quebrada, patrulha do reino, mercador pedindo ajuda, pegadas saindo da estrada."],
+  ["Praça do Mercado", "Uma praça de vilarejo cheia de barracas, cestos e gente negociando.", "Feira ao ar livre com poço no centro e barracas coloridas. Compras, rumores e perseguições entre as barracas. Ideias: batedor de carteiras, mercador de itens estranhos, o aviso de procurado no quadro, uma discussão que vira confusão."],
+  ["Ferraria", "Uma oficina de ferreiro com forja acesa, bigorna e armas penduradas na parede.", "Oficina quente e barulhenta. Compra, conserto e encomenda de equipamento. Ideias: encomenda urgente do exército, minério de procedência estranha, aprendiz que viu algo, arma que não deveria estar ali."],
+  ["Cripta", "Uma cripta antiga com sarcófagos de pedra, teias e um ar parado e gelado.", "Câmara funerária com nichos, sarcófagos e um altar apagado. Para mortos-vivos, armadilhas e pistas históricas. Ideias: inscrição de um nome apagado, sarcófago entreaberto, luz azul fraca no fundo, selo que alguém quebrou."],
+  ["Esgoto", "Túnel de tijolos com um canal de água escura no meio e passarelas estreitas dos lados.", "Rede de túneis sob a cidade. Fuga, contrabando e criaturas. Ideias: grade enferrujada, marcas de gangue na parede, ratos grandes demais, uma passagem seca que leva a um porão."],
+  ["Acampamento", "Um acampamento com fogueira, barracas e troncos para sentar, no meio da mata.", "Pouso de viajantes, bandidos ou do próprio grupo. Cenas de descanso, vigília e conversa. Ideias: fogueira ainda quente e ninguém por perto, mantimentos revirados, barulho fora do círculo de luz."],
+  ["Biblioteca", "Uma biblioteca silenciosa, com estantes altas, mesas de leitura e uma escada de rolar.", "Salão de livros e pergaminhos, de mosteiro, nobre ou mago. Pesquisa, segredos e magia. Ideias: livro que sussurra, seção proibida trancada, bibliotecário que só fala por bilhetes, página arrancada."],
+  ["Cabana na Floresta", "Uma cabana de madeira cercada de árvores, com fumaça saindo da chaminé.", "Casa isolada de caçador, eremita ou bruxa. Refúgio, pista ou armadilha. Ideias: ervas secando no teto, mapa antigo na parede, o morador ausente há dias, alarme feito de sinos de lata."],
+  ["Capela", "Uma capela pequena de pedra, com bancos de madeira, velas acesas e um vitral colorido.", "Templo simples de vilarejo. Cura, abrigo, confissão e rituais. Ideias: padre nervoso, doação sumida, cripta sob o altar, vitral que mudou desde ontem."],
+  ["Beco da Cidade", "Um beco apertado entre casas altas, de noite, iluminado por uma lanterna solitária.", "Viela estreita para perseguições, emboscadas e encontros discretos. Ideias: porta de serviço entreaberta, telhados para escalar, informante com pressa, rastro de sangue que some numa parede."],
+  ["Porão de Armazém", "Um porão cheio de caixotes, barris e sacas, com uma lâmpada a óleo pendurada.", "Depósito de mercadorias, contrabando ou ponto de encontro de gangue. Ideias: caixote com fundo falso, barril que não tem cheiro de vinho, alçapão para o esgoto, guarda dormindo."],
+  ["Cela de Prisão", "Uma cela de pedra com grades de ferro, palha no chão e uma janelinha no alto.", "Calabouço de guarda da cidade, de bandidos ou de cultistas. Prisão, interrogatório e fuga. Ideias: preso vizinho que sabe de algo, chave pendurada longe demais, pedra solta atrás do catre."],
+  ["Salão Nobre", "Um salão elegante com mesa longa, candelabros e tapeçarias nas paredes.", "Sala de banquete de um nobre ou prefeito. Negociação, intriga e recepção. Ideias: jantar com um envenenador, convidado que não deveria estar vivo, mapa escondido atrás da tapeçaria."]
+];
+
+function imagemProvisoria(nome) {
+  var c = document.createElement("canvas");
+  c.width = 1600; c.height = 900;
+  var g = c.getContext("2d");
+  var gr = g.createLinearGradient(0, 0, 1600, 900);
+  gr.addColorStop(0, "#2a2430"); gr.addColorStop(1, "#14121a");
+  g.fillStyle = gr; g.fillRect(0, 0, 1600, 900);
+  g.fillStyle = "#e8dcc0"; g.textAlign = "center";
+  g.font = "bold 84px Georgia, serif"; g.fillText(nome, 800, 440);
+  g.fillStyle = "#9a8f78"; g.font = "36px Georgia, serif"; g.fillText("Imagem aguardando: use “Trocar a foto”", 800, 520);
+  return c.toDataURL("image/jpeg", 0.8);
+}
+
+function migrarCenariosGenericos() {
+  if ((EST.migracoes || {}).cenariosGenericos) return;
+  var tem = {};
+  ENVIADAS.forEach(function (e) { tem[e.nome] = true; });
+  var fila = CENARIOS_GENERICOS.filter(function (c) { return !tem[c[0]]; });
+  function concluir() { EST.migracoes = EST.migracoes || {}; EST.migracoes.cenariosGenericos = true; salvarEstado("migracoes"); }
+  if (!fila.length) { concluir(); return; }
+  (function proximo() {
+    var c = fila.shift();
+    if (!c) { concluir(); if (typeof renderizar === "function") renderizar(); return; }
+    gravar("cena_enviar", { nome: c[0], dados: imagemProvisoria(c[0]) }).then(function (r) {
+      if (!r) return; /* falhou: tenta de novo na próxima vez que o mestre entrar */
+      ENVIADAS.push({ id: r.id, nome: r.nome, v: Math.floor(Date.now() / 1000), grids: [] });
+      (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { resumo: c[1], historia: c[2] };
+      salvarEstado("cenarios_info");
+      proximo();
+    });
+  })();
+}
+
 var itensAba = "catalogo", itFiltro = { q: "", cat: "todas", origem: "todas", soFase: false }, itEdit = null, itMsg = "", itDel = "";
 function listaItens() { return EST.itens || (EST.itens = []); }
 function salvarItens() { salvarEstado("itens"); }
@@ -4495,6 +4551,7 @@ MESTRE = {
     aplicarCampo();
     sincronizarPub();
     migrarPresaJavali();
+    migrarCenariosGenericos();
   },
 
   antes: function (r) {
