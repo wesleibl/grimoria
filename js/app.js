@@ -1134,7 +1134,7 @@ function celulaTab(svg, ev) {
 
 /* ============================ DIREÇÃO NO DESTINO ============================ */
 
-/* Ao escolher a casa de destino, abre um seletor ali perto: N, S, L ou O para deixar o token virado para esse lado, ou ✓ para
+/* Ao escolher a casa de destino, abre um seletor ali perto: setas para deixar o token virado para esse lado, ou ✓ para
    ir direto (fica virado para o lado do caminho). O seletor é HTML (botões grandes para o dedo) e é reposicionado a cada redesenho. */
 var destEsc = null;
 
@@ -1183,7 +1183,7 @@ function desenharSeletorDir() {
       ["n", "o", "ok", "l", "s"].map(function (d) {
         return d === "ok"
           ? '<button type="button" class="dir-ok" data-dirsel="" aria-label="Ir para ' + coordNome(destEsc.x, destEsc.y) + ' virado para o lado do caminho" title="Ir (fica virado para o lado do caminho)">✓</button>'
-          : '<button type="button" class="dir-' + d + '" data-dirsel="' + d + '" aria-label="Ir virado para ' + NOME_DIR[d] + '" title="' + NOME_DIR[d] + '">' + d.toUpperCase() + "</button>";
+          : '<button type="button" class="dir-' + d + '" data-dirsel="' + d + '" aria-label="Ir virado para ' + NOME_DIR[d] + '" title="' + NOME_DIR[d] + '">' + ({ n: "↑", s: "↓", l: "→", o: "←" })[d] + "</button>";
       }).join("");
     el.onclick = function (ev) {
       var b = ev.target.closest ? ev.target.closest("[data-dirsel]") : null;
