@@ -502,6 +502,13 @@ body.sem-rolagem { overflow: hidden; }
 .tc-info { display: grid; gap: 4px; padding: 8px 10px 10px; justify-items: start; }
 .tc-nome { font-size: 1.05rem; }
 .tc-info small { color: #b9c6ca; }
+.combate-equip { width: 100%; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface2); box-sizing: border-box; }
+.combate-equip h4 { margin: 0 0 8px; }
+.combate-equip ul { margin: 0; padding-left: 20px; }
+.combate-equip li { margin: 8px 0; }
+.combate-equip li.ignorado { opacity: .65; }
+.combate-equip li > small { display: block; }
+.combate-equip .meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 @media (max-width: 900px) {
   .tok-card.alheio { position: fixed; inset: 4dvh 3vw auto; width: 94vw; height: 92dvh; max-height: 92dvh; z-index: 300; display: flex; flex-direction: column; }
   .tok-card.alheio .tc-fig { flex: 1 1 auto; min-height: 0; display: grid; place-items: center; }
