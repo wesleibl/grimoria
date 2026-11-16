@@ -58,6 +58,9 @@ try {
         'POST perfil_pericias' => acaoPerfilPericias(),
         'POST perfil_img' => acaoPerfilImg(),
         'POST perfil_img_remover' => acaoPerfilImgRemover(),
+        'POST perfil_dado' => acaoPerfilDado(),
+        'POST perfil_dado_img' => acaoPerfilDadoImg(),
+        'POST perfil_dado_img_remover' => acaoPerfilDadoImgRemover(),
         'POST inv_op' => acaoInvOp(),
         'POST perfil_kit' => acaoPerfilKit(),
         'POST perfil_questionario' => acaoPerfilQuestionario(),
@@ -150,7 +153,7 @@ function acaoInicio(): never
             'usuarios' => db()->query('SELECT id, nome, email, papel FROM usuarios ORDER BY nome')->fetchAll(),
             'imagens' => listarImagens(),
             'enviadas' => listarCenasEnviadas(),
-            'campo' => campoLer(),
+            'campo' => campoParaMestre(campoLer()),
         ]);
     }
     /* O jogador recebe só o que foi liberado: o próprio perfil, o próprio grimório revelado
@@ -166,7 +169,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'xp', 'xpLog', 'aprimoramentos', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'xp', 'xpLog', 'aprimoramentos', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec', 'dado'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim'], (array)($jog['aprimoramentos'] ?? [])) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -246,7 +249,7 @@ function acaoJogadorSalvar(): never
     $j = corpo()['jogador'] ?? null;
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
-    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito'], $j['xp'], $j['xpLog'], $j['aprimoramentos']); /* inventário, XP e aprimoramentos têm operações próprias */
+    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito'], $j['xp'], $j['xpLog'], $j['aprimoramentos'], $j['dado']); /* inventário, XP e aprimoramentos têm operações próprias */
     /* Um grimório por jogador: dois jogadores nunca ficam com o mesmo. */
     $grim = trim((string)($j['grim'] ?? ''));
     if ($grim !== '') {
@@ -295,7 +298,7 @@ function acaoJogadorExcluir(): never
     exigirMestre();
     $id = idValido(corpo()['id'] ?? '');
     db()->prepare('DELETE FROM jogadores WHERE id = ?')->execute([$id]);
-    db()->prepare("DELETE FROM imagens WHERE tipo = 'avatar' AND ref = ?")->execute([$id]);
+    db()->prepare("DELETE FROM imagens WHERE tipo IN ('avatar', 'dado') AND ref = ?")->execute([$id]);
     responder(['ok' => true]);
 }
 
@@ -477,6 +480,43 @@ function acaoPerfilImgRemover(): never
     responder(['ok' => true]);
 }
 
+/* Aparência dos dados do jogador (jogadores.dados.dado = {cor, num, img}). As cores aparecem no navegador dos outros
+   jogadores: só passam #rrggbb. Nada de texto livre. */
+function acaoPerfilDado(): never
+{
+    $jog = jogadorDaConta();
+    $c = corpo();
+    foreach (['cor', 'num'] as $k) {
+        if (!is_string($c[$k] ?? null) || !preg_match('/^#[0-9a-fA-F]{6}$/D', $c[$k])) erro('Cor inválida.');
+    }
+    $atual = is_array($jog['dado'] ?? null) ? $jog['dado'] : [];
+    salvarCamposJogador($jog['id'], ['dado' => ['cor' => strtolower($c['cor']), 'num' => strtolower($c['num']), 'img' => ((int)($atual['img'] ?? 0)) ?: null]], false);
+    responder(['ok' => true]);
+}
+
+/* Foto do dado: limite próprio, bem menor que o das outras imagens (o navegador já reduz para ~512 px e ~150 KB). */
+function acaoPerfilDadoImg(): never
+{
+    $jog = jogadorDaConta();
+    [$mime, $bin] = decodificarImagem(corpo()['dados'] ?? '', 200_000, 640);
+    $pdo = db();
+    $pdo->prepare("INSERT INTO imagens (tipo, ref, mime, dados) VALUES ('dado', ?, ?, ?)")->execute([$jog['id'], $mime, $bin]);
+    $novo = (int)$pdo->lastInsertId();
+    $pdo->prepare("DELETE FROM imagens WHERE tipo = 'dado' AND ref = ? AND id <> ?")->execute([$jog['id'], $novo]);
+    $d = is_array($jog['dado'] ?? null) ? $jog['dado'] : [];
+    salvarCamposJogador($jog['id'], ['dado' => ['cor' => corHex($d['cor'] ?? null, '#2a6fc9'), 'num' => corHex($d['num'] ?? null, '#ffffff'), 'img' => $novo]], false);
+    responder(['id' => $novo]);
+}
+
+function acaoPerfilDadoImgRemover(): never
+{
+    $jog = jogadorDaConta();
+    db()->prepare("DELETE FROM imagens WHERE tipo = 'dado' AND ref = ?")->execute([$jog['id']]);
+    $d = is_array($jog['dado'] ?? null) ? $jog['dado'] : [];
+    salvarCamposJogador($jog['id'], ['dado' => ['cor' => corHex($d['cor'] ?? null, '#2a6fc9'), 'num' => corHex($d['num'] ?? null, '#ffffff'), 'img' => null]], false);
+    responder(['ok' => true]);
+}
+
 /* ============================ INVENTÁRIO ============================ */
 
 /* Jogador mexe no próprio inventário; o mestre, no de qualquer jogador (campo "jogador"). */
@@ -527,7 +567,7 @@ function acaoAcao(): never
 function acaoCampo(): never
 {
     exigirMestre();
-    responder(['campo' => campoLer()]);
+    responder(['campo' => campoParaMestre(campoLer())]);
 }
 
 function acaoCampoOp(): never
@@ -535,7 +575,7 @@ function acaoCampoOp(): never
     $u = exigirLogin();
     $c = corpo();
     $op = (string)($c['op'] ?? '');
-    if ($u['papel'] === 'mestre') responder(['campo' => campoOpMestre($op, $c)]);
+    if ($u['papel'] === 'mestre') responder(['campo' => campoParaMestre(campoOpMestre($op, $c, (int)$u['id']))]);
     campoOpJogador($u, $op, $c);
 }
 

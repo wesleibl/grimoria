@@ -86,10 +86,20 @@ function ipCliente(): string { return (string)($_SERVER['REMOTE_ADDR'] ?? '?'); 
 /* Cria as tabelas na primeira vez. O arquivo marcador evita repetir isso a cada requisição. */
 function garantirSchema(PDO $pdo): void
 {
-    $marca = __DIR__ . '/.schema-v3';
+    $marca = __DIR__ . '/.schema-v4';
     if (is_file($marca)) return;
-    $sql = file_get_contents(__DIR__ . '/schema.sql');
-    foreach (array_filter(array_map('trim', explode(';', $sql))) as $cmd) $pdo->exec($cmd);
+    /* Banco novo: o schema.sql já cria tudo (inclusive o tipo 'dado' das imagens). Banco antigo (marcador v3): só o ALTER. */
+    if (!is_file(__DIR__ . '/.schema-v3')) {
+        $sql = file_get_contents(__DIR__ . '/schema.sql');
+        foreach (array_filter(array_map('trim', explode(';', $sql))) as $cmd) $pdo->exec($cmd);
+    }
+    /* Acrescenta 'dado' ao ENUM de imagens.tipo (fotos dos dados). Roda uma vez; se falhar, o site segue e tenta de novo depois. */
+    try {
+        $pdo->exec("ALTER TABLE imagens MODIFY tipo ENUM('avatar', 'mapa', 'local', 'dado') NOT NULL");
+    } catch (Throwable $e) {
+        error_log('grimoria: ALTER imagens.tipo falhou: ' . $e->getMessage());
+        return;
+    }
     @file_put_contents($marca, date('c'));
 }
 
@@ -410,12 +420,13 @@ function decidirAprimoramento(string $jogId, string $pedidoId, string $decisao):
 /* ============================ IMAGENS ============================ */
 
 /* Lê uma imagem enviada como data URL e devolve [mime, bytes]. */
-function decodificarImagem(mixed $dataUrl): array
+function decodificarImagem(mixed $dataUrl, int $maxBytes = 8_000_000, int $maxLado = 0): array
 {
     if (!preg_match('#^data:image/[a-z+]+;base64,(.+)$#s', (string)$dataUrl, $m)) erro('Imagem inválida.');
     $bin = base64_decode($m[1], true);
-    if ($bin === false || strlen($bin) > 8_000_000) erro('A imagem é grande demais (máximo 8 MB).');
+    if ($bin === false || strlen($bin) > $maxBytes) erro('A imagem é grande demais (máximo ' . ($maxBytes >= 1_000_000 ? intdiv($maxBytes, 1_000_000) . ' MB' : intdiv($maxBytes, 1000) . ' KB') . ').');
     $info = @getimagesizefromstring($bin);
+    if ($maxLado > 0 && $info && max((int)$info[0], (int)$info[1]) > $maxLado) erro('A imagem é grande demais (máximo ' . $maxLado . ' px de lado).');
     $mime = $info['mime'] ?? '';
     if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) erro('Formato de imagem não aceito.');
     return [$mime, $bin];
@@ -441,7 +452,21 @@ function jogadorPodeVer(array $img, ?array $jog, array $locaisPub): bool
        outros pelo token). Fora disso, só o dono. */
     if ($img['tipo'] === 'avatar') return ($jog && $img['ref'] === $jog['id']) || avatarEmCena((string)$img['ref']);
     if ($img['tipo'] === 'local') return in_array($img['ref'], $locaisPub, true);
+    /* Foto do dado: do dono e de quem está vendo a rolagem em andamento que a usa. */
+    if ($img['tipo'] === 'dado') return ($jog && $img['ref'] === $jog['id']) || dadoEmCena((int)($img['id'] ?? 0));
     return false;
+}
+
+function dadoEmCena(int $imgId): bool
+{
+    if ($imgId <= 0) return false;
+    $a = lerEstado('acao') ?? [];
+    if (empty($a['ativo']) || ($a['modo'] ?? 'grid') === 'foto') return false;
+    $campo = campoLer();
+    $r = $campo['rolagem'] ?? null;
+    if (!is_array($r) || (int)($r['estilo']['img'] ?? 0) !== $imgId || time() - (int)($r['t'] ?? 0) > 60) return false;
+    $t = tokensAcao()[(string)($r['tok'] ?? '')] ?? null;
+    return $t !== null && tokenVisivel($t, $campo);
 }
 
 function avatarEmCena(string $jogId): bool
@@ -978,6 +1003,134 @@ function iniDigitada(mixed $v): array
     return ['v' => $n, 'modo' => 'digitado'];
 }
 
+/* ============================ ROLADOR DE DADOS ============================ */
+
+/* campo.rolador = id do token que o mestre liberou para rolar (fora de combate). Em combate, rola quem está na vez.
+   campo.rolagem = {n, estado: escolhido|rolado, tok, nome, tipo, dado, v, t, estilo}. O resultado sai SÓ de random_int aqui:
+   o navegador nunca envia o valor. campo.rolN conta as mudanças, para os navegadores detectarem novidade. */
+const DADOS_VALIDOS = [4, 6, 8, 10, 12, 20];
+
+function dadoValido(mixed $d): int
+{
+    if (is_string($d) && ctype_digit($d)) $d = (int)$d;
+    if (!is_int($d) || !in_array($d, DADOS_VALIDOS, true)) erro('Dado inválido.');
+    return $d;
+}
+
+function corHex(mixed $c, string $padrao): string
+{
+    return is_string($c) && preg_match('/^#[0-9a-fA-F]{6}$/D', $c) ? strtolower($c) : $padrao;
+}
+
+function luminanciaHex(string $hex): float
+{
+    $l = [];
+    foreach ([1, 3, 5] as $i) {
+        $v = hexdec(substr($hex, $i, 2)) / 255;
+        $l[] = $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+    }
+    return 0.2126 * $l[0] + 0.7152 * $l[1] + 0.0722 * $l[2];
+}
+
+/* Aparência do dado de um token, copiada para a rolagem no momento da escolha. Inimigo: sempre vermelho. Jogador: o que ele
+   salvou em "Meus dados" (jogadores.dados.dado), ou a cor do token. Aliado: cor do token, com números claros (ou escuros, se a cor for clara). */
+function estiloDado(array $t): array
+{
+    $tipo = $t['tipo'] ?? '';
+    if ($tipo === 'inimigo') return ['cor' => '#b3261e', 'num' => '#fff1ee', 'img' => null];
+    $cor = corHex($t['cor'] ?? null, $tipo === 'jogador' ? '#2a6fc9' : '#2e8b57');
+    if ($tipo === 'jogador' && !empty($t['jog'])) {
+        $st = db()->prepare('SELECT dados FROM jogadores WHERE id = ?');
+        $st->execute([(string)$t['jog']]);
+        $d = (json_decode((string)$st->fetchColumn(), true) ?: [])['dado'] ?? null;
+        $img = null;
+        if (is_array($d) && (int)($d['img'] ?? 0) > 0) {
+            $q = db()->prepare("SELECT id FROM imagens WHERE id = ? AND tipo = 'dado' AND ref = ?");
+            $q->execute([(int)$d['img'], (string)$t['jog']]);
+            $img = $q->fetchColumn() !== false ? (int)$d['img'] : null;
+        }
+        return ['cor' => corHex(is_array($d) ? ($d['cor'] ?? null) : null, $cor), 'num' => corHex(is_array($d) ? ($d['num'] ?? null) : null, '#ffffff'), 'img' => $img];
+    }
+    return ['cor' => $cor, 'num' => luminanciaHex($cor) > 0.5 ? '#1a1a1a' : '#f8f8f8', 'img' => null];
+}
+
+/* Id do token que pode rolar agora, ou null. Só com a imersão ativa e fora da fase de iniciativa. */
+function rolaAgora(array $campo, array $a, array $tokens): ?string
+{
+    if (empty($a['ativo']) || ($a['modo'] ?? 'grid') === 'foto') return null;
+    $cb = $campo['combate'] ?? null;
+    if (is_array($cb)) {
+        if (($cb['fase'] ?? '') !== 'turnos') return null;
+        $id = (string)(($cb['ordem'] ?? [])[$cb['turno'] ?? 0] ?? '');
+    } else {
+        $id = (string)($campo['rolador'] ?? '');
+    }
+    $t = $tokens[$id] ?? null;
+    if ($id === '' || !$t || !isset($campo['pos'][$id]) || !in_array($t['tipo'] ?? '', ['jogador', 'aliado', 'inimigo'], true) || !empty($t['morto'])) return null;
+    return $id;
+}
+
+/* escolher_dado e rolar, para o jogador (só o próprio token) e para o mestre (aliados e inimigos). */
+function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $mestre, ?string $meu, int $uid): void
+{
+    $id = rolaAgora($campo, lerEstado('acao') ?? [], $tokens);
+    if ($id === null) erro('Ninguém pode rolar dados agora.', 409);
+    $t = $tokens[$id];
+    if ($mestre) {
+        if (($t['tipo'] ?? '') === 'jogador') erro('Quem rola é o jogador, na tela dele.', 409);
+    } elseif ($id !== $meu) {
+        erro('Não é a sua vez de rolar.', 409);
+    }
+    /* Limite por usuário (guardado no campo, dentro da transação): 1 rolagem por segundo; a troca de dado é um pouco mais folgada. */
+    $agora = microtime(true);
+    $rl = is_array($campo['rl'] ?? null) ? $campo['rl'] : [];
+    if ($agora - (float)($rl[$uid][$op] ?? 0) < ($op === 'rolar' ? 1.0 : 0.3)) erro('Calma: devagar com os dados.', 429);
+    $rl[$uid][$op] = $agora;
+    foreach ($rl as $k => $v) if ($agora - max(array_map('floatval', $v)) > 60) unset($rl[$k]);
+    $campo['rl'] = $rl;
+
+    $nome = mb_substr((string)($t['nome'] ?? ''), 0, 60);
+    if ($op === 'escolher_dado') {
+        $campo['rolN'] = (int)($campo['rolN'] ?? 0) + 1;
+        $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'escolhido', 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dado' => dadoValido($c['dado'] ?? null), 'v' => null, 't' => time(), 'estilo' => estiloDado($t)];
+        return;
+    }
+    $r = $campo['rolagem'] ?? null;
+    if (!is_array($r) || ($r['estado'] ?? '') !== 'escolhido' || ($r['tok'] ?? '') !== $id || time() - (int)($r['t'] ?? 0) > 60) erro('Escolha o dado antes de rolar.', 409);
+    $d = dadoValido($r['dado'] ?? null);
+    $v = random_int(1, $d);
+    $campo['rolN'] = (int)($campo['rolN'] ?? 0) + 1;
+    $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'rolado', 'v' => $v, 't' => time()] + $r;
+    /* Token oculto: nem a rolagem nem o registro vão para os jogadores. */
+    $txt = "$nome rolou d$d: $v";
+    campoEvento($campo, $txt, tokenVisivel($t, $campo) ? $txt : null);
+}
+
+/* A rolagem que o espectador pode ver, e se ele pode rolar agora. Ocultos e rolagens velhas ficam de fora. */
+function rolagemPublica(array $campo, array $tokens, array $vis, ?string $euId): array
+{
+    $quem = rolaAgora($campo, lerEstado('acao') ?? [], $tokens);
+    $r = $campo['rolagem'] ?? null;
+    $out = null;
+    if (is_array($r) && isset($vis[(string)($r['tok'] ?? '')])) {
+        $idade = time() - (int)($r['t'] ?? 0);
+        $escolhido = ($r['estado'] ?? '') === 'escolhido';
+        if ($escolhido ? ($idade <= 60 && $quem === (string)$r['tok']) : $idade <= 30) {
+            $out = ['n' => (int)$r['n'], 'estado' => $escolhido ? 'escolhido' : 'rolado', 'tok' => (string)$r['tok'], 'nome' => (string)($r['nome'] ?? ''), 'tipo' => (string)($r['tipo'] ?? ''),
+                'dado' => (int)$r['dado'], 'v' => $escolhido ? null : (int)$r['v'], 'idade' => max(0, $idade),
+                'estilo' => ['cor' => corHex($r['estilo']['cor'] ?? null, '#2a6fc9'), 'num' => corHex($r['estilo']['num'] ?? null, '#ffffff'), 'img' => ($r['estilo']['img'] ?? null) ? (int)$r['estilo']['img'] : null]];
+        }
+    }
+    return ['rolagem' => $out, 'euRolo' => $euId !== null && $quem === $euId];
+}
+
+/* O mestre recebe também a hora do servidor (para saber a idade da rolagem). */
+function campoParaMestre(array $c): array
+{
+    $c['agora'] = time();
+    return $c;
+}
+
 function ordemIniciativa(array $tokens, array $ini): array
 {
     $rank = ['jogador' => 0, 'aliado' => 1, 'inimigo' => 2];
@@ -1127,10 +1280,10 @@ function avancarTurno(array &$campo, array $tokens): void
 }
 
 /* Operações do mestre. Devolve o campo atualizado. */
-function campoOpMestre(string $op, array $c): array
+function campoOpMestre(string $op, array $c, int $uid = 0): array
 {
     $tokens = tokensAcao();
-    return campoAtualizar(function (array &$campo) use ($op, $c, $tokens): void {
+    return campoAtualizar(function (array &$campo) use ($op, $c, $tokens, $uid): void {
         podarEfeitos($campo, $tokens);
         switch ($op) {
             case 'pos':
@@ -1207,6 +1360,8 @@ function campoOpMestre(string $op, array $c): array
                 break;
             case 'encerrar':
                 $campo['combate'] = null;
+                $campo['rolador'] = null;
+                $campo['rolagem'] = null;
                 foreach ($campo['pos'] as $id => $_) $campo['pos'][$id]['gasto'] = 0;
                 campoEvento($campo, 'Combate encerrado.', 'Combate encerrado.');
                 if ($campo['efeitos']) {
@@ -1244,11 +1399,24 @@ function campoOpMestre(string $op, array $c): array
             case 'limpar_log':
                 $campo['eventos'] = [];
                 break;
+            case 'rolador':
+                /* Quem pode rolar fora de combate (jogador, aliado ou inimigo; '' = ninguém). Vale até o mestre trocar. */
+                $id = (string)($c['id'] ?? '');
+                if ($id !== '' && (!isset($tokens[$id]) || !in_array($tokens[$id]['tipo'] ?? '', ['jogador', 'aliado', 'inimigo'], true))) erro('Token inválido para rolar.');
+                $campo['rolador'] = $id === '' ? null : $id;
+                if (($campo['rolagem']['estado'] ?? '') === 'escolhido') $campo['rolagem'] = null;
+                break;
+            case 'escolher_dado':
+            case 'rolar':
+                campoOpDado($campo, $op, $c, $tokens, true, null, $uid);
+                break;
             case 'resetar':
                 /* Zera a ação do mapa atual: tira os tokens informados (e as armadilhas acionadas deles), encerra o combate
                    e apaga o registro. Os tokens de outros mapas não são tocados. */
                 foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id], $campo['efeitos'][(string)$id]);
                 $campo['combate'] = null;
+                $campo['rolador'] = null;
+                $campo['rolagem'] = null;
                 $campo['eventos'] = [];
                 $campo['efeitos'] = [];
                 break;
@@ -1275,7 +1443,7 @@ function campoOpJogador(array $u, string $op, array $c): never
     if ($meu === null) erro('Seu personagem não está no mapa.', 409);
     $eu = $tokens[$meu];
 
-    campoAtualizar(function (array &$campo) use ($op, $c, $a, $tokens, $meu, $eu): void {
+    campoAtualizar(function (array &$campo) use ($op, $c, $a, $tokens, $meu, $eu, $u): void {
         $fase = $campo['combate']['fase'] ?? null;
         $atual = $fase === 'turnos' ? ($campo['combate']['ordem'][$campo['combate']['turno']] ?? null) : null;
         switch ($op) {
@@ -1343,6 +1511,10 @@ function campoOpJogador(array $u, string $op, array $c): never
                         campoEvento($campo, ($eu['nome'] ?? 'Jogador') . ' passou por ' . ($t['nome'] ?? 'armadilha') . " ($casa)" . (!empty($t['efeito']) ? ': ' . $t['efeito'] : '') . '.', null, true);
                     }
                 }
+                break;
+            case 'escolher_dado':
+            case 'rolar':
+                campoOpDado($campo, $op, $c, $tokens, false, $meu, (int)$u['id']);
                 break;
             case 'virar':
                 /* Virar-se não custa movimento: só vale para o próprio token. */
@@ -1490,7 +1662,7 @@ function acaoPublica(?array $jogador = null): array
         'tokens' => $tokens,
         'combate' => $combate,
         'eventos' => array_slice($eventos, -8),
-    ];
+    ] + rolagemPublica($campo, tokensAcao(), $vis, $euId);
 }
 
 /* O jogador só vê a foto de um cenário se ele foi liberado E está ligado a um local já revelado no mapa,

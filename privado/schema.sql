@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS jogadores (
 
 CREATE TABLE IF NOT EXISTS imagens (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  tipo ENUM('avatar', 'mapa', 'local') NOT NULL,
+  tipo ENUM('avatar', 'mapa', 'local', 'dado') NOT NULL,
   ref VARCHAR(64) NOT NULL DEFAULT '',
   titulo VARCHAR(120) NOT NULL DEFAULT '',
   mime VARCHAR(40) NOT NULL,
