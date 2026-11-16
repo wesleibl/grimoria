@@ -125,7 +125,8 @@ function spellItem(s, marco, extra) {
   return '<li class="sp"><span class="sico">' + ic(KIND_ICON[s.tipo] || "brilho") + '</span><div class="sbody"><div class="shead">' +
     (marco ? '<span class="marco">Nível ' + (marco + 1) + "</span>" : "") +
     '<span class="sname">' + s.nome + "</span>" + costLabel(s.custo) +
-    '<span class="kind">' + s.tipo + "</span>" + (extra || "") + "</div>" + desc(s.texto) + flagsHTML(s) + "</div></li>";
+    '<span class="kind">' + s.tipo + "</span>" + (extra || "") + "</div>" + desc(s.texto) + flagsHTML(s) +
+    ((s.melhorias || []).length ? '<ul class="spell-melhorias">' + s.melhorias.map(function (m) { return '<li>' + ic("cima") + esc(m) + '</li>'; }).join("") + '</ul>' : "") + "</div></li>";
 }
 /* libHTML (opcional, só do mestre) devolve o botão de liberar de cada feitiço. */
 function bookCard(g, paraJogador, libHTML) {
@@ -289,10 +290,9 @@ function viewNiveis() {
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
-    panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b> e <b>+2 a partir do nível 5</b>. O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço",
       "<p>Você escolhe um feitiço do seu grimório e um aprimoramento:</p>" +
-      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
+      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
       "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. O mestre aprova cada escolha.</p>") +
     panel(ic("espada") + "Nova habilidade",
       "<p>Em algum momento, o grimório ganha uma habilidade nova, já pronta. O mestre avisa quando isso acontecer.</p>") +
@@ -618,6 +618,73 @@ function atalhosJogador() {
     panel(ic("bussola") + "Mapa", '<p>Os lugares que o grupo já descobriu.</p><p><a href="#mapa">Abrir</a></p>') + "</div>";
 }
 
+var OPCOES_APRIMORAMENTO = [
+  { id: "dano-dado", categoria: "dano", texto: "Mais dano: +1 dado de dano" },
+  { id: "dano-fixo", categoria: "dano", texto: "Mais dano: +2 de dano fixo" },
+  { id: "barato", categoria: "barato", texto: "Mais barato: -1 de mana" },
+  { id: "alcance-alvo", categoria: "alcance", texto: "Mais alcance: +1 alvo" },
+  { id: "alcance-area", categoria: "alcance", texto: "Mais alcance: área maior" },
+  { id: "duracao", categoria: "duracao", texto: "Mais duradouro: +1 turno de duração" },
+  { id: "resistencia-cd", categoria: "resistencia", texto: "Mais difícil de resistir: +2 na dificuldade do teste" },
+  { id: "resistencia-ataque", categoria: "resistencia", texto: "Mais difícil de resistir: +2 na rolagem de ataque" }
+];
+function opcaoAprim(id) { return OPCOES_APRIMORAMENTO.filter(function (o) { return o.id === id; })[0] || null; }
+function tiposAprimDisponiveis(j, g, s) {
+  var ativos = (j.aprimoramentos || []).filter(function (a) { return a.grimorio === g.nome && a.feitico === s.nome && (a.status === "pendente" || a.status === "aprovado"); });
+  if (ativos.length >= 2) return [];
+  var categorias = ativos.map(function (a) { var o = opcaoAprim(a.tipo); return o && o.categoria; });
+  return OPCOES_APRIMORAMENTO.filter(function (o) {
+    return categorias.indexOf(o.categoria) === -1 && (o.id !== "barato" || (typeof s.custo === "number" && s.custo > 1));
+  });
+}
+var aprimMsg = "";
+function aprimoramentosJogadorHTML(j, g) {
+  if (!j || nivelJog(j) < 2) return "";
+  var pedidos = j.aprimoramentos || [];
+  var h = '<section class="panel aprim-painel"><h2>Aprimorar um feitiço</h2><p>Você ganha uma escolha no nível 2 e outra no nível 4. O mestre aprova cada pedido. Um feitiço aceita até dois aprimoramentos de categorias diferentes.</p><p role="status" class="mdica">' + esc(aprimMsg) + '</p>';
+  [2, 4].forEach(function (nivel) {
+    if (nivelJog(j) < nivel) return;
+    var registros = pedidos.filter(function (a) { return a.nivel === nivel; });
+    var ativo = registros.filter(function (a) { return a.status === "pendente" || a.status === "aprovado"; })[0];
+    h += '<div class="aprim-escolha"><h3>Escolha do nível ' + nivel + '</h3>';
+    if (ativo) {
+      var op = opcaoAprim(ativo.tipo);
+      h += '<p><b>' + esc(ativo.feitico) + '</b> · ' + esc(op ? op.texto : ativo.tipo) + ' <span class="tag ' + (ativo.status === "aprovado" ? "buff" : "role") + '">' + (ativo.status === "aprovado" ? "Aprovado" : "Aguardando o mestre") + '</span></p>';
+    } else {
+      if (registros.some(function (a) { return a.status === "recusado"; })) h += '<p class="mdica">O pedido anterior foi recusado. Você pode escolher novamente.</p>';
+      var spells = (g.spells || []).filter(function (s) { return tiposAprimDisponiveis(j, g, s).length; });
+      if (!spells.length) h += '<p class="mdica">Nenhum feitiço liberado disponível para aprimorar.</p>';
+      else {
+        var opcoes = tiposAprimDisponiveis(j, g, spells[0]);
+        h += '<div class="item-grade"><label>Feitiço<select class="sorteio-in" id="aprimFeitico' + nivel + '">' + spells.map(function (s) { return '<option value="' + esc(s.nome) + '">' + esc(s.nome) + '</option>'; }).join("") + '</select></label>' +
+          '<label>Aprimoramento<select class="sorteio-in" id="aprimTipo' + nivel + '">' + opcoes.map(function (o) { return '<option value="' + o.id + '">' + esc(o.texto) + '</option>'; }).join("") + '</select></label></div>' +
+          '<button type="button" class="primary" data-aprimpedir="' + nivel + '">Enviar para aprovação</button>';
+      }
+    }
+    h += '</div>';
+  });
+  return h + '</section>';
+}
+function atualizarTiposAprim(nivel) {
+  var escolha = document.getElementById("aprimFeitico" + nivel), tipos = document.getElementById("aprimTipo" + nivel), g = PUB.grimorio;
+  if (!escolha || !tipos || !g || !PUB.jogador) return;
+  var s = (g.spells || []).filter(function (x) { return x.nome === escolha.value; })[0];
+  tipos.innerHTML = (s ? tiposAprimDisponiveis(PUB.jogador, g, s) : []).map(function (o) { return '<option value="' + o.id + '">' + esc(o.texto) + '</option>'; }).join("");
+}
+function pedirAprimoramentoJogador(b) {
+  if (!b.dataset.aprimpedir || !PUB.jogador || !PUB.grimorio) return false;
+  var nivel = parseInt(b.dataset.aprimpedir, 10);
+  var feitico = (document.getElementById("aprimFeitico" + nivel) || {}).value;
+  var tipo = (document.getElementById("aprimTipo" + nivel) || {}).value;
+  if (!feitico || !tipo) return true;
+  b.disabled = true;
+  gravar("aprimoramento_pedir", { nivel: nivel, feitico: feitico, tipo: tipo }).then(function (r) {
+    if (r && r.aprimoramentos) { PUB.jogador.aprimoramentos = r.aprimoramentos; aprimMsg = "Pedido enviado ao mestre."; renderizar(); }
+    else { b.disabled = false; aprimMsg = "Não foi possível enviar. Confira o aviso no topo da página."; var aviso = document.querySelector(".aprim-painel [role=status]"); if (aviso) aviso.textContent = aprimMsg; }
+  });
+  return true;
+}
+
 function viewMeuGrimorio() {
   var g = PUB.grimorio;
   if (!g) {
@@ -627,7 +694,7 @@ function viewMeuGrimorio() {
     '<p class="lead">As magias aparecem aqui conforme você as desbloqueia. Passe o mouse (ou toque) sobre a descrição de um feitiço para ver os valores mínimo e máximo dos dados.</p>' + legenda();
   h += '<div class="cer-card">' + bookCard(g, true) + "</div>";
   if (!g.spells.length) h += '<div class="empty">Nenhuma magia liberada ainda.</div>';
-  return h + meuCaminhoHTML(PUB.jogador);
+  return h + aprimoramentosJogadorHTML(PUB.jogador, g) + meuCaminhoHTML(PUB.jogador);
 }
 
 /* ============================ PERFIL ============================ */
