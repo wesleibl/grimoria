@@ -3690,11 +3690,18 @@ function dropSeletorHTML() {
     return '<option value="' + j.id + '"' + (j.id === dropAlvo ? " selected" : "") + ">" + esc(j.personagem || j.nome || "Sem nome") + "</option>";
   }).join("") + '</select></label><span id="dropMsg" role="status" class="mdica">' + esc(dropMsg) + "</span></div>";
 }
+/* Antes de entregar um item: confere se o jogador aguenta o peso. Passando da capacidade, o mestre decide se entrega mesmo assim. */
+function cabeNaCarga(jog, item) {
+  var novo = invPeso(jog) + (Number(item.peso) || 0), cap = invCapacidade(jog);
+  if (novo <= cap) return true;
+  return window.confirm((jog.personagem || jog.nome || "O jogador") + " não consegue carregar " + item.nome + ": ficaria com " + pesoTxt(novo) + " de " + pesoTxt(cap) + " de capacidade (sobrecarga de " + pesoTxt(novo - cap) + ").\n\nEntregar mesmo assim?");
+}
 function acoesDrops(b) {
   var id = b.dataset.dropdar;
   if (!id) return false;
   var it = itemDoCatalogo(id), jog = achaJog(dropAlvo);
   if (!it || !jog) return true;
+  if (!cabeNaCarga(jog, it)) { dropMsg = jog.personagem || jog.nome || "O jogador"; dropMsg += " não aguenta o peso de " + it.nome + "."; var mm = document.getElementById("dropMsg"); if (mm) mm.textContent = dropMsg; return true; }
   b.disabled = true;
   var antes = invJogId;
   invJogId = jog.id;
@@ -4038,6 +4045,7 @@ function acoesItens(b) {
     var item = achaItem(d.itdar), sel = document.querySelector('[data-itdarsel="' + d.itdar + '"]');
     var jog = sel ? achaJog(sel.value) : null;
     if (!item || !jog) return true;
+    if (!cabeNaCarga(jog, item)) { itMsg = (jog.personagem || jog.nome || "O jogador") + " não aguenta o peso de " + item.nome + "."; var mi = document.getElementById("itMsg"); if (mi) mi.textContent = itMsg; return true; }
     b.disabled = true;
     invJogId = jog.id;
     invOp("add", { item: invDeTemplate(item, 1, true) }).then(function (r) {
