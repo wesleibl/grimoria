@@ -1064,10 +1064,10 @@ function desenharTabuleiro(cfg) {
     var forma = t.tipo === "armadilha"
       ? '<polygon points="0,' + (-r * 1.15).toFixed(1) + " " + (r * 1.15).toFixed(1) + ",0 0," + (r * 1.15).toFixed(1) + " " + (-r * 1.15).toFixed(1) + ',0" fill="' + corToken(t) + '"/>'
       : '<circle r="' + r.toFixed(1) + '" fill="' + corToken(t) + '"/>';
-    /* Setinha na borda do círculo, apontando para onde o token está virado (sem dir, nada). Fica por baixo do círculo, das iniciais e da foto. */
+    /* Seta sobre a borda do círculo, visível também por cima da seleção e da foto. */
     var seta = "", ang = { n: 0, l: 90, s: 180, o: 270 }[t.dir];
     if (ang !== undefined && t.tipo !== "armadilha") {
-      seta = '<polygon class="dir" fill="' + corToken(t) + '" transform="rotate(' + ang + ')" points="0,' + (-r * 1.3).toFixed(1) + " " + (r * 0.34).toFixed(1) + "," + (-r * 0.9).toFixed(1) + " " + (-r * 0.34).toFixed(1) + "," + (-r * 0.9).toFixed(1) + '"/>';
+      seta = '<polygon class="dir" transform="rotate(' + ang + ')" points="0,' + (-r * 1.3).toFixed(1) + " " + (r * 0.52).toFixed(1) + "," + (-r * 0.56).toFixed(1) + " " + (-r * 0.52).toFixed(1) + "," + (-r * 0.56).toFixed(1) + '"/>';
     }
     var barra = "";
     if (cfg.mestre && t.vidaMax && t.tipo !== "armadilha") {
@@ -1097,8 +1097,8 @@ function desenharTabuleiro(cfg) {
     /* O token selecionado ganha um halo que pulsa para fora: é a pista de que ele aguarda o destino. */
     var halo = cfg.sel === t.id ? '<circle class="halo" r="' + (r * 1.1).toFixed(1) + '"/>' : "";
     h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" data-alvo="' + alvo + '" style="' + estilo + '">' +
-      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + halo + seta + forma +
-      '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + fotoSvg + barra + "</g>";
+      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + halo + forma +
+      '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + fotoSvg + barra + seta + "</g>";
   });
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
   svg.innerHTML = h;

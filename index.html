@@ -541,7 +541,7 @@ body.sem-rolagem { overflow: hidden; }
 @keyframes alc-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
 @keyframes pulso { 0%, 100% { stroke-width: 4; } 50% { stroke-width: 7; } }
 @media (prefers-reduced-motion: reduce) { .tab.suave { transition: none; } .token { transition: none !important; } .alc, .token .halo, .token.sel circle, #tokInfo.aguardando { animation: none !important; } }
-.token .dir { stroke: #111; stroke-width: 1.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.token .dir, .token.atual .dir { fill: #fff; stroke: #111; stroke-width: 2.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .token circle { stroke: #fff; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
 .token text { fill: #fff; font-weight: 700; pointer-events: none; font-family: system-ui, sans-serif; paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 2px; }
 .token.sel circle { stroke: var(--accent); stroke-width: 4; }
