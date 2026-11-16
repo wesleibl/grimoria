@@ -150,7 +150,7 @@ function acaoInicio(): never
             'usuarios' => db()->query('SELECT id, nome, email, papel FROM usuarios ORDER BY nome')->fetchAll(),
             'imagens' => listarImagens(),
             'enviadas' => listarCenasEnviadas(),
-            'campo' => campoLer(),
+            'campo' => campoParaMestre(campoLer()),
         ]);
     }
     /* O jogador recebe só o que foi liberado: o próprio perfil, o próprio grimório revelado
@@ -527,7 +527,7 @@ function acaoAcao(): never
 function acaoCampo(): never
 {
     exigirMestre();
-    responder(['campo' => campoLer()]);
+    responder(['campo' => campoParaMestre(campoLer())]);
 }
 
 function acaoCampoOp(): never
@@ -535,7 +535,7 @@ function acaoCampoOp(): never
     $u = exigirLogin();
     $c = corpo();
     $op = (string)($c['op'] ?? '');
-    if ($u['papel'] === 'mestre') responder(['campo' => campoOpMestre($op, $c)]);
+    if ($u['papel'] === 'mestre') responder(['campo' => campoParaMestre(campoOpMestre($op, $c, (int)$u['id']))]);
     campoOpJogador($u, $op, $c);
 }
 
