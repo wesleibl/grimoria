@@ -1769,10 +1769,29 @@ function dadosPainelHTML(m) {
   return h + "</div>" + (dadosMsg ? '<p class="dados-msg" role="status">' + esc(dadosMsg) + "</p>" : "");
 }
 
+/* Seção fixa "Dados" ao lado do mapa (aba Ação): mostra os 6 dados, qual foi escolhido e o último resultado. Quem pode rolar também clica aqui. */
+function dadosLadoHTML(m) {
+  var r = m.rolagem, esc1 = r && r.estado === "escolhido" ? r.dado : 0, est = (r && r.estilo) || m.estilo || {}, pode = !!m.pode;
+  var h = '<section class="panel dados-lado"><h3>' + ic("dado") + "Dados</h3><div class=\"dados-grade\">";
+  DADOS.forEach(function (d) {
+    var on = esc1 === d || (r && r.estado === "rolado" && r.dado === d);
+    h += '<' + (pode ? 'button type="button" data-dado="' + d + '"' : "span") + ' class="dado-op' + (esc1 === d ? " sel" : on ? " ult" : "") + '"' + (pode ? ' aria-pressed="' + (esc1 === d) + '"' : "") + ' aria-label="d' + d + (esc1 === d ? ", escolhido" : "") + '">' +
+      dadoSVG(d, est, String(d), "l" + d) + "<span>d" + d + "</span></" + (pode ? "button" : "span") + ">";
+  });
+  h += "</div>";
+  if (r && r.estado === "escolhido") h += '<p class="dados-status"><b>' + esc(r.nome || "Alguém") + "</b> escolheu o <b>d" + r.dado + "</b>.</p>";
+  else if (r) h += '<p class="dados-status"><b>' + esc(r.nome || "Alguém") + "</b> rolou d" + r.dado + ": <b>" + esc(String(r.v)) + "</b></p>";
+  else h += '<p class="mdica">' + (pode ? "Escolha um dado." : "Nenhum dado escolhido.") + "</p>";
+  if (pode) h += '<button type="button" class="primary dados-rolar" data-dados-rolar' + (esc1 && !dadosOcup ? "" : " disabled") + ">Rolar" + (esc1 ? " d" + esc1 : "") + "</button>" + (dadosMsg ? '<p class="tok-aviso">' + esc(dadosMsg) + "</p>" : "");
+  return h + "</section>";
+}
+
 /* Chamado a cada desenho do mapa e depois de cada operação. Atualiza o botão, o painel e o dado no meio do mapa. */
 function atualizarDados() {
   var m = MESTRE ? MESTRE.modeloDados() : modeloDadosJogador();
   dadoReceber(m.rolagem, m.idade);
+  var lado = document.getElementById("dadosLado");
+  if (lado) { var hl = dadosLadoHTML(m); if (lado.getAttribute("data-j") !== hl) { lado.innerHTML = hl; lado.setAttribute("data-j", hl); } }
   var box = caixaTab();
   if (!box || !box.querySelector) return;
   var pode = !!m.pode;
@@ -1974,7 +1993,7 @@ function viewAcaoJogador() {
   }
   return "<h1>" + esc(a.titulo || "Cena atual") + "</h1>" + (a.resumo ? '<p class="resumo">' + esc(a.resumo) + "</p>" : "") + '<p class="mdica">Cada casa tem 1,5 m. O movimento é só na horizontal e na vertical (sem diagonal). O mapa se atualiza sozinho enquanto esta aba estiver aberta.</p>' +
     '<p id="acaoMsg" role="status" class="mdica' + (acaoMsgErro ? " tok-aviso" : "") + '">' + esc(acaoMsg) + "</p>" +
-    '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
+    '<div class="acao-mapa"><div>' + tabuleiroHTML(API + "?a=cena_img&v=" + encodeURIComponent(a.img), a.titulo || "Mapa da cena") + '</div><aside class="acao-lado"><div id="dadosLado"></div><div id="acaoCombate">' + acaoCombateHTML() + "</div></aside></div>" +
     listaTokensHTML(a.tokens || [], a.eu) + '<div id="acaoLog">' + acaoLogHTML() + "</div>";
 }
 

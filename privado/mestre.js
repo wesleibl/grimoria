@@ -3122,7 +3122,7 @@ function viewAcaoMestre() {
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
   h += '<p class="mdica" id="tokInfo" role="status">' + esc(INFO_PADRAO) + "</p>";
-  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado" id="acaoLado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado" id="acaoLado"><div id="dadosLado"></div><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   var faltam = (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); });
   h += '<div class="controls"><label class="tok-best">Jogador <select class="sorteio-in" id="tokJogSel"' + (faltam.length ? "" : " disabled") + ">" +
     (faltam.length ? faltam.map(function (j) { return '<option value="' + esc(j.id) + '">' + esc(j.personagem || j.nome || "Jogador") + "</option>"; }).join("") : "<option>Todos já estão no mapa</option>") +

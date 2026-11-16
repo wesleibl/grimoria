@@ -538,6 +538,14 @@ body.sem-rolagem { overflow: hidden; }
 .dado-livre { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
 .dado-livre input[type="color"] { width: 48px; height: 36px; padding: 0; }
 @media (prefers-reduced-motion: reduce) { .dado-prev.rolando .dado-fig { animation: none; } }
+.dados-lado .dados-grade { grid-template-columns: repeat(3, 1fr); }
+.dados-lado .dado-op { background: var(--surface2); color: var(--text); border: 2px solid transparent; min-height: 70px; }
+.dados-lado .dado-op.sel { border-color: var(--accent); background: var(--warn-bg); }
+.dados-lado .dado-op.ult { border-color: var(--line); }
+.dados-lado .dado-op .dado-svg { width: 48px; height: 48px; }
+.dados-lado button.dado-op { cursor: pointer; }
+.dados-status { margin: .6rem 0 0; }
+.dados-lado .dados-rolar { margin: .6rem 0 0; }
 /* Painel de iniciativa (⚔), card do token e efeitos: ficam dentro do .tab-box (valem em tela cheia) */
 .zoom-ctl button[aria-pressed="true"][data-zoom="ini"] { background: var(--accent); color: var(--accent-ink); }
 .ini-painel { position: absolute; top: 58px; right: 8px; z-index: 5; width: min(250px, calc(100% - 16px)); max-height: calc(100% - 66px); overflow-y: auto; box-sizing: border-box; padding: 8px 10px; border-radius: 10px; background: rgba(20, 30, 33, .82); color: #fff; font-size: .88rem; line-height: 1.35; }
