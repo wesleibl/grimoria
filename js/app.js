@@ -159,7 +159,7 @@ function viewRegras() {
     ["<b>Inteligência</b>", "Suporte, cura, controle, conhecimento, percepção e manter feitiços de efeito contínuo (barreiras, auras, invocações)."]
   ]);
 
-  h += "<h2>Perícias</h2>" + panel("Perícias do D&D", "<p>Teste de perícia: d20 + atributo, mais o bônus de proficiência se você for proficiente na perícia. O bônus é +2 nos níveis 1 e 2, e +3 do nível 3 em diante. Você é proficiente em 4 perícias no nível 1, mais 1 a cada 2 níveis (níveis 2 e 4). Marque no Perfil.</p>" +
+  h += "<h2>Perícias</h2>" + panel("Perícias do D&D", "<p>Teste de perícia: d20 + atributo, mais o bônus de proficiência se você for proficiente na perícia. O bônus é +2 nos níveis 1 e 2, e +3 do nível 3 em diante. Você é proficiente em 4 perícias no nível 1, mais 1 a cada 2 níveis (níveis 3 e 5). Marque no Perfil.</p>" +
     "<p>Sabedoria e Carisma viram Inteligência; Força e Constituição viram Poder. <b>Poder:</b> Atletismo. <b>Destreza:</b> Acrobacia, Furtividade, Prestidigitação. <b>Inteligência:</b> todas as outras.</p>");
 
   h += "<h2>Criar o personagem</h2>" + panel("Números", "<ul>" +
@@ -765,7 +765,7 @@ var PER_ABR = { poder: "POD", destreza: "DES", inteligencia: "INT" };
 /* Proficiência, como no D&D: o personagem é proficiente em algumas perícias e soma o bônus de proficiência nelas.
    Bônus: +2 nos níveis 1 e 2, +3 do nível 3 em diante. Perícias proficientes: 4 no nível 1, mais 1 a cada 2 níveis. */
 function profBonus(j) { var n = nivelJog(j); return n <= 2 ? 2 : n <= 8 ? 3 : n <= 12 ? 4 : n <= 16 ? 5 : 6; }
-function perOrcamento(j) { return 4 + Math.floor(nivelJog(j) / 2); }
+function perOrcamento(j) { return 4 + Math.floor((nivelJog(j) - 1) / 2); }
 function perProf(j, id) { return (parseInt(j.pericias && j.pericias[id], 10) || 0) > 0; }
 function perBonus(j, id) { return perProf(j, id) ? profBonus(j) : 0; }
 function perUsado(o) { return PERICIAS.reduce(function (s, p) { return s + ((parseInt(o[p[0]], 10) || 0) > 0 ? 1 : 0); }, 0); }
