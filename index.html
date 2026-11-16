@@ -704,7 +704,12 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 /* O nome ganha largura mínima legível e a linha quebra no celular; o campo da iniciativa fica estreito (não ocupa a linha toda). */
 .cmb-nome { flex: 1 1 9ch; min-width: 9ch; overflow-wrap: anywhere; }
 .cmb-nome small { display: block; color: var(--muted); font-size: .78rem; }
-.cmb-lista .sorteio-in.num { width: 72px; flex: none; }
+.cmb-lista .sorteio-in.num { width: 56px; flex: none; padding: 6px 8px; text-align: center; }
+.cmb-lista li { flex-wrap: nowrap; gap: 8px; }
+.cmb-nome { flex: 1 1 0; min-width: 0; }
+.cmb-dado { flex: none; width: 36px; height: 36px; padding: 0; line-height: 1; font-size: 1.05rem; }
+.cmb-acoes { display: grid; gap: 6px; margin: .6rem 0; }
+.cmb-acoes button { width: 100%; margin: 0; }
 .cmb-ordem .ef { color: var(--text); border-color: var(--line); }
 .cmb-ordem { margin: 0 0 .8rem; padding-left: 1.4rem; }
 .cmb-ordem li { margin: 0 0 .2rem; }

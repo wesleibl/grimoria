@@ -2903,9 +2903,9 @@ function combatePainelHTML() {
       var v = ini[t.id];
       return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span><span class="cmb-nome">' + esc(t.nome) + "<small>" + esc(tipoRotulo(t)) + "</small></span>" +
         '<input class="sorteio-in num" type="number" min="-20" max="80" data-cini="' + t.id + '" value="' + (v ? v.v : "") + '" placeholder="–" aria-label="Iniciativa de ' + esc(t.nome) + '">' +
-        '<button type="button" data-crolar="' + t.id + '">Rolar</button></li>';
+        '<button type="button" class="cmb-dado" data-crolar="' + t.id + '" title="Rolar iniciativa de ' + esc(t.nome) + '" aria-label="Rolar iniciativa de ' + esc(t.nome) + '">🎲</button></li>';
     }).join("") + "</ul>" +
-      '<div class="controls"><button type="button" id="cmbRolarInim">Rolar inimigos e aliados</button><button type="button" class="primary" id="cmbComecar">Começar os turnos</button><button type="button" id="cmbEncerrar">Cancelar</button></div>' +
+      '<div class="cmb-acoes"><button type="button" id="cmbRolarInim">Rolar inimigos e aliados</button><button type="button" class="primary" id="cmbComecar">Começar os turnos</button><button type="button" id="cmbEncerrar">Cancelar</button></div>' +
       '<p class="mdica">Quem ficar sem iniciativa age por último.</p></section>';
     return h;
   }
@@ -2915,7 +2915,7 @@ function combatePainelHTML() {
     var v = ini[id] ? ini[id].v : "–";
     return '<li class="' + (i === cb.turno ? "atual" : "") + (t.morto ? " morto" : "") + '"><button type="button" class="link" data-tsel="' + id + '">' + esc(t.nome) + "</button> <small>" + v + "</small>" + (i === cb.turno ? " ◀" : "") + (t.efeitos && t.efeitos.length && !t.morto ? " " + chipsEfeitosHTML(t.efeitos) : "") + "</li>";
   }).join("") + "</ol>" +
-    '<div class="controls"><button type="button" class="primary" id="cmbProximo">Próximo turno</button><button type="button" id="cmbRecalc" title="Inclui quem entrou depois e tira os derrotados, sem perder o turno atual">Recalcular ordem</button><button type="button" id="cmbEncerrar">Encerrar combate</button></div></section>';
+    '<div class="cmb-acoes"><button type="button" class="primary" id="cmbProximo">Próximo turno</button><button type="button" id="cmbRecalc" title="Inclui quem entrou depois e tira os derrotados, sem perder o turno atual">Recalcular ordem</button><button type="button" id="cmbEncerrar">Encerrar combate</button></div></section>';
   return h;
 }
 
