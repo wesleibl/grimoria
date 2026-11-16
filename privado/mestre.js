@@ -2912,7 +2912,46 @@ function tipoRotulo(t) {
   return t.oculto && !revelado(t) ? base + " · oculto" : base;
 }
 
-function combatePainelHTML() {
+/* Quem pode rolar agora: em combate, quem está na vez; fora dele, quem o mestre escolheu. Espelha rolaAgora() do servidor, que confere de novo. */
+function rolaAgoraMestre() {
+  var a = acaoEst(), cb = CAMPO.combate, id = null;
+  if (!a.ativo || a.modo === "foto") return null;
+  if (cb) { if (cb.fase !== "turnos") return null; id = (cb.ordem || [])[cb.turno]; }
+  else id = CAMPO.rolador;
+  var t = id ? acharTok(id) : null;
+  return t && (CAMPO.pos || {})[t.id] && (t.tipo === "jogador" || t.tipo === "aliado" || t.tipo === "inimigo") && !t.morto ? t : null;
+}
+
+/* Modelo do rolador de dados do mestre: ele rola por aliados e inimigos; o jogador rola na tela dele. O mestre vê tudo, inclusive ocultos. */
+function modeloDadosMestre() {
+  var t = rolaAgoraMestre(), r = CAMPO.rolagem || null, idade = 0;
+  if (r && dadoSt.n === -1) idade = CAMPO.agora ? Math.max(0, CAMPO.agora - (r.t || 0)) : 999; /* ao carregar a página: rolagem velha não anima */
+  if (r && r.estado === "escolhido" && (!t || r.tok !== t.id)) r = null;
+  var estilo = t && t.tipo === "inimigo" ? { cor: "#b3261e", num: "#fff1ee" } : t ? { cor: corHexOu(t.cor, COR_TOKEN.aliado), num: "#f8f8f8" } : {};
+  if (t && t.tipo === "aliado" && lumHex(estilo.cor) > 0.5) estilo.num = "#1a1a1a";
+  return { rolagem: r, idade: idade, pode: !!t && t.tipo !== "jogador", tok: t ? t.id : null, nome: t ? t.nome || "" : "", estilo: estilo };
+}
+
+/* Painel "Dados" ao lado do mapa: escolhe quem pode rolar fora de combate. */
+function dadosMestreHTML() {
+  var a = acaoEst(), cb = CAMPO.combate;
+  var h = '<section class="panel cmb"><h3>' + ic("dado") + "Dados</h3>";
+  if (!a.ativo) return h + '<p class="mdica">Os dados só funcionam com a imersão ativa.</p></section>';
+  if (cb) {
+    if (cb.fase === "ini") return h + '<p class="mdica">Na fase de iniciativa ninguém rola dados soltos.</p></section>';
+    var t = acharTok(atualId());
+    return h + '<p class="mdica">Em combate rola quem está na vez' + (t ? ": <b>" + esc(t.nome) + "</b>. " + (t.tipo === "jogador" ? "O jogador rola na tela dele." : "Use o botão de dados no mapa (aparece só para você).") : ".") + "</p></section>";
+  }
+  var lista = combatentes();
+  return h + '<label>Quem pode rolar<select class="sorteio-in" data-rolador><option value="">Ninguém</option>' + lista.map(function (x) {
+    return '<option value="' + esc(x.id) + '"' + (CAMPO.rolador === x.id ? " selected" : "") + ">" + esc(x.nome) + " (" + esc(tipoRotulo(x)) + ")</option>";
+  }).join("") + "</select></label>" +
+    '<p class="mdica">Vale até você trocar. Jogador rola na tela dele; aliado e inimigo, pelo botão de dados no mapa. Rolagem de token oculto só você vê.</p></section>';
+}
+
+function combatePainelHTML() { return dadosMestreHTML() + combatePainelHTML0(); }
+
+function combatePainelHTML0() {
   var cb = CAMPO.combate, a = acaoEst();
   var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
   if (!cb) {
@@ -3048,7 +3087,7 @@ function iniciarCampoPoll() { if (!campoRodando) { campoRodando = true; pollCamp
 function pararCampoPoll() { clearTimeout(campoTimer); campoTimer = null; campoRodando = false; campoGer++; }
 function pollCampo(ger) {
   if (ger !== campoGer || rotaAtual() !== "acao") { campoRodando = false; return; }
-  var depois = function () { if (ger === campoGer) campoTimer = setTimeout(function () { pollCampo(ger); }, 2500); };
+  var depois = function () { if (ger === campoGer) campoTimer = setTimeout(function () { pollCampo(ger); }, CAMPO.combate || CAMPO.rolador || CAMPO.rolagem ? 2000 : 2500); };
   if (document.hidden || arrastando || pendentes || Object.keys(timers).length) { depois(); return; }
   api("campo").then(function (r) {
     if (ger !== campoGer || !r.campo || r.campo.v === CAMPO.v) return;
@@ -3358,6 +3397,7 @@ function redesenharTokens() {
 
 function changeAcao(el) {
   var d = el.dataset, a = acaoEst(), t;
+  if (el.hasAttribute("data-rolador")) { campoOp("rolador", { id: el.value }).then(renderAcaoUI); return true; }
   if (d.acao === "cenario") {
     var id = el.value.indexOf("e:") === 0 ? parseInt(el.value.slice(2), 10) : 0, ce = id ? acharEnvio(id) : null;
     selecionarNaAcao(id, ce && gridsDe(ce).length ? gridsDe(ce)[0].id : 0);
@@ -4624,6 +4664,7 @@ MESTRE = {
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
   modeloIni: modeloIniMestre,
+  modeloDados: modeloDadosMestre,
   regrasExtra: regrasExtraMestre,
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,
