@@ -645,7 +645,7 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 /* Tela larga: o painel fica AO LADO do mapa e acompanha a rolagem, então dá para ajustar o token sem descer a página. */
 @media (min-width: 1100px) {
   main.imersivo .acao-mapa { grid-template-columns: minmax(0, 1fr) 360px; }
-  main.imersivo .acao-lado { grid-template-columns: 1fr; position: sticky; top: 72px; max-height: calc(100vh - 84px); overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+  main.imersivo .acao-lado { grid-template-columns: 1fr; }
   main.imersivo .acao-lado.tem-sel #tokPainel { order: -1; }
 }
 /* Seletor de direção no destino (N S L O + ✓): botões grandes, em cruz, sobre a casa escolhida. */
