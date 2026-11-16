@@ -1020,7 +1020,8 @@ function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (C
 function tabuleiroHTML(src, alt) {
   return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div>' +
     '<div class="zoom-ctl"><button type="button" data-zoom="mais" aria-label="Aproximar o mapa">+</button><button type="button" data-zoom="menos" aria-label="Afastar o mapa">−</button>' +
-    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="ini" aria-label="Mostrar ou ocultar a ordem de iniciativa" aria-pressed="false" title="Ordem de iniciativa">⚔</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<aside class="ini-painel" id="iniPainel" aria-label="Ordem de iniciativa" hidden></aside><div class="tok-card" id="tokCard" hidden></div>' +
     '<div class="tab-hud" id="tabHud" aria-live="polite"></div><div class="gire-dica">Gire o aparelho para o modo paisagem</div></div>';
 }
 
@@ -1063,6 +1064,11 @@ function desenharTabuleiro(cfg) {
     var forma = t.tipo === "armadilha"
       ? '<polygon points="0,' + (-r * 1.15).toFixed(1) + " " + (r * 1.15).toFixed(1) + ",0 0," + (r * 1.15).toFixed(1) + " " + (-r * 1.15).toFixed(1) + ',0" fill="' + corToken(t) + '"/>'
       : '<circle r="' + r.toFixed(1) + '" fill="' + corToken(t) + '"/>';
+    /* Setinha na borda do círculo, apontando para onde o token está virado (sem dir, nada). Fica por baixo do círculo, das iniciais e da foto. */
+    var seta = "", ang = { n: 0, l: 90, s: 180, o: 270 }[t.dir];
+    if (ang !== undefined && t.tipo !== "armadilha") {
+      seta = '<polygon class="dir" fill="' + corToken(t) + '" transform="rotate(' + ang + ')" points="0,' + (-r * 1.3).toFixed(1) + " " + (r * 0.34).toFixed(1) + "," + (-r * 0.9).toFixed(1) + " " + (-r * 0.34).toFixed(1) + "," + (-r * 0.9).toFixed(1) + '"/>';
+    }
     var barra = "";
     if (cfg.mestre && t.vidaMax && t.tipo !== "armadilha") {
       var pc = Math.max(0, Math.min(1, (t.vida == null ? t.vidaMax : t.vida) / t.vidaMax)), bw = r * 1.8;
@@ -1091,7 +1097,7 @@ function desenharTabuleiro(cfg) {
     /* O token selecionado ganha um halo que pulsa para fora: é a pista de que ele aguarda o destino. */
     var halo = cfg.sel === t.id ? '<circle class="halo" r="' + (r * 1.1).toFixed(1) + '"/>' : "";
     h += '<g class="' + cls + '" data-tok="' + esc(t.id) + '" data-alvo="' + alvo + '" style="' + estilo + '">' +
-      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + halo + forma +
+      "<title>" + esc(t.nome || "") + " (" + coordNome(x, y) + ")</title>" + halo + seta + forma +
       '<text text-anchor="middle" dy=".35em" font-size="' + (r * 0.8).toFixed(1) + '">' + (t.tipo === "armadilha" ? "!" : esc(iniciais(t.nome))) + "</text>" + fotoSvg + barra + "</g>";
   });
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -1107,6 +1113,7 @@ function desenharTabuleiro(cfg) {
     });
   }
   tabGeo = { W: W, H: H, cols: cols, rows: rows, cw: cw, ch: ch };
+  atualizarIni();
   var caixa = caixaTab();
   if (caixa) { if (caixa.style && caixa.style.setProperty) caixa.style.setProperty("--ar", (W / H).toFixed(4)); ligarZoom(caixa); aplicarZoom(false); }
   /* Roda a cada desenho, não só no primeiro: com a imagem já no cache o desenho é imediato, e é aqui que os
@@ -1144,9 +1151,18 @@ function origemTab(box) {
 var gradeOculta = false;
 try { gradeOculta = localStorage.getItem("grimoria_grade_oculta") === "1"; } catch (e) {}
 
+/* Em tela cheia o HUD fica embaixo do mapa (não por cima): a largura do mapa desconta a altura dele. HUD vazio não reserva nada. */
+function medirHud() {
+  var box = caixaTab(), h = box && box.querySelector ? box.querySelector("#tabHud") : null;
+  if (!box || !box.style || !box.style.setProperty) return;
+  var alt = h && box.classList.contains("tc") && h.offsetHeight ? h.offsetHeight : 0;
+  box.style.setProperty("--hud-h", alt + "px");
+}
+
 function aplicarZoom(suave) {
   var box = caixaTab(), tab = box && box.querySelector ? box.querySelector(".tab") : null;
   if (!box || !tab) return;
+  medirHud();
   var z = zoomTab.z, w = tab.offsetWidth || box.clientWidth, h = tab.offsetHeight || box.clientHeight;
   zoomTab.tx = Math.min(0, Math.max(w * (1 - z), zoomTab.tx));
   zoomTab.ty = Math.min(0, Math.max(h * (1 - z), zoomTab.ty));
@@ -1185,6 +1201,7 @@ function zoomBotao(k) {
     try { localStorage.setItem("grimoria_grade_oculta", gradeOculta ? "1" : "0"); } catch (e) {}
     aplicarZoom(false);
   }
+  else if (k === "ini") alternarIni();
   else if (k === "cheia") { if (emTelaCheia(box)) sairTelaCheia(); else entrarTelaCheia(); }
 }
 
@@ -1193,7 +1210,7 @@ function ligarZoom(box) {
   if (box.dataset) box.dataset.zoomLigado = "1";
   var ptrs = {}, modo = null, ini = null, soltarTudo = false;
   function lista() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
-  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud")); }
+  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .tok-card")); }
   box.addEventListener("pointerdown", function (ev) {
     if (ignorar(ev) || (ev.pointerType === "mouse" && ev.button !== 0)) return;
     zoomSuprimir = false;
@@ -1298,6 +1315,7 @@ function atualizarHud() {
   var h = document.getElementById("tabHud");
   if (!h) return;
   h.innerHTML = MESTRE ? MESTRE.hudHTML() : hudJogador();
+  medirHud();
 }
 function hudJogador() {
   var a = acaoPub, cb = a && a.combate, h = "";
@@ -1305,10 +1323,12 @@ function hudJogador() {
     var t = meuTok(), atual = (cb.ordem.filter(function (o) { return o.id === cb.atual; })[0] || {}).nome;
     h += "<span>Rodada " + cb.rodada + " · " + (cb.minhaVez ? "<b>sua vez!</b>" + (t ? " restam " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + " casas" : "") : (atual ? "turno de " + esc(atual) : "…")) + "</span>";
     if (cb.minhaVez) h += '<button type="button" class="primary" id="fimTurno">Encerrar turno</button>';
+    if (cb.minhaVez && efeitosVezHTML()) h += '<span class="ef-vez">' + efeitosVezHTML() + "</span>";
   } else if (cb && cb.fase === "ini") {
     h += "<span>Iniciativa: " + (cb.euPreciso ? "role no painel (saia da tela cheia)" : "aguardando os outros") + "</span>";
   }
   if (acaoMsg) h += '<span class="' + (acaoMsgErro ? "erro" : "") + '">' + esc(acaoMsg) + "</span>";
+  if (meuTok()) h += '<span class="hud-btns">' + virarBotoesHTML() + '<button type="button" data-ficha="' + esc(acaoPub.eu) + '">Ver ficha</button></span>';
   return h;
 }
 
@@ -1319,6 +1339,143 @@ function listaTokensHTML(tokens, meu) {
     var mov = turnos && meu && t.id === meu && t.desl ? ", deslocamento " + t.desl + ", restam " + Math.max(0, t.desl - (t.gasto || 0)) : "";
     return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span>' + esc(t.nome || "Sem nome") + (t.tipo === "armadilha" ? " (armadilha)" : "") + " <small>" + coordNome(t.x | 0, t.y | 0) + (meu && t.id === meu ? ", você" : "") + mov + "</small></li>";
   }).join("") + "</ul>";
+}
+
+/* ============================ INICIATIVA, FICHA DO TOKEN, DIREÇÃO E EFEITOS ============================ */
+
+/* Painel da ordem de iniciativa (botão ⚔) e card do token clicado: ficam DENTRO do .tab-box, então aparecem em tela cheia.
+   Jogador e mestre usam o mesmo desenho; cada um monta o próprio modelo (o do jogador só tem o que acaoPublica() manda). */
+var iniAberto = false, cardTok = null;
+try { iniAberto = localStorage.getItem("grimoria_ini_aberta") === "1"; } catch (e) { /* sem armazenamento: começa fechado */ }
+var NOME_DIR = { n: "Norte", s: "Sul", l: "Leste", o: "Oeste" };
+var NOME_TIPO = { jogador: "Jogador", aliado: "Aliado", inimigo: "Inimigo" };
+
+function slugEstado(e) { return String(e || "").toLowerCase().replace(/[^a-z]+/g, ""); }
+function turnosTxt(n) { return n + (n === 1 ? " turno" : " turnos"); }
+/* Chips dos efeitos: nome + turnos que restam; um aviso quando exige resistência. */
+function chipsEfeitosHTML(ef) {
+  return (ef || []).map(function (e) {
+    var t = e.turnos != null ? " · " + turnosTxt(e.turnos) : "";
+    return '<span class="ef ef-' + (e.tipo === "buff" ? "buff" : "debuff") + (e.aviso ? " aviso" : "") + '" title="' + esc((e.tipo === "buff" ? "Benefício" : "Prejuízo") + (e.teste ? ": exige teste de resistência" : "")) + '">' +
+      esc(e.nome) + t + (e.teste ? " ⚠" : "") + "</span>";
+  }).join("");
+}
+function efeitosVezHTML() {
+  var t = meuTok();
+  if (!t || !(t.efeitos || []).length) return "";
+  return "<b>Seus efeitos:</b> " + t.efeitos.map(function (e) {
+    return esc(e.nome) + (e.turnos != null ? " (" + turnosTxt(e.turnos) + ")" : "") + (e.teste ? " — role resistência" : "");
+  }).join(" · ");
+}
+/* Botões de direção (N S L O). Quem os clica vira o próprio token: não custa movimento. */
+function virarBotoesHTML(atual) {
+  return '<span class="virar" role="group" aria-label="Virar o token">' + ["n", "s", "l", "o"].map(function (d) {
+    return '<button type="button" data-virar="' + d + '" aria-label="Virar para ' + NOME_DIR[d] + '" aria-pressed="' + (atual === d ? "true" : "false") + '">' + d.toUpperCase() + "</button>";
+  }).join("") + "</span>";
+}
+
+function alternarIni() {
+  iniAberto = !iniAberto;
+  try { localStorage.setItem("grimoria_ini_aberta", iniAberto ? "1" : "0"); } catch (e) { /* sem armazenamento: vale só nesta tela */ }
+  atualizarIni();
+}
+
+function iniPainelHTML(m) {
+  var h = '<div class="ini-cab"><b>' + ic("espada") + "Iniciativa</b>" + (m && m.rodada ? "<span>Rodada " + m.rodada + "</span>" : "") + "</div>";
+  if (!m) return h + '<p class="mdica">Nenhum combate em andamento.</p>';
+  if (m.fase === "ini") {
+    return h + "<p>Rolando a iniciativa…</p>" + (m.pend.length ? '<p class="mdica">Faltam: ' + m.pend.map(esc).join(", ") + ".</p>" : '<p class="mdica">Todos já definiram. Aguardando o mestre.</p>');
+  }
+  return h + '<ol class="ini-lista">' + m.linhas.map(function (l) {
+    return '<li class="' + (l.atual ? "atual" : "") + (l.eu ? " eu" : "") + (l.morto ? " morto" : "") + '"><span class="tok-cor" style="background:' + esc(l.cor) + '"></span>' +
+      '<span class="ini-nome">' + esc(l.nome) + (l.eu ? " <small>(você)</small>" : "") + (l.atual ? " ◀" : "") + "</span>" +
+      (l.v != null ? '<span class="ini-v" title="Iniciativa">' + esc(String(l.v)) + "</span>" : "") +
+      (l.vida ? '<span class="ini-vida est-' + slugEstado(l.estado || "num") + '">' + esc(l.vida) + "</span>" : "") +
+      (l.efeitos && l.efeitos.length ? '<span class="ini-ef">' + chipsEfeitosHTML(l.efeitos) + "</span>" : "") + "</li>";
+  }).join("") + "</ol>";
+}
+
+/* Chamado a cada desenho e a cada ciclo do polling. Só mexe no DOM se o conteúdo mudou (compara o JSON). */
+function atualizarIni() {
+  var box = caixaTab();
+  if (!box || !box.querySelector) return;
+  var p = box.querySelector("#iniPainel"), b = box.querySelector('[data-zoom="ini"]');
+  if (b) b.setAttribute("aria-pressed", iniAberto ? "true" : "false");
+  if (p) {
+    if (!iniAberto) p.hidden = true;
+    else {
+      var m = MESTRE ? MESTRE.modeloIni() : modeloIniJogador(), j = JSON.stringify(m);
+      if (p.getAttribute("data-j") !== j) {
+        var rol = p.scrollTop;
+        p.innerHTML = iniPainelHTML(m);
+        p.setAttribute("data-j", j);
+        p.scrollTop = rol;
+      }
+      p.hidden = false;
+    }
+  }
+  atualizarCardTok();
+}
+
+/* Card do token de outro (ou do próprio, pelo "Ver ficha"): imagem, tipo, casa, estado de vida em palavras e efeitos. */
+function cardTokHTML(t) {
+  var eu = acaoPub && t.id === acaoPub.eu, img;
+  if (t.foto) img = '<img class="tc-img" src="' + API + "?a=img&amp;id=" + encodeURIComponent(t.foto) + '" alt="' + esc(t.nome || "") + '">';
+  else if (t.icone) img = '<img class="tc-img" src="image/bestiario/' + esc(t.icone) + '.jpg" alt="' + esc(t.nome || "") + '">';
+  else img = '<div class="tc-ini" style="background:' + esc(corToken(t)) + '">' + esc(iniciais(t.nome)) + "</div>";
+  var estado = t.morto ? "Caído" : (t.estado || ""), vida = "";
+  if (eu && acaoPub.minhaVida) vida = "Vida " + acaoPub.minhaVida.vida + "/" + acaoPub.minhaVida.vidaMax;
+  else if (estado) vida = estado;
+  return '<button type="button" class="tc-x" data-cardfechar aria-label="Fechar">✕</button><div class="tc-fig">' + img + "</div>" +
+    '<div class="tc-info"><b class="tc-nome">' + esc(t.nome || "Sem nome") + "</b>" +
+    "<small>" + esc(NOME_TIPO[t.tipo] || "") + (eu ? " · você" : "") + " · " + coordNome(t.x | 0, t.y | 0) + (t.dir ? " · virado para " + NOME_DIR[t.dir] : "") + "</small>" +
+    (vida ? '<span class="ini-vida est-' + slugEstado(eu && acaoPub.minhaVida ? "num" : estado) + '">' + esc(vida) + "</span>" : "") +
+    ((t.efeitos || []).length ? '<span class="ini-ef">' + chipsEfeitosHTML(t.efeitos) + "</span>" : "") +
+    (eu ? virarBotoesHTML(t.dir) : "") + "</div>";
+}
+function atualizarCardTok() {
+  var box = caixaTab(), c = box && box.querySelector ? box.querySelector("#tokCard") : null;
+  if (!c) return;
+  var t = null;
+  if (cardTok && acaoPub) (acaoPub.tokens || []).forEach(function (o) { if (o.id === cardTok && o.tipo !== "armadilha") t = o; });
+  if (!t) { cardTok = null; c.hidden = true; c.removeAttribute("data-j"); return; }
+  var j = JSON.stringify([t, acaoPub.eu === t.id ? acaoPub.minhaVida : null]);
+  if (c.getAttribute("data-j") !== j) { c.innerHTML = cardTokHTML(t); c.setAttribute("data-j", j); }
+  c.hidden = false;
+}
+function abrirCardTok(id) { cardTok = id; atualizarCardTok(); }
+function fecharCardTok() { cardTok = null; atualizarCardTok(); }
+/* Imagem que não carregou (a CSP não permite onerror inline; o erro não borbulha, então escuta na captura). */
+document.addEventListener("error", function (e) {
+  var im = e.target;
+  if (im && im.tagName === "IMG" && im.classList.contains("tc-img") && im.parentNode) {
+    var d = document.createElement("div");
+    d.className = "tc-ini";
+    d.textContent = "?";
+    im.parentNode.replaceChild(d, im);
+  }
+}, true);
+
+function modeloIniJogador() {
+  var a = acaoPub, cb = a && a.combate;
+  if (!cb) return null;
+  if (cb.fase === "ini") return { fase: "ini", rodada: cb.rodada, pend: cb.pendentes || [] };
+  var porId = {};
+  (a.tokens || []).forEach(function (t) { porId[t.id] = t; });
+  return {
+    fase: "turnos", rodada: cb.rodada, linhas: cb.ordem.map(function (o) {
+      var t = porId[o.id] || {}, eu = o.id === a.eu, vida = eu && a.minhaVida ? a.minhaVida.vida + "/" + a.minhaVida.vidaMax : (o.morto ? "Caído" : t.estado || "");
+      return { nome: o.nome, cor: corToken(t), v: o.v, atual: o.id === cb.atual, eu: eu, morto: !!o.morto, vida: vida, estado: eu && a.minhaVida ? "" : (o.morto ? "Caído" : t.estado || ""), efeitos: t.efeitos || [] };
+    })
+  };
+}
+
+function virarJogador(dir) {
+  var t = meuTok();
+  if (!t || t.dir === dir) return;
+  t.dir = dir;
+  desenharAcaoJogador();
+  api("campo_op", { op: "virar", dir: dir }).then(function () {}, function (e) { mostrarAcaoMsg(e.message, true); }).then(function () { return buscarAcaoAgora(true); });
 }
 
 /* ============================ AÇÃO (JOGADOR) ============================ */
@@ -1341,9 +1498,15 @@ function podeMover() {
   return a.livre !== false;
 }
 
+/* Direção do próprio token e atalho para a ficha: aparecem no card de combate e no HUD. */
+function meuControlesHTML() {
+  var t = meuTok();
+  return t ? '<div class="controls meu-ctl"><span class="mdica">Virado para:</span> ' + virarBotoesHTML(t.dir) + '<button type="button" data-ficha="' + esc(t.id) + '">Ver ficha</button></div>' : "";
+}
+
 function acaoCombateHTML() {
   var a = acaoPub, cb = a.combate;
-  if (!cb) return '<p class="mdica">' + (a.livre === false ? "O mestre travou o movimento por enquanto." : (a.eu ? "Arraste o seu token para se mover." : "Seu personagem ainda não está no mapa.")) + "</p>";
+  if (!cb) return '<p class="mdica">' + (a.livre === false ? "O mestre travou o movimento por enquanto." : (a.eu ? "Clique no seu token e depois numa casa azul para se mover." : "Seu personagem ainda não está no mapa.")) + "</p>" + meuControlesHTML();
   var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
   if (cb.fase === "ini") {
     h += "<p>Hora de rolar a <b>iniciativa</b> (d20 + Destreza).</p>";
@@ -1353,7 +1516,7 @@ function acaoCombateHTML() {
     } else if (cb.euIni != null) {
       h += "<p>Sua iniciativa: <b>" + cb.euIni + "</b>.</p>";
     }
-    h += "<p class=\"mdica\">" + (cb.pendentes.length ? "Aguardando: " + cb.pendentes.map(esc).join(", ") + "." : "Todos os jogadores já rolaram. O mestre vai começar os turnos.") + "</p></section>";
+    h += "<p class=\"mdica\">" + (cb.pendentes.length ? "Aguardando: " + cb.pendentes.map(esc).join(", ") + "." : "Todos os jogadores já rolaram. O mestre vai começar os turnos.") + "</p>" + meuControlesHTML() + "</section>";
     return h;
   }
   h += "<p><b>Rodada " + cb.rodada + "</b></p>";
@@ -1363,11 +1526,12 @@ function acaoCombateHTML() {
   var t = meuTok();
   if (cb.minhaVez) {
     h += '<p class="vez"><b>É a sua vez!</b>' + (t ? " Você ainda pode andar " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + " casas (de " + (t.desl || 6) + ")." : "") + "</p>" +
+      (efeitosVezHTML() ? '<p class="ef-vez">' + efeitosVezHTML() + "</p>" : "") +
       '<div class="controls"><button type="button" class="primary" id="fimTurno">Encerrar turno</button></div>';
   } else {
     h += '<p class="mdica">' + (cb.atual ? "Turno de " + esc((cb.ordem.filter(function (o) { return o.id === cb.atual; })[0] || {}).nome || "alguém") + "." : (cb.atualOculto ? "Algo se move nas sombras…" : "")) + "</p>";
   }
-  return h + "</section>";
+  return h + meuControlesHTML() + "</section>";
 }
 
 function acaoLogHTML() {
@@ -1416,14 +1580,24 @@ function desenharAcaoJogador() {
 function ligarCliqueJog() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
-  if (!meuTok() || !podeMover()) { selJog = false; svg.onclick = null; return; }
+  if (!meuTok() || !podeMover()) selJog = false;
   svg.onclick = function (ev) {
     if (movendoJog) return;
     var alvo = ev.target.closest ? ev.target.closest(".alc") : null;
     if (alvo) { moverJogadorPara(parseInt(alvo.getAttribute("data-ax"), 10), parseInt(alvo.getAttribute("data-ay"), 10), parseInt(alvo.getAttribute("data-ad"), 10)); return; }
     var g = ev.target.closest ? ev.target.closest(".token") : null;
-    var t = meuTok();
-    selJog = !!(g && t && g.dataset.tok === acaoPub.eu && !selJog);
+    var t = meuTok(), id = g ? g.dataset.tok : null;
+    /* Token de outro: abre (ou fecha, se já estava aberto) o card com a imagem dele. Não mexe na seleção para mover. */
+    if (id && (!t || id !== acaoPub.eu)) {
+      var o = (acaoPub.tokens || []).filter(function (x) { return x.id === id; })[0];
+      if (o && o.tipo !== "armadilha") { if (cardTok === id) fecharCardTok(); else abrirCardTok(id); }
+      return;
+    }
+    /* O próprio token continua como antes: seleciona para mover. Se não pode mover agora, abre a ficha dele. */
+    if (id && !podeMover()) { if (cardTok === id) fecharCardTok(); else abrirCardTok(id); return; }
+    fecharCardTok();
+    if (!t || !podeMover()) return;
+    selJog = !!(id && !selJog);
     if (selJog) {
       var cb = acaoPub.combate, resta = cb && cb.fase === "turnos" ? Math.max(0, (t.desl || 6) - (t.gasto || 0)) : (t.desl || 6);
       mostrarAcaoMsg("Escolha uma casa azul para se mover (até " + resta + (resta === 1 ? " casa" : " casas") + ").", false);
@@ -2418,6 +2592,9 @@ app.addEventListener("click", function (e) {
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
   if (b.dataset.zoom) { zoomBotao(b.dataset.zoom); return; }
+  if (b.dataset.virar && !MESTRE) { virarJogador(b.dataset.virar); return; }
+  if (b.dataset.ficha !== undefined && !MESTRE) { abrirCardTok(b.dataset.ficha); return; }
+  if (b.hasAttribute("data-cardfechar")) { fecharCardTok(); return; }
   if (b.id === "iniRolar") { b.disabled = true; acaoOpJogador("ini", { rolar: true }); return; }
   if (b.id === "iniDigitar") {
     var vi = parseInt((document.getElementById("iniValor") || {}).value, 10);

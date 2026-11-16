@@ -201,6 +201,18 @@ deslocamento = 6 + floor(Destreza / 2) + ajuste
 
 **Painel do token (mestre):** clicar num token, no mapa ou na lista, abre o painel com nome, cor, tipo, Destreza, ajuste, gasto, vida (atual e máxima), derrotado, oculto, duplicar e remover.
 
+**Direção do token (N/S/L/O):** o servidor guarda `campo.pos[id].dir` e a setinha aparece na borda do círculo, na cor do token (sem `dir`, nada é desenhado; armadilha nunca tem). Ao andar, a direção é a do último passo do caminho (o mestre, ao arrastar, vale a origem e o destino). A op `virar` muda sem custo de movimento: o jogador só vira o próprio token (botões N S L O no card de combate, no HUD e no card do token); o mestre vira qualquer um no painel do token. `dir` é posição, então sai em `acaoPublica()`.
+
+**Card do token (jogador):** tocar num token de outro abre um card dentro do mapa (vale em tela cheia) com imagem, nome, tipo, casa, estado de vida e efeitos; fecha no ✕, ao tocar fora ou ao tocar noutro token. O próprio token continua selecionando para mover; "Ver ficha" abre o card dele (com a vida exata, `minhaVida`). A imagem é a foto do jogador ou o `icone` do bestiário (arquivo público de `image/bestiario/`; só passa se casar com `^[a-z0-9_-]{1,60}$`; a arte grande de `privado/arte` nunca sai). O mestre pode desmarcar "Imagem visível aos jogadores" no token (inimigo disfarçado); sem imagem, o card mostra o círculo de cor com as iniciais.
+
+**Painel de iniciativa (⚔):** botão no canto superior direito do mapa (lembrado no navegador). Mostra a rodada e a ordem, com o turno atual destacado, "você" marcado, derrotados riscados, o valor da iniciativa, a vida e os efeitos de cada um; na fase de iniciativa mostra quem ainda falta. Atualiza junto com o polling e só mexe no DOM se o conteúdo mudou. O mestre vê a vida exata.
+
+**Estado de vida (jogador):** a barra de vida no grid é só do mestre. O jogador vê só o rótulo, calculado no servidor: **Ileso** (100%), **Ferido** (≥ 50%), **Grave** (≥ 25%), **Por um fio** (> 0), **Caído** (0 ou derrotado). Token sem vida máxima não tem estado. `vida`, `vidaMax` e defesa nunca saem; só o próprio jogador recebe os números do próprio token.
+
+**Efeitos (buffs e debuffs):** `campo.efeitos[tokId] = [{id, nome, tipo, turnos, teste, nota}]`. O mestre adiciona no painel do token (lista dos estados do jogo ou nome livre, turnos ou sem contagem, "exige resistência", nota só dele), com "−1 turno" e ✕; ops `efeito_add`, `efeito_rm`, `efeito_set` (nome ≤ 40, nota ≤ 120, turnos 0 a 99, até 12 por token). O servidor conta: ao começar o turno do token, cada efeito com contagem perde 1 turno; ao chegar a 0 sai e vai ao registro "X: efeito Y acabou"; efeito com resistência gera "X precisa rolar resistência contra Y" (e o mestre recebe o alerta). Encerrar o combate limpa todos; token removido ou derrotado perde os efeitos. O jogador recebe nome, tipo, turnos e `teste` (nunca a nota), e na vez dele vê "Seus efeitos: Queimando (2 turnos) · Veneno — role resistência".
+
+**Tela cheia:** o HUD não cobre mais o mapa. Em tela cheia a caixa vira coluna (mapa em cima, HUD embaixo) e o mapa desconta a altura do HUD (`--hud-h`, medida em JS); HUD vazio não ocupa espaço. Vale também na tela cheia por CSS (iPhone).
+
 ## 4.3 Perfil do jogador: status e atributos
 
 > **Nada no Perfil é salvo sozinho.** São **dois botões de salvar separados**: **Salvar atributos** (a distribuição dos 5 pontos na criação e, depois, o bônus) e **Salvar informações** (nome do personagem, altura, descrição, sonho e medo). Só a **foto** é salva na hora, porque escolher o arquivo já é a confirmação.

@@ -2462,7 +2462,7 @@ function clickCenarios(b) {
 
 var CENAS = null, ENVIADAS = [], cenasMsg = "", tokSel = null, confirmarLimpar = false, upMsg = "";
 /* Posições e combate vêm do servidor (campo), que é quem manda: o mestre e os jogadores agem ao mesmo tempo. */
-var CAMPO = { pos: {}, combate: null, revelados: {}, acionadas: {}, eventos: [], v: 0 };
+var CAMPO = { pos: {}, combate: null, revelados: {}, acionadas: {}, eventos: [], efeitos: {}, v: 0 };
 var campoTimer = null, campoGer = 0, campoRodando = false, arrastando = false;
 var TIPOS_TOKEN = [["jogador", "Jogador"], ["aliado", "Aliado"], ["inimigo", "Inimigo"]];
 
@@ -2510,12 +2510,16 @@ function movel(t) { return t.tipo !== "armadilha"; }
    próprio personagem sem conhecer a Destreza. Também vai o tamanho do grid, que o servidor usa para conferir os movimentos. */
 function salvarAcao() {
   var a = acaoEst();
-  a.tokens.forEach(function (t) { if (movel(t)) t.desl = deslTok(t); });
+  a.tokens.forEach(function (t) {
+    if (movel(t)) t.desl = deslTok(t);
+    /* Inimigo do bestiário: grava o nome do ícone público (image/bestiario/*.jpg). A arte grande de privado/arte nunca vai. */
+    if (t.bestiario && t.icone == null && IMAGEM_INIMIGO[t.bestiario]) t.icone = IMAGEM_INIMIGO[t.bestiario];
+  });
   a.livre = true; /* a opção de travar o movimento fora de combate foi substituída pelo botão de imersão */
   if (tabGeo) { a.cols = tabGeo.cols; a.rows = tabGeo.rows; }
   else { var gg = gridDe(a); if (gg.cols) a.cols = gg.cols; if (gg.rows) a.rows = gg.rows; }
   var copia = JSON.parse(JSON.stringify(a));
-  copia.tokens.forEach(function (t) { delete t.x; delete t.y; delete t.gasto; });
+  copia.tokens.forEach(function (t) { delete t.x; delete t.y; delete t.gasto; delete t.dir; delete t.efeitos; });
   adiar("est-acao", function () { gravar("estado", { chave: "acao", valor: copia }); }, 400);
 }
 
@@ -2523,8 +2527,9 @@ function aplicarCampo() {
   var pos = CAMPO.pos || {};
   acaoEst().tokens.forEach(function (t) {
     var p = pos[t.id];
-    if (p) { t.x = p.x; t.y = p.y; t.gasto = p.gasto || 0; }
+    if (p) { t.x = p.x; t.y = p.y; t.gasto = p.gasto || 0; t.dir = p.dir; }
     else if (t.x == null) { t.x = 0; t.y = 0; t.gasto = 0; }
+    t.efeitos = (CAMPO.efeitos || {})[t.id] || [];
   });
 }
 
@@ -2586,6 +2591,7 @@ function casaLivre(tipo) {
 }
 function novoTok(nome, tipo, extra) {
   var c = casaLivre(tipo);
+  if (extra && extra.bestiario && IMAGEM_INIMIGO[extra.bestiario]) extra = extras({ icone: IMAGEM_INIMIGO[extra.bestiario] }, extra);
   var t = extras({ id: "t" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nome: nome, tipo: tipo, cor: COR_TOKEN[tipo], x: c.x, y: c.y, oculto: false, gasto: 0 }, extra);
   acaoEst().tokens.push(t);
   return t;
@@ -2664,6 +2670,29 @@ function fichaBestiarioHTML(t) {
   return h + "</div>";
 }
 
+/* Direção do token (N S L O): o servidor guarda em campo.pos[id].dir. */
+function virarBotoesMestreHTML(t) {
+  return virarBotoesHTML(t.dir).replace(/data-virar=/g, 'data-tvirar="' + t.id + '" data-dir=');
+}
+
+/* Efeitos temporários do token: chips com "−1 turno" e ✕, e o formulário para adicionar. O servidor conta os turnos. */
+function efeitosEditorHTML(t) {
+  var lista = (CAMPO.efeitos || {})[t.id] || [];
+  var h = '<fieldset class="ef-ed"><legend>Efeitos (buffs e debuffs)</legend><div class="ef-lista">' + (lista.length ? lista.map(function (e) {
+    return '<span class="ef ef-' + (e.tipo === "buff" ? "buff" : "debuff") + '" title="' + esc(e.nota || "") + '">' + esc(e.nome) + (e.turnos != null ? " · " + turnosTxt(e.turnos) : "") + (e.teste ? " ⚠" : "") +
+      (e.turnos != null ? ' <button type="button" data-efmenos="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Tirar 1 turno de ' + esc(e.nome) + '">−1 turno</button>' : "") +
+      ' <button type="button" data-efrm="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Remover ' + esc(e.nome) + '">✕</button></span>';
+  }).join("") : '<small class="mdica">Nenhum efeito.</small>') + "</div>" +
+    '<div class="tok-grade"><label>Efeito<select class="sorteio-in" id="efSel"><option value="">Escolher…</option>' + Object.keys(ESTADOS).map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + "</option>"; }).join("") + '<option value="__outro">Outro…</option></select></label>' +
+    '<label>Nome (se outro)<input class="sorteio-in" type="text" maxlength="40" id="efNome"></label>' +
+    '<label>Tipo<select class="sorteio-in" id="efTipo"><option value="debuff">Debuff</option><option value="buff">Buff</option></select></label>' +
+    '<label class="tok-num">Turnos <input class="sorteio-in num" type="number" min="0" max="99" id="efTurnos" placeholder="∞"></label></div>' +
+    '<label>Nota (só você vê)<input class="sorteio-in" type="text" maxlength="120" id="efNota"></label>' +
+    '<label class="rev-label"><input type="checkbox" id="efTeste"> Exige resistência</label>' +
+    '<div class="controls"><button type="button" data-efadd="' + t.id + '">Adicionar efeito</button></div></fieldset>';
+  return h;
+}
+
 function tokPainelHTML() {
   var t = tokSel ? acharTok(tokSel) : null;
   if (!t) return '<section class="panel"><h3>Token</h3><p class="mdica">Clique num token no mapa ou na lista para editar.</p></section>';
@@ -2675,6 +2704,7 @@ function tokPainelHTML() {
       '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (acionada(t) ? " (já acionada)" : "") + "</label>";
   } else {
     var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0;
+    var dirs = '<div class="tok-linha"><span class="tok-desl">Virado para</span> ' + virarBotoesMestreHTML(t) + "</div>";
     h += '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
       return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
     }).join("") + "</select></label>" +
@@ -2688,7 +2718,9 @@ function tokPainelHTML() {
       (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
       '<div class="tok-vida-btn">' + [-5, -1, 1, 5].map(function (d) { return '<button type="button" data-vdelta="' + d + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + "</button>"; }).join("") + "</div>" +
       '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado (sai dos turnos)</label>" +
-      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto dos jogadores</label>";
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto dos jogadores</label>" +
+      (t.tipo !== "jogador" ? '<label class="rev-label"><input type="checkbox" data-timg="' + t.id + '"' + (t.imgOculta ? "" : " checked") + "> Imagem visível aos jogadores</label>" : "") +
+      dirs + efeitosEditorHTML(t);
   }
   return h + '<div class="controls"><button type="button" data-tdup="' + t.id + '">Duplicar</button><button type="button" data-tdel="' + t.id + '">Remover</button></div></section>';
 }
@@ -2710,6 +2742,30 @@ function combatentes() {
   return acaoEst().tokens.filter(function (t) { return (t.tipo === "jogador" || t.tipo === "aliado" || t.tipo === "inimigo") && !t.morto; });
 }
 
+/* O tipo vai escrito (e não só pela cor): jogador, aliado, inimigo ou oculto. */
+/* Modelo do painel de iniciativa (⚔) do mestre: vida exata. */
+function modeloIniMestre() {
+  var cb = CAMPO.combate;
+  if (!cb) return null;
+  var ini = cb.ini || {};
+  if (cb.fase === "ini") {
+    return { fase: "ini", rodada: cb.rodada, pend: combatentes().filter(function (t) { return !ini[t.id]; }).map(function (t) { return t.nome; }) };
+  }
+  return {
+    fase: "turnos", rodada: cb.rodada, linhas: (cb.ordem || []).map(function (id, i) {
+      var t = acharTok(id);
+      if (!t) return null;
+      var vida = t.vidaMax ? (t.vida == null ? t.vidaMax : t.vida) + "/" + t.vidaMax : "";
+      return { nome: t.nome + (t.oculto && !revelado(t) ? " (oculto)" : ""), cor: corToken(t), v: ini[id] ? ini[id].v : null, atual: i === cb.turno, eu: false, morto: !!t.morto, vida: vida, estado: "num", efeitos: t.morto ? [] : (t.efeitos || []) };
+    }).filter(Boolean)
+  };
+}
+
+function tipoRotulo(t) {
+  var base = t.tipo === "jogador" ? "jogador" : t.tipo === "aliado" ? "aliado" : "inimigo";
+  return t.oculto && !revelado(t) ? base + " · oculto" : base;
+}
+
 function combatePainelHTML() {
   var cb = CAMPO.combate, a = acaoEst();
   var h = '<section class="panel cmb"><h3>' + ic("espada") + "Combate</h3>";
@@ -2722,7 +2778,7 @@ function combatePainelHTML() {
   if (cb.fase === "ini") {
     h += '<p class="mdica">Iniciativa: os jogadores rolam ou digitam o valor deles. Você define a dos inimigos.</p><ul class="cmb-lista">' + combatentes().map(function (t) {
       var v = ini[t.id];
-      return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span><span class="cmb-nome">' + esc(t.nome) + (t.oculto ? " (oculto)" : "") + "</span>" +
+      return '<li><span class="tok-cor" style="background:' + corToken(t) + '"></span><span class="cmb-nome">' + esc(t.nome) + "<small>" + esc(tipoRotulo(t)) + "</small></span>" +
         '<input class="sorteio-in num" type="number" min="-20" max="80" data-cini="' + t.id + '" value="' + (v ? v.v : "") + '" placeholder="–" aria-label="Iniciativa de ' + esc(t.nome) + '">' +
         '<button type="button" data-crolar="' + t.id + '">Rolar</button></li>';
     }).join("") + "</ul>" +
@@ -2734,7 +2790,7 @@ function combatePainelHTML() {
     var t = acharTok(id);
     if (!t) return "";
     var v = ini[id] ? ini[id].v : "–";
-    return '<li class="' + (i === cb.turno ? "atual" : "") + (t.morto ? " morto" : "") + '"><button type="button" class="link" data-tsel="' + id + '">' + esc(t.nome) + "</button> <small>" + v + "</small>" + (i === cb.turno ? " ◀" : "") + "</li>";
+    return '<li class="' + (i === cb.turno ? "atual" : "") + (t.morto ? " morto" : "") + '"><button type="button" class="link" data-tsel="' + id + '">' + esc(t.nome) + "</button> <small>" + v + "</small>" + (i === cb.turno ? " ◀" : "") + (t.efeitos && t.efeitos.length && !t.morto ? " " + chipsEfeitosHTML(t.efeitos) : "") + "</li>";
   }).join("") + "</ol>" +
     '<div class="controls"><button type="button" class="primary" id="cmbProximo">Próximo turno</button><button type="button" id="cmbRecalc" title="Inclui quem entrou depois e tira os derrotados, sem perder o turno atual">Recalcular ordem</button><button type="button" id="cmbEncerrar">Encerrar combate</button></div></section>';
   return h;
@@ -3166,6 +3222,7 @@ function changeAcao(el) {
     return true;
   }
   if (d.tmorto && (t = acharTok(d.tmorto))) { t.morto = el.checked; salvarAcao(); renderAcaoUI(); return true; }
+  if (d.timg && (t = acharTok(d.timg))) { t.imgOculta = !el.checked; salvarAcao(); return true; }
   if (d.cini) {
     var vn = parseInt(el.value, 10);
     if (!isNaN(vn)) campoOp("ini", { id: d.cini, valor: vn }).then(renderAcaoUI);
@@ -3311,12 +3368,34 @@ function clickAcao(b) {
     campoOp("pos", { zerar: true }).then(renderAcaoUI);
     return true;
   }
+  if (b.dataset.tvirar && b.dataset.dir) {
+    campoOp("virar", { id: b.dataset.tvirar, dir: b.dataset.dir }).then(function () { renderAcaoUI(); });
+    return true;
+  }
+  if (b.dataset.efadd) {
+    var f = function (id) { return document.getElementById(id); }, sel = f("efSel").value, nome = sel === "__outro" ? f("efNome").value.trim() : sel;
+    if (!nome) { infoTok("Escolha um efeito da lista, ou “Outro…” e digite o nome.", true); return true; }
+    campoOp("efeito_add", { id: b.dataset.efadd, nome: nome, tipo: f("efTipo").value, turnos: f("efTurnos").value === "" ? null : parseInt(f("efTurnos").value, 10), teste: f("efTeste").checked, nota: f("efNota").value })
+      .then(function (r) { if (r) infoTok("Efeito “" + nome + "” adicionado."); renderAcaoUI(); });
+    return true;
+  }
+  if (b.dataset.efrm) {
+    campoOp("efeito_rm", { id: b.dataset.eft, efeito: b.dataset.efrm }).then(function () { renderAcaoUI(); });
+    return true;
+  }
+  if (b.dataset.efmenos) {
+    var ef = ((CAMPO.efeitos || {})[b.dataset.eft] || []).filter(function (e) { return e.id === b.dataset.efmenos; })[0];
+    if (!ef || ef.turnos == null) return true;
+    /* Chegou a 0: o efeito acaba (some da lista), como aconteceria ao virar o turno. */
+    campoOp(ef.turnos <= 1 ? "efeito_rm" : "efeito_set", { id: b.dataset.eft, efeito: ef.id, turnos: ef.turnos - 1 }).then(function () { renderAcaoUI(); });
+    return true;
+  }
   if (b.dataset.tdup && (t = acharTok(b.dataset.tdup))) {
     var c = casaLivre(t.tipo);
     var cp = extras({}, t);
     cp.id = "t" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
     cp.nome = nomeUnico(String(t.nome).replace(/ \d+$/, ""));
-    cp.x = c.x; cp.y = c.y; cp.gasto = 0; delete cp.jog;
+    cp.x = c.x; cp.y = c.y; cp.gasto = 0; delete cp.jog; delete cp.dir; cp.efeitos = [];
     a.tokens.push(cp);
     tokSel = cp.id;
     enviarPos([cp]); salvarAcao(); renderAcaoUI();
@@ -3858,6 +3937,7 @@ MESTRE = {
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
+  modeloIni: modeloIniMestre,
   regrasExtra: regrasExtraMestre,
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,

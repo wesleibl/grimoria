@@ -688,10 +688,12 @@ function kitEscolher(string $jogId, array $ids): array
    transação com bloqueio. Assim o mestre e vários jogadores podem agir ao mesmo tempo sem se sobrescrever.
    Estrutura: pos {id: {x, y, gasto}}, combate {fase: ini|turnos, rodada, turno, ini {id: {v, modo}}, ordem [id]},
    revelados {id: true} (armadilhas reveladas pelo mestre aos jogadores), acionadas {id: true} (armadilhas por onde um
-   jogador passou; só o mestre sabe), eventos [{t, txt, pub, alerta}], v (versão). */
+   jogador passou; só o mestre sabe), eventos [{t, txt, pub, alerta}], v (versão).
+   pos[id].dir (n|s|l|o) é para onde o token está virado; sem dir, nada é desenhado.
+   efeitos {tokId: [{id, nome, tipo: buff|debuff, turnos: int|null, teste: bool, nota}]}: o servidor conta os turnos. */
 function campoPadrao(array $c): array
 {
-    return $c + ['pos' => [], 'combate' => null, 'revelados' => [], 'acionadas' => [], 'eventos' => [], 'v' => 0];
+    return $c + ['pos' => [], 'combate' => null, 'revelados' => [], 'acionadas' => [], 'eventos' => [], 'efeitos' => [], 'v' => 0];
 }
 
 function campoLer(): array
@@ -794,8 +796,9 @@ function rotaMinima(int $x0, int $y0, int $x1, int $y1, int $cols, int $rows, ar
     $fila = [[$x0, $y0]];
     for ($i = 0; $i < count($fila); $i++) {
         [$x, $y] = $fila[$i];
-        $dx = $x1 <=> $x;
-        $dy = $y1 <=> $y;
+        /* Com dx ou dy zero a lista de vizinhos teria duplicatas e perderia duas direções: então usa 1. */
+        $dx = ($x1 <=> $x) ?: 1;
+        $dy = ($y1 <=> $y) ?: 1;
         foreach ([[$x + $dx, $y], [$x, $y + $dy], [$x - $dx, $y], [$x, $y - $dy]] as [$nx, $ny]) {
             $k = "$nx,$ny";
             if ($nx < 0 || $ny < 0 || $nx >= $cols || $ny >= $rows || array_key_exists($k, $pais) || isset($bloq[$k])) continue;
@@ -812,6 +815,89 @@ function rotaMinima(int $x0, int $y0, int $x1, int $y1, int $cols, int $rows, ar
         }
     }
     return null;
+}
+
+const DIRECOES = ['n', 's', 'l', 'o'];
+
+/* Direção do último passo: pela rota (penúltima casa -> última); sem rota, pela origem e o destino (vence o eixo maior). Y cresce para baixo. */
+function dirDoMovimento(int $x0, int $y0, int $x1, int $y1, ?array $rota = null): ?string
+{
+    if ($rota) {
+        $ult = $rota[count($rota) - 1];
+        $pen = count($rota) > 1 ? $rota[count($rota) - 2] : [$x0, $y0];
+        [$x0, $y0, $x1, $y1] = [(int)$pen[0], (int)$pen[1], (int)$ult[0], (int)$ult[1]];
+        $dx = $x1 - $x0;
+        $dy = $y1 - $y0;
+    } else {
+        $dx = $x1 - $x0;
+        $dy = $y1 - $y0;
+        if ($dx === 0 && $dy === 0) return null;
+        if (abs($dy) > abs($dx)) $dx = 0; else $dy = 0;
+    }
+    if ($dx > 0) return 'l';
+    if ($dx < 0) return 'o';
+    if ($dy > 0) return 's';
+    if ($dy < 0) return 'n';
+    return null;
+}
+
+function dirValida(mixed $d): ?string
+{
+    return is_string($d) && in_array($d, DIRECOES, true) ? $d : null;
+}
+
+/* Remove os efeitos de quem foi derrotado. */
+function podarEfeitos(array &$campo, array $tokens): void
+{
+    foreach (array_keys($campo['efeitos']) as $id) {
+        if (!empty($tokens[$id]['morto']) || !$campo['efeitos'][$id]) unset($campo['efeitos'][$id]);
+    }
+}
+
+/* Começo do turno de um token: gasta um turno de cada efeito com contagem, remove o que acabou e avisa quem precisa de resistência. */
+function efeitosInicioTurno(array &$campo, array $tokens, string $id): void
+{
+    $lista = $campo['efeitos'][$id] ?? [];
+    if (!$lista || empty($tokens[$id]) || !empty($tokens[$id]['morto'])) return;
+    $nome = (string)($tokens[$id]['nome'] ?? '?');
+    $vis = tokenVisivel($tokens[$id], $campo);
+    $fica = [];
+    foreach ($lista as $e) {
+        $en = (string)($e['nome'] ?? '?');
+        if (isset($e['turnos']) && $e['turnos'] !== null) {
+            $e['turnos'] = (int)$e['turnos'] - 1;
+            if ($e['turnos'] <= 0) {
+                campoEvento($campo, "$nome: efeito $en acabou.", $vis ? "$nome: efeito $en acabou." : null);
+                continue;
+            }
+        }
+        $fica[] = $e;
+        if (!empty($e['teste'])) campoEvento($campo, "$nome precisa rolar resistência contra $en.", $vis ? "$nome precisa rolar resistência contra $en." : null, true);
+    }
+    if ($fica) $campo['efeitos'][$id] = $fica; else unset($campo['efeitos'][$id]);
+}
+
+/* Valida o efeito vindo do mestre (nome até 40, nota até 120, turnos 0 a 99 ou sem contagem). */
+function efeitoLimpo(array $c, ?array $base = null): array
+{
+    $nome = trim(mb_substr((string)($c['nome'] ?? ($base['nome'] ?? '')), 0, 40));
+    if ($nome === '') erro('Dê um nome ao efeito.');
+    $tipo = ($c['tipo'] ?? ($base['tipo'] ?? 'debuff')) === 'buff' ? 'buff' : 'debuff';
+    $t = array_key_exists('turnos', $c) ? $c['turnos'] : ($base['turnos'] ?? null);
+    if ($t === null || $t === '') {
+        $turnos = null;
+    } else {
+        $turnos = (int)$t;
+        if ($turnos < 0 || $turnos > 99) erro('Turnos do efeito: de 0 a 99.');
+    }
+    return [
+        'id' => (string)($base['id'] ?? 'e' . bin2hex(random_bytes(4))),
+        'nome' => $nome,
+        'tipo' => $tipo,
+        'turnos' => $turnos,
+        'teste' => array_key_exists('teste', $c) ? !empty($c['teste']) : !empty($base['teste']),
+        'nota' => mb_substr(trim((string)($c['nota'] ?? ($base['nota'] ?? ''))), 0, 120),
+    ];
 }
 
 function avancarTurno(array &$campo, array $tokens): void
@@ -833,6 +919,7 @@ function avancarTurno(array &$campo, array $tokens): void
     $nome = (string)($tokens[$id]['nome'] ?? '?');
     $vis = isset($tokens[$id]) && tokenVisivel($tokens[$id], $campo);
     campoEvento($campo, "Rodada $rod: turno de $nome.", $vis ? "Rodada $rod: turno de $nome." : "Rodada $rod: algo se move nas sombras.");
+    efeitosInicioTurno($campo, $tokens, (string)$id);
 }
 
 /* Operações do mestre. Devolve o campo atualizado. */
@@ -840,18 +927,26 @@ function campoOpMestre(string $op, array $c): array
 {
     $tokens = tokensAcao();
     return campoAtualizar(function (array &$campo) use ($op, $c, $tokens): void {
+        podarEfeitos($campo, $tokens);
         switch ($op) {
             case 'pos':
                 foreach ((array)($c['pos'] ?? []) as $id => $p) {
                     if (!is_array($p)) continue;
                     $id = (string)$id;
-                    $campo['pos'][$id] = [
+                    $ant = $campo['pos'][$id] ?? null;
+                    $novo = [
                         'x' => max(0, min(199, (int)($p['x'] ?? 0))),
                         'y' => max(0, min(199, (int)($p['y'] ?? 0))),
-                        'gasto' => max(0, (int)($p['gasto'] ?? ($campo['pos'][$id]['gasto'] ?? 0))),
+                        'gasto' => max(0, (int)($p['gasto'] ?? ($ant['gasto'] ?? 0))),
                     ];
+                    /* A direção acompanha o movimento (origem -> destino); se o token não saiu do lugar, mantém a que tinha. */
+                    $dir = $ant && ((int)$ant['x'] !== $novo['x'] || (int)$ant['y'] !== $novo['y'])
+                        ? dirDoMovimento((int)$ant['x'], (int)$ant['y'], $novo['x'], $novo['y'])
+                        : dirValida($ant['dir'] ?? null);
+                    if ($dir) $novo['dir'] = $dir;
+                    $campo['pos'][$id] = $novo;
                 }
-                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id]);
+                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id], $campo['efeitos'][(string)$id]);
                 if (!empty($c['zerar'])) foreach ($campo['pos'] as $id => $_) $campo['pos'][$id]['gasto'] = 0;
                 break;
             case 'revelar':
@@ -896,6 +991,7 @@ function campoOpMestre(string $op, array $c): array
                     foreach ($campo['pos'] as $id => $_) $campo['pos'][$id]['gasto'] = 0;
                     $nome = (string)($tokens[$ordem[0]]['nome'] ?? '?');
                     campoEvento($campo, "Rodada 1: turno de $nome.", isset($tokens[$ordem[0]]) && tokenVisivel($tokens[$ordem[0]], $campo) ? "Rodada 1: turno de $nome." : 'Rodada 1: algo se move nas sombras.');
+                    efeitosInicioTurno($campo, $tokens, (string)$ordem[0]);
                 }
                 break;
             case 'proximo':
@@ -906,6 +1002,37 @@ function campoOpMestre(string $op, array $c): array
                 $campo['combate'] = null;
                 foreach ($campo['pos'] as $id => $_) $campo['pos'][$id]['gasto'] = 0;
                 campoEvento($campo, 'Combate encerrado.', 'Combate encerrado.');
+                if ($campo['efeitos']) {
+                    $campo['efeitos'] = [];
+                    campoEvento($campo, 'Os efeitos temporários foram limpos.', 'Os efeitos temporários acabaram.');
+                }
+                break;
+            case 'virar':
+                $id = (string)($c['id'] ?? '');
+                $dir = dirValida($c['dir'] ?? null);
+                if (!$dir) erro('Direção inválida.');
+                if (!isset($campo['pos'][$id])) erro('Token sem posição.', 404);
+                $campo['pos'][$id]['dir'] = $dir;
+                break;
+            case 'efeito_add':
+                $id = (string)($c['id'] ?? '');
+                if (!isset($tokens[$id]) || ($tokens[$id]['tipo'] ?? '') === 'armadilha') erro('Token não encontrado.', 404);
+                if (count($campo['efeitos'][$id] ?? []) >= 12) erro('No máximo 12 efeitos por token.', 409);
+                $campo['efeitos'][$id][] = efeitoLimpo($c);
+                break;
+            case 'efeito_rm':
+                $id = (string)($c['id'] ?? '');
+                $campo['efeitos'][$id] = array_values(array_filter($campo['efeitos'][$id] ?? [], fn($e) => ($e['id'] ?? '') !== (string)($c['efeito'] ?? '')));
+                break;
+            case 'efeito_set':
+                $id = (string)($c['id'] ?? '');
+                $achou = false;
+                foreach (($campo['efeitos'][$id] ?? []) as $i => $e) {
+                    if (($e['id'] ?? '') !== (string)($c['efeito'] ?? '')) continue;
+                    $campo['efeitos'][$id][$i] = efeitoLimpo($c, $e);
+                    $achou = true;
+                }
+                if (!$achou) erro('Efeito não encontrado.', 404);
                 break;
             case 'limpar_log':
                 $campo['eventos'] = [];
@@ -913,9 +1040,10 @@ function campoOpMestre(string $op, array $c): array
             case 'resetar':
                 /* Zera a ação do mapa atual: tira os tokens informados (e as armadilhas acionadas deles), encerra o combate
                    e apaga o registro. Os tokens de outros mapas não são tocados. */
-                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id]);
+                foreach ((array)($c['remover'] ?? []) as $id) unset($campo['pos'][(string)$id], $campo['revelados'][(string)$id], $campo['acionadas'][(string)$id], $campo['efeitos'][(string)$id]);
                 $campo['combate'] = null;
                 $campo['eventos'] = [];
+                $campo['efeitos'] = [];
                 break;
             default:
                 erro('Operação desconhecida.', 404);
@@ -987,8 +1115,10 @@ function campoOpJogador(array $u, string $op, array $c): never
                     erro(($fase === 'turnos' ? 'Deslocamento insuficiente: restam ' . max(0, $resta) . ' casas' : 'Longe demais: você anda até ' . max(0, $resta) . ' casas por movimento') .
                         ' (o caminho livre até lá tem ' . $casas . ').', 409);
                 }
+                $dir = dirDoMovimento((int)$pos['x'], (int)$pos['y'], $x, $y, $rota);
                 $campo['pos'][$meu]['x'] = $x;
                 $campo['pos'][$meu]['y'] = $y;
+                if ($dir) $campo['pos'][$meu]['dir'] = $dir;
                 if ($fase === 'turnos') $campo['pos'][$meu]['gasto'] = (int)($pos['gasto'] ?? 0) + $casas;
                 /* Armadilha em qualquer casa do caminho (inclusive a final): SÓ o mestre é avisado. Para os jogadores nada
                    muda: a armadilha continua escondida e não aparece mensagem. */
@@ -1004,6 +1134,14 @@ function campoOpJogador(array $u, string $op, array $c): never
                     }
                 }
                 break;
+            case 'virar':
+                /* Virar-se não custa movimento: só vale para o próprio token. */
+                $dir = dirValida($c['dir'] ?? null);
+                if (!$dir) erro('Direção inválida.');
+                if (!empty($eu['morto'])) erro('Seu personagem está fora de combate.', 409);
+                if (!isset($campo['pos'][$meu])) erro('Posição desconhecida. Avise o mestre.', 409);
+                $campo['pos'][$meu]['dir'] = $dir;
+                break;
             default:
                 erro('Operação desconhecida.', 404);
         }
@@ -1012,6 +1150,19 @@ function campoOpJogador(array $u, string $op, array $c): never
 }
 
 /* ============================ CENA PÚBLICA (JOGADOR) ============================ */
+
+/* Estado de vida em palavras: o jogador nunca recebe o número. Sem vida máxima, sem estado. */
+function estadoVida(array $t): ?string
+{
+    $max = (int)($t['vidaMax'] ?? 0);
+    if ($max <= 0 || ($t['tipo'] ?? '') === 'armadilha') return null;
+    $v = !empty($t['morto']) ? 0 : (int)($t['vida'] ?? $max);
+    if ($v <= 0) return 'Caído';
+    if ($v >= $max) return 'Ileso';
+    if ($v * 100 >= $max * 50) return 'Ferido';
+    if ($v * 100 >= $max * 25) return 'Grave';
+    return 'Por um fio';
+}
 
 /* O que o jogador vê da aba Ação: sem nomes de pasta (podem ser spoiler), sem tokens ocultos e sem dados do mestre. */
 function acaoPublica(?string $jogId = null): array
@@ -1033,6 +1184,9 @@ function acaoPublica(?string $jogId = null): array
     $tokens = [];
     $vis = [];
     $euId = null;
+    $minhaVida = null;
+    $cb0 = $campo['combate'];
+    $atual0 = is_array($cb0) && ($cb0['fase'] ?? '') === 'turnos' ? ($cb0['ordem'][$cb0['turno']] ?? null) : null;
     $fotos = fotosJogadores(array_map(fn($t) => is_array($t) && ($t['tipo'] ?? '') === 'jogador' ? ($t['jog'] ?? null) : null, $a['tokens'] ?? []));
     foreach (($a['tokens'] ?? []) as $t) {
         if (!is_array($t) || !isset($t['id'])) continue;
@@ -1048,9 +1202,27 @@ function acaoPublica(?string $jogId = null): array
             $o['desl'] = (int)($t['desl'] ?? 6);
             $o['gasto'] = (int)($p['gasto'] ?? 0);
         }
+        if (($t['tipo'] ?? '') !== 'armadilha') {
+            /* Para onde está virado e o estado de vida em palavras (o número de vida e a defesa nunca saem). */
+            if ($d = dirValida($p['dir'] ?? null)) $o['dir'] = $d;
+            if ($e = estadoVida($t)) $o['estado'] = $e;
+            /* Imagem do inimigo/aliado: só o nome do arquivo público do bestiário (e só se o mestre não a escondeu). */
+            if (empty($t['imgOculta']) && is_string($t['icone'] ?? null) && preg_match('/^[a-z0-9_-]{1,60}$/', $t['icone'])) $o['icone'] = $t['icone'];
+            /* Efeitos (sem a nota do mestre). aviso = é a vez dele e o efeito pede resistência. */
+            if (empty($t['morto'])) {
+                foreach (($campo['efeitos'][$id] ?? []) as $ef) {
+                    $o['efeitos'][] = ['nome' => (string)($ef['nome'] ?? ''), 'tipo' => ($ef['tipo'] ?? '') === 'buff' ? 'buff' : 'debuff',
+                        'turnos' => isset($ef['turnos']) ? (int)$ef['turnos'] : null, 'teste' => !empty($ef['teste']),
+                        'aviso' => !empty($ef['teste']) && $atual0 === $id];
+                }
+            }
+        }
         $tokens[] = $o;
         $vis[$id] = $o;
-        if ($jogId !== null && ($t['jog'] ?? null) === $jogId && ($t['tipo'] ?? '') === 'jogador') $euId = $id;
+        if ($jogId !== null && ($t['jog'] ?? null) === $jogId && ($t['tipo'] ?? '') === 'jogador') {
+            $euId = $id;
+            if ((int)($t['vidaMax'] ?? 0) > 0) $minhaVida = ['vida' => max(0, (int)($t['vida'] ?? $t['vidaMax'])), 'vidaMax' => (int)$t['vidaMax']];
+        }
     }
 
     $combate = null;
@@ -1095,6 +1267,7 @@ function acaoPublica(?string $jogId = null): array
         'rows' => (int)($g['rows'] ?? 0),
         'livre' => (bool)($a['livre'] ?? true),
         'eu' => $euId,
+        'minhaVida' => $minhaVida,
         'tokens' => $tokens,
         'combate' => $combate,
         'eventos' => array_slice($eventos, -8),
