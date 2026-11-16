@@ -64,7 +64,7 @@ var GRIMORIOS = [
   { nome: "Grimório de Vento", attr: "destreza", papel: "Suporte", sub: "mobilidade, posicionamento e dano leve", tier: "",
     spells: [
       sp("Rajada Cortante", 1, "básico", "d20 + Destreza, dano 1d6, alcance longo. Quem for atingido é empurrado 1 casa."),
-      sp("Passo do Vento", 2, "médio", "Move até o dobro do deslocamento e ganha +2 de Defesa até a próxima rodada."),
+      sp("Passo do Vento", 2, "médio", "Move até o dobro do deslocamento. Nos próximos 2 turnos, a sua Rajada Cortante causa +1d4 de dano."),
       sp("Cortina de Vento", 2, "médio", "Por 2 turnos, os ataques à distância contra você e os aliados próximos têm -2."),
       sp("Corrente Ascendente", 4, "ultimate", "Por 2 turnos, você e os aliados próximos voam: ignoram o terreno, ganham +2 de deslocamento e os inimigos têm -2 para acertá-los. Nesse tempo, a sua Rajada Cortante causa +1d4 de dano.")
     ],
