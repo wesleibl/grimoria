@@ -2082,19 +2082,34 @@ function viewNiveisMestre() {
 
 var xpMsg = "", xpValorSugerido = 0;
 var aprimMsgMestre = "";
+function feiticoDoGrimorio(grim, nome) {
+  var r = null;
+  GRIMORIOS.forEach(function (g) { if (g.nome === grim) g.spells.forEach(function (s) { if (s.nome === nome) r = s; }); });
+  return r;
+}
 function aprimoramentosMestreHTML(lista) {
   var linhas = [], fim = [];
   lista.forEach(function (j) {
     (j.aprimoramentos || []).forEach(function (a) {
       var op = opcaoAprim(a.tipo), nome = esc(j.personagem || j.nome || "Jogador");
-      var desc = '<b>' + nome + '</b> · nível ' + a.nivel + ' · ' + esc(a.feitico) + ' (' + esc(a.grimorio) + ') · ' + esc(op ? op.texto : a.tipo);
-      if (a.status === "pendente") linhas.push('<li class="aprim-pedido">' + desc + ' <button type="button" class="primary" data-aprimdec="aprovado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Aprovar</button> <button type="button" data-aprimdec="recusado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Recusar</button></li>');
-      else fim.push('<li>' + desc + ' <span class="tag ' + (a.status === "aprovado" ? "buff" : "role") + '">' + (a.status === "aprovado" ? "Aprovado" : "Recusado") + '</span></li>');
+      var melhoria = esc(op ? op.texto : a.tipo);
+      if (a.status === "pendente") {
+        var fe = feiticoDoGrimorio(a.grimorio, a.feitico);
+        var ja = (j.aprimoramentos || []).filter(function (x) { return x.status === "aprovado" && x.grimorio === a.grimorio && x.feitico === a.feitico; }).map(function (x) { var o = opcaoAprim(x.tipo); return esc(o ? o.texto : x.tipo); });
+        linhas.push('<article class="aprim-pedido"><p class="aprim-quem"><b>' + nome + '</b> · nível ' + a.nivel + ' · ' + esc(a.grimorio) + '</p>' +
+          (fe ? '<ul class="spells">' + spellItem(fe, 0, "") + '</ul>' : '<p><b>' + esc(a.feitico) + '</b></p>') +
+          '<p class="aprim-melhoria">' + ic("cima") + '<span><b>Aprimoramento pedido:</b> ' + melhoria + '</span></p>' +
+          (ja.length ? '<p class="mdica">Já aprovados neste feitiço: ' + ja.join("; ") + '.</p>' : '') +
+          '<div class="aprim-botoes"><button type="button" class="primary" data-aprimdec="aprovado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Aprovar</button>' +
+          '<button type="button" data-aprimdec="recusado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Recusar</button></div></article>');
+      } else {
+        fim.push('<li><b>' + nome + '</b> · nível ' + a.nivel + ' · ' + esc(a.feitico) + ' (' + esc(a.grimorio) + ') · ' + melhoria + ' <span class="tag ' + (a.status === "aprovado" ? "buff" : "role") + '">' + (a.status === "aprovado" ? "Aprovado" : "Recusado") + '</span></li>');
+      }
     });
   });
   return '<section class="panel"><h2>Aprimoramentos de feitiço</h2><p>Jogadores nos níveis 2 e 4 escolhem um aprimoramento. Nada vale até você aprovar.</p>' +
     '<p role="status" id="aprimMsgMestre" class="mdica">' + esc(aprimMsgMestre) + '</p>' +
-    (linhas.length ? '<ul>' + linhas.join("") + '</ul>' : '<p class="mdica">Nenhum pedido pendente.</p>') +
+    (linhas.length ? '<div class="aprim-pedidos">' + linhas.join("") + '</div>' : '<p class="mdica">Nenhum pedido pendente.</p>') +
     (fim.length ? '<details><summary>Histórico (' + fim.length + ')</summary><ul>' + fim.join("") + '</ul></details>' : '') + '</section>';
 }
 function acoesAprimoramento(b) {
