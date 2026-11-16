@@ -3918,11 +3918,310 @@ function inputItens(el) {
   return false;
 }
 
+/* ============================ PERSONAGENS (NPCs) ============================ */
+
+/* Elenco de apoio do Reino de Alvorada: vilões, gente dos vilarejos, comerciantes, Ordem e estradas. Cada um tem o que o mestre precisa
+   para interpretar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história.
+   "segredo" é só do mestre (esta aba nunca vai para os jogadores). "sexo" é m ou f. */
+var GRUPOS_NPC = ["Organização", "Vale das Colheitas", "Porto Salgado", "Floresta dos Cedros", "Pedra Velha", "Encruzilhada", "Alta Lumen e Ordem", "Estradas"];
+var PERSONAGENS = [
+  /* ---- A organização (SPOILER) ---- */
+  { nome: "Benedita Sarrão", sexo: "f", idade: 54, papel: "Curandeira itinerante (infiltrada 1)", origem: "Vale das Colheitas", grupo: "Organização",
+    aparencia: "Baixa e redonda, mãos manchadas de verde pelas ervas, lenço cor de açafrão na cabeça e um cesto de vime que nunca larga. Pulseira grossa de fibra trançada no pulso esquerdo. Sorriso de avó e olhos que não sorriem junto.",
+    humor: "Maternal e provocador: trata todo mundo como criança desnutrida (\"menino, com essa cor você precisa é de sopa\") e ri baixinho das próprias receitas.",
+    fala: "Senta aí que esse corte eu fecho antes de a sopa esfriar. Não, não é mágica. É alho.",
+    uso: "Aparece logo depois do ataque aos campos, cuida dos feridos de graça e ganha a confiança de todos. É a primeira 'ajuda' da organização.",
+    segredo: "Soltou o Devorador pela Fenda de Mana. A marca fica debaixo da pulseira de fibra. Pista: sabe o nome do fazendeiro ferido antes de alguém dizer. Nunca usa o grimório na frente dos jogadores." },
+  { nome: "Capitão Rufo Maravalha", sexo: "m", idade: 47, papel: "Mercador marítimo e capitão (infiltrado 2)", origem: "Porto Salgado", grupo: "Organização",
+    aparencia: "Barba ruiva trançada com argolas de cobre, casaco comprido de couro de foca, dente de ouro à esquerda. Arrasta um pouco o pé esquerdo (ferida antiga). Anel de sinete pesado na mão direita, que ele gira quando mente.",
+    humor: "Exagerado: toda história de mar cresce a cada versão, e ele é o primeiro a gargalhar da própria mentira.",
+    fala: "O peixe tinha o tamanho desta mesa. Desta taberna. Tá bom, do cais. Mas tinha dentes, isso eu juro.",
+    uso: "Chega com suprimentos e informações sobre o navio misterioso, 'sem querer nada em troca'. Oferece passagem e mapas.",
+    segredo: "O Navio Silencioso é dele; a tripulação inteira é marcada. A marca está gravada por dentro do anel de sinete. Pista: sabe quantos tripulantes o navio tem, e ninguém desceu dele." },
+  { nome: "Ísolde Varanó", sexo: "f", idade: 36, papel: "Caçadora-guia (infiltrada 3)", origem: "Floresta dos Cedros", grupo: "Organização",
+    aparencia: "Alta e magra, cabelo raspado de um lado e trançado do outro, cicatriz de galho no queixo. Anda descalça na mata e carrega um arco curto de cedro. Marca de 'queimadura' fina atrás da orelha, escondida pela trança.",
+    humor: "Seco e econômico: uma frase, no máximo duas, e um riso pelo nariz quando alguém erra o caminho.",
+    fala: "Pisou no galho. O cervo já sabe que vocês estão aqui. Eu também soube, a duzentos passos.",
+    uso: "Oferece guiar os jogadores pela mata atrás dos caçadores sumidos. É boa de verdade, e salva alguém de uma armadilha no caminho.",
+    segredo: "Mandou marcar os caçadores no ritual da Clareira do Cervo. Pista: conhece atalhos que 'ninguém' conhece e nunca se perde à noite. Pode ser a que se redime, se a mesa criar laço com ela." },
+  { nome: "Mestre Aurélio Pensamonte", sexo: "m", idade: 61, papel: "Estudioso de ruínas e magia antiga (infiltrado 4)", origem: "Alta Lumen (mora em Pedra Velha)", grupo: "Organização",
+    aparencia: "Magro, curvado, óculos de aro de latão remendados com arame, dedos azuis de tinta. Túnica cinza com bolsos cheios de lascas de pedra que tilintam quando anda. Um caderno encadernado em couro escuro que nunca abre perto de ninguém.",
+    humor: "Pedante e distraído: trocadilhos eruditos que só ele acha graça, seguidos de um 'não entenderam, claro'.",
+    fala: "Esse símbolo é anterior ao reino. Anterior a mim, inclusive, o que é dizer muito.",
+    uso: "Traduz os símbolos das Ruínas Antigas para os jogadores e pede 'só uma olhadinha' na mina lacrada. Ajuda de verdade a passar pelo guardião.",
+    segredo: "Quer o altar da Câmara Selada para fortalecer o ritual de controle. Pista: o caderno dele já tinha os símbolos desenhados antes de ele 'descobri-los'. A marca fica na palma da mão, sob a tinta." },
+  { nome: "Comandante Lúcia Valmorada", sexo: "f", idade: 42, papel: "Oficial da Ordem dos Cavaleiros Mágicos (infiltrada 5)", origem: "Alta Lumen", grupo: "Organização",
+    aparencia: "Capa azul-escura da Ordem, armadura polida demais para quem diz viver na estrada, cabelo preto num coque militar, cicatriz fina atravessando a mão direita. Postura perfeita. Luva só na mão direita.",
+    humor: "Ironia elegante: provoca com classe, ri da burocracia da Ordem e dos nobres, e faz os jogadores se sentirem os únicos competentes do reino.",
+    fala: "A Ordem vai chegar. Daqui a três semanas, com dois estagiários e um formulário. Enquanto isso, temos vocês.",
+    uso: "É o apoio dos jogadores dentro da Ordem: defende os relatórios deles, consegue autorizações, abre portas na capital. A traição mais dolorosa.",
+    segredo: "É por ela que a Ordem nunca percebe nada: filtra e some com os relatórios dos vilarejos. A marca está na mão direita, sob a luva. Boa candidata a redenção: foi marcada contra a vontade e luta por dentro." },
+  { nome: "Dom Caliste Umbrão", sexo: "m", idade: 70, papel: "Líder da organização (oculto até o arco final)", origem: "Torre Quebrada (criado pelos guardiões do primeiro grimório)", grupo: "Organização",
+    aparencia: "Até o arco final, só uma voz calma e uma silhueta na névoa. Quando aparece: cabelo prateado comprido, olhos leitosos de cego, manto cor de cinza, um aro de ferro na testa que esconde a marca original, a primeira de todas.",
+    humor: "Calmo e paternal, nunca levanta a voz. Humor de 'pai decepcionado': ironias suaves sobre a pequenez das pessoas e piadas filosóficas que ninguém ri.",
+    fala: "Oito grimórios sorteados ao acaso, e o reino chama isso de ordem. Eu só quero dar ao acaso uma direção.",
+    uso: "Cérebro do plano. Aparece em sonhos ou pela boca dos marcados antes de aparecer em pessoa. Chefe do arco final, no Santuário da Ilha Nebulosa.",
+    segredo: "Acredita que o reino só evitou guerras porque os grandes magos sempre foram poucos, e que uma única vontade (a dele) os manterá sob controle para sempre. Quer marcar os jogadores, que são os próximos grandes magos. (Motivação a confirmar com o mestre.)" },
+  { nome: "Tião Serrote", sexo: "m", idade: 29, papel: "Capanga marcado (ex-lenhador)", origem: "Floresta dos Cedros", grupo: "Organização",
+    aparencia: "Enorme, ombros de lenhador, barba por fazer, machado de cabo comprido. Olhos vidrados. Emblema da marca pendurado no pescoço, por fora da camisa, como se fosse honra.",
+    humor: "O que sobrou: repete as piadas que contava antes, sem rir e no tom errado, como se lesse de um papel.",
+    fala: "Por que o lenhador não... não... Eu contava essa. Era engraçada.",
+    uso: "O rosto dos capangas marcados: mostra o que a marca faz com alguém. Pode ser libertado (dificuldade 12) e virar aliado, com memória cheia de buracos.",
+    segredo: "Foi um dos caçadores sumidos na Clareira do Cervo. Se libertado, lembra da voz de Ísolde no ritual." },
+  { nome: "Nerissa Dobra-Maré", sexo: "f", idade: 25, papel: "Marinheira marcada do Navio Silencioso", origem: "Porto Salgado", grupo: "Organização",
+    aparencia: "Pele queimada de sol, cabelo encaracolado cheio de sal, tatuagem de âncora no antebraço e, por cima dela, a marca. Pés descalços, calça arregaçada. Cantava nas tabernas: a voz ainda é bonita.",
+    humor: "Antes da marca: piadas de marinheiro e canções de deboche. Agora só cantarola, e às vezes a melodia certa escapa com a letra errada.",
+    fala: "(cantarolando) ...e o mar guardou o nome dela... O nome. Qual era o nome?",
+    uso: "Primeira marcada que os jogadores podem conhecer de perto. Mãe Zefa, da taberna, a conhece desde criança e pede ajuda.",
+    segredo: "Subiu no navio de Rufo por um contrato de trabalho. Se libertada, sabe o caminho pela névoa até a Ilha Nebulosa." },
+
+  /* ---- Vale das Colheitas ---- */
+  { nome: "Dona Rosalva Terrabranda", sexo: "f", idade: 63, papel: "Fazendeira e matriarca do vilarejo", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Braços grossos de quem carrega saco de milho, avental com bolsos cheios de sementes, chapéu de palha furado, pés largos. Cabelo branco preso com um garfo de madeira.",
+    humor: "De sogra: provoca com carinho, chama todo mundo de 'magrelo' e dá comida antes de ouvir o problema.",
+    fala: "Cavaleiro mágico, é? Bonito. Come o pão primeiro, que cavaleiro com fome só serve pra cair do cavalo.",
+    uso: "Os campos dela foram os primeiros atacados. Dá cama, comida e o sermão. Pode ser mãe, tia ou vizinha de um dos jogadores.",
+    segredo: "Desconfia de Benedita ('curandeira que chega antes do doente'), mas guarda pra si porque a mulher curou o neto." },
+  { nome: "Joca Pé-de-Milho", sexo: "m", idade: 14, papel: "Ajudante de fazenda que quer ser cavaleiro", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Sardento, dentes separados, cabelo espetado com palha, calça curta demais. Espada de pau na cintura, com 'nome' entalhado: Trovão.",
+    humor: "Pastelão: tropeça, imita os jogadores pelas costas, inventa golpes com nomes ridículos e cai sozinho.",
+    fala: "Eu vi a pegada! Era deste tamanho! Tá, era menor. Mas eu tava mais perto que vocês.",
+    uso: "Segue os jogadores escondido. Serve para mostrar o que eles representam para o vilarejo e para um resgate no meio do arco. Futuro recruta de esquadrão.",
+    segredo: "" },
+  { nome: "Olívio Moinheiro", sexo: "m", idade: 48, papel: "Moleiro", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Coberto de farinha até as sobrancelhas, surdo do ouvido esquerdo, mãos grossas, cheiro de pão. Anda com a cabeça inclinada para ouvir melhor.",
+    humor: "Repete a mesma piada mais alto, convencido de que ninguém ouviu da primeira vez, e ri antes do final.",
+    fala: "Eu disse: O MILHO TÁ COM MEDO! Porque... o milho... tá com medo! Entendeu? Do bicho!",
+    uso: "O moinho fica na beira dos campos: ele ouviu o 'barulho de coisa sendo mastigada' na noite do ataque e sabe de que lado veio (a Fenda de Mana).",
+    segredo: "" },
+  { nome: "Celina Ervasdoces", sexo: "f", idade: 31, papel: "Herbalista do vilarejo", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Dedos manchados de verde, trança comprida com raminhos presos, voz baixa, saia cheia de bolsos costurados. Olheiras de quem colhe de madrugada.",
+    humor: "Sarcasmo seco, principalmente sobre 'remédio de viajante' e sobre gente que não sabe distinguir hortelã de erva-cicuta.",
+    fala: "Alho não fecha corte. Alho tempera. Quem te disse isso devia saber a diferença. Ou sabe, e quer que você não saiba.",
+    uso: "Rival de Benedita e a melhor pista contra ela: percebe que as curas da 'curandeira' são rápidas demais para ervas. Vende poções e antídotos.",
+    segredo: "" },
+
+  /* ---- Porto Salgado ---- */
+  { nome: "Mãe Zefa", sexo: "f", idade: 52, papel: "Dona da taberna O Caranguejo Bêbado", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Grande, braços de quem carrega barril, voz que atravessa chuva, lenço vermelho e um pano de prato no ombro que ela usa como chicote. Brincos de concha.",
+    humor: "Debochado: dá apelido na primeira olhada, cobra dívida em rima e grita as fofocas do balcão para a sala inteira.",
+    fala: "Chegou o Cabelo-de-Rede e a Botinha-Nova! Senta, bebe, e me conta por que o cheiro de mana tá entrando pela porta.",
+    uso: "Centro de informação do porto: todo marinheiro bêbado fala com ela. Pede aos jogadores que tragam Nerissa de volta.",
+    segredo: "Guarda a chave de um depósito de contrabando do Lelé. Não conta, mas aceita trocar a informação por um favor." },
+  { nome: "Lelé Três-Dedos", sexo: "m", idade: 21, papel: "Contrabandista e vendedor de informação", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Magro, rápido, dois dedos a menos na mão esquerda (rede de pesca), colete com mais bolsos que tecido, sempre mastigando alguma coisa. Sorriso torto.",
+    humor: "Malandro: promete, não cumpre, ri com os ombros e culpa a maré. Chama todo mundo de 'patrão'.",
+    fala: "Patrão, informação de graça não vale nada. Por duas moedas eu te conto onde o navio acende as luzes. Por três, quem apaga.",
+    uso: "Sabe o horário em que o Navio Silencioso acende as luzes e tem um bote. Vende itens 'caídos do navio' na aba Itens.",
+    segredo: "Já subiu no navio uma vez, viu a tripulação parada no convés e fugiu. Tem pesadelos e não conta de graça." },
+  { nome: "Amélia Brisaforte", sexo: "f", idade: 35, papel: "Fiscal do porto", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Casaco azul do reino com os punhos puídos, caderno de registros debaixo do braço, pena atrás da orelha, cabelo preso de qualquer jeito. Cansaço honesto.",
+    humor: "Sarcasmo burocrático: comenta tudo como se fosse preencher um formulário, inclusive o próprio funeral.",
+    fala: "Navio sem registro, sem bandeira, sem desembarque. No papel ele não existe. Pena que ele não leu o papel.",
+    uso: "Mostra que a Ordem foi avisada três vezes e nunca respondeu. Os ofícios dela passam por Alta Lumen (e somem nas mãos de Lúcia).",
+    segredo: "" },
+  { nome: "Velho Nuno Remendo", sexo: "m", idade: 74, papel: "Remendador de redes", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Quase cego, olhos azulados de catarata, dedos finos e precisos, senta no mesmo caixote do cais há quarenta anos. Chapéu de lona, cachimbo apagado.",
+    humor: "Humor de velho sobre a própria morte ('já me enterraram duas vezes, não pegou') e risadinhas sozinho no meio da conversa.",
+    fala: "Eu não vejo o navio, filho. Mas eu ouço. E navio não zumbe. Aquele ali zumbe que nem colmeia.",
+    uso: "Ouve o que ninguém vê: o zumbido de mana do navio e os passos sincronizados da tripulação. Testemunha que ninguém leva a sério.",
+    segredo: "" },
+  { nome: "Teodora Marés", sexo: "f", idade: 28, papel: "Mercadora de especiarias e tecidos", origem: "Porto Salgado (nasceu em Alta Lumen)", grupo: "Porto Salgado",
+    aparencia: "Vestido de corte da capital, mas já remendado três vezes; cabelo castanho com um lenço de seda; unhas curtas de quem conta moeda. Balança de bronze sempre na mesa.",
+    humor: "Vende até a piada: 'isso vai te custar', 'essa resposta é de graça, a próxima não'. Ri só com o canto da boca.",
+    fala: "Pimenta do sul, seda do norte e uma informação do leste. A informação é mais cara. E não tem desconto.",
+    uso: "Fornecedora da aba Itens no porto. Concorrente de Rufo: foi a única que recusou o negócio dele e sabe que as contas dele não fecham.",
+    segredo: "" },
+
+  /* ---- Floresta dos Cedros ---- */
+  { nome: "Ancião Baltazar Cedro-Torto", sexo: "m", idade: 77, papel: "Chefe do vilarejo", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Curvado como a árvore que lhe dá o nome, cajado de cedro mais alto que ele, barba comprida onde cresceu musgo de verdade. Capa de pele de urso velha. Olhos muito vivos.",
+    humor: "Enigmático: conta fábulas sem final e diz 'o fim você termina'. Ri quando alguém se irrita com isso.",
+    fala: "Um caçador seguiu um cervo branco até a clareira. O cervo olhou para ele e disse... Bom. O resto você vai me contar quando voltar.",
+    uso: "Autoriza a entrada na mata e conhece a lenda do Cervo. Pede que tragam os caçadores vivos, 'mesmo que não pareçam vivos'.",
+    segredo: "Sabe que o cervo da clareira é sagrado e está sofrendo. Prefere que o libertem a que o matem." },
+  { nome: "Mira Passo-Leve", sexo: "f", idade: 22, papel: "Caçadora, irmã de um caçador sumido", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Pequena e rápida, cabelo escuro curto, carvão pintado sob os olhos, faca de osso na coxa, botas com sola de pele. Mordida de lobo cicatrizada no antebraço.",
+    humor: "Competitiva: aposta tudo ('aposto que não acerta aquele galho'), comemora alto e cobra as apostas que ganha.",
+    fala: "Aposta: eu acho o rastro antes de você terminar essa frase. Pronto. Achei. Me deve uma moeda.",
+    uso: "Aliada natural dos jogadores na mata. Admira Ísolde, o que torna a revelação dolorosa. Futura membro de esquadrão.",
+    segredo: "O irmão dela é Tião Serrote. Ela ainda não sabe que ele virou capanga marcado." },
+  { nome: "Gaspar Curtume", sexo: "m", idade: 41, papel: "Curtidor de peles", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Mãos vermelhas de tanino, avental de couro endurecido, cheiro forte que chega antes dele. Fala pouco e olha muito. Faca curva sempre afiada.",
+    humor: "Humor negro de açougue: conversa com as peles ('esse aqui também não me pagou') e faz piada com o que ninguém quer olhar.",
+    fala: "Pelo queimado em forma de desenho. Não é fogo. Fogo não desenha. Alguém marcou esse bicho como a gente marca gado.",
+    uso: "Identifica a marca queimada no pelo das Feras Marcadas e sabe que é feita 'de dentro para fora'. Compra e vende peles e couro na aba Itens.",
+    segredo: "" },
+  { nome: "Vó Ludmila", sexo: "f", idade: 81, papel: "Parteira e contadora de histórias", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Minúscula, enrolada em três xales, cachimbo de barro, cabelo branco que ela nunca prende. Senta na soleira e tricota sem olhar.",
+    humor: "Dramática: tudo é 'no meu tempo', tudo era maior, mais frio e mais perigoso, e ela sobreviveu a tudo 'de camisola'.",
+    fala: "No meu tempo o cervo falava, menina. E o que ele dizia a gente não repetia depois do escuro.",
+    uso: "Guarda a versão antiga da lenda do Cervo e do ritual da clareira. Fez o parto de metade do vilarejo, inclusive de Ísolde: conhece a 'queimadura' atrás da orelha dela.",
+    segredo: "" },
+
+  /* ---- Pedra Velha ---- */
+  { nome: "Dário Picarocha", sexo: "m", idade: 53, papel: "Mestre-mineiro, chefe da mina", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Baixo e largo, sem a sobrancelha esquerda (explosão antiga), voz rouca de poeira, mãos como pás. Lanterna de mineiro pendurada no cinto mesmo de dia.",
+    humor: "Grosso: xinga em dialeto de mina, faz piada de desabamento e ri como quem tosse.",
+    fala: "Lacrei a mina eu mesmo, com estas mãos. Se vocês abrirem, abram sabendo que o que tá lá dentro bateu na porta primeiro.",
+    uso: "Dono da decisão de lacrar a mina. Orgulhoso, culpado e teimoso: só libera a entrada se os jogadores provarem que valem a pena.",
+    segredo: "Ouviu o 'tremor estranho' de dentro da Câmara Selada: não foi tremor, foi uma batida ritmada, como um coração." },
+  { nome: "Beatriz Lanterna", sexo: "f", idade: 17, papel: "Guardiã das lanternas da mina", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Magra, cabelo preso num pano cheio de fuligem, dedos queimados de óleo, um chaveiro enorme de lanternas penduradas. Olhos acostumados ao escuro.",
+    humor: "Nerd de túnel: conta tudo em números (passos, metros, litros de óleo) e acha graça quando os outros não acompanham.",
+    fala: "Do portão até o lacre são 412 passos meus, 380 dos seus. Depois do lacre eu não contei. Ninguém contou.",
+    uso: "Conhece cada túnel. Viu Aurélio entrando na mina de madrugada 'pra medir' e achou estranho que ele não levou lanterna.",
+    segredo: "" },
+  { nome: "Cosme Ferreiro", sexo: "m", idade: 38, papel: "Ferreiro", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Braços cobertos de pequenas queimaduras, avental de couro, cabelo preso com uma tira de ferro, barba chamuscada num lado. Martelo pequeno no cinto que ele bate na coxa quando pensa.",
+    humor: "Literal: entende a piada cinco segundos depois e então ri alto demais, batendo na mesa. Cai em qualquer trocadilho.",
+    fala: "Afiar a lâmina? Sim. Afiar a língua, não sei fazer. ...Ah! Era brincadeira. Boa. Boa!",
+    uso: "Conserta e vende armas e armaduras (aba Itens). Reforça equipamento com minério das ruínas, o que pode ser gancho para itens especiais.",
+    segredo: "" },
+  { nome: "Iolanda Carvão", sexo: "f", idade: 46, papel: "Dona do armazém e da hospedaria O Pico", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Rechonchuda, bochechas vermelhas, dedos pretos de carvão que ela limpa no avental sem parar, brinco de pedra verde. Fala com as mãos.",
+    humor: "Fofoqueira: conta cada segredo 'só para você' para todo mundo, e fica ofendida se a fofoca volta.",
+    fala: "Eu não devia contar, mas o estudioso paga o quarto com moeda da capital. Moeda nova. Quem tem moeda nova em Pedra Velha?",
+    uso: "Hospeda Aurélio e os jogadores. Fonte de boatos (metade verdadeiros). Vende suprimentos e aluga quartos.",
+    segredo: "" },
+
+  /* ---- Encruzilhada ---- */
+  { nome: "Prefeito Honório Quatrocaminhos", sexo: "m", idade: 56, papel: "Prefeito da Encruzilhada", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Gordo, anéis em todos os dedos, faixa vermelha de prefeito por cima de uma barriga de prefeito. Suor permanente na testa e um lenço bordado para enxugar.",
+    humor: "Político: tudo vira discurso, inclusive pedir sal. Elogia a si mesmo na terceira pessoa.",
+    fala: "A Encruzilhada, sob esta administração, nunca viu um ritual tão... Vocês estão ouvindo? Alguém anota o que eu disse.",
+    uso: "Organiza a cerimônia dos grimórios. Quer o crédito pela segurança da cidade e detesta que a Ordem o ignore.",
+    segredo: "Deve dinheiro a Teodora Marés e a Rufo Maravalha. O segundo é quem paga as festas da cerimônia." },
+  { nome: "Bruna Cantoneira", sexo: "f", idade: 33, papel: "Chefe da guarda da cidade", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Nariz quebrado duas vezes, cabelo raspado dos lados, cota de malha remendada, lança curta. Mastiga raiz de gengibre para ficar acordada.",
+    humor: "Sarcasmo de quartel: curto, seco e sempre contra quem está no comando (inclusive ela mesma).",
+    fala: "Pedi reforço à Ordem na primavera. Mandaram um selo bonito. Eu emoldurei.",
+    uso: "A primeira a dizer em voz alta que a Ordem não dá conta. Aliada prática dos jogadores na Sessão 1: entrega o primeiro combate (os bandidos) e os guarda nas costas.",
+    segredo: "" },
+  { nome: "Sr. Évaro", sexo: "m", idade: 68, papel: "Cerimonialista dos grimórios", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Alto e ossudo, túnica branca bordada de dourado já amarelada, bastão com um livro de pedra na ponta. Fala com pausas longas e olhos fechados. Cheira a incenso.",
+    humor: "Solene e teatral em público, com pausas dramáticas. Em particular, adora uma fofoca e ri com a mão na boca.",
+    fala: "O grimório... escolhe. (pausa) Não o contrário. (pausa) Agora me conta, o filho da Rosalva foi mesmo sorteado com Sangue?",
+    uso: "Conduz a cerimônia da Sessão 1 e explica os grimórios. Sabe onde fica o Cemitério de Grimórios e o que dorme lá.",
+    segredo: "Guardou o card do Antimagia fora do sorteio por ordem antiga que ele não entende. Sabe que Caliste existiu: eram aprendizes juntos na Torre Quebrada." },
+  { nome: "Pipa", sexo: "f", idade: 12, papel: "Garota de recados (e de bolsos alheios)", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Pequena, suja de propósito, cabelo cortado com faca, casaco de adulto com as mangas dobradas quatro vezes. Corre mais do que qualquer guarda.",
+    humor: "Rápida e insolente: xingamentos criativos ('cara de pão dormido') e imitações cruéis dos adultos.",
+    fala: "Recado custa um pão. Recado com resposta, dois. Vigiar o homem do anel, isso eu faço de graça, que ele me deu um tapa.",
+    uso: "Sabe quem entrou e saiu da cidade na noite da cerimônia. Pode levar recados entre os jogadores e os NPCs. Não enfrenta perigo: é criança, os jogadores a protegem.",
+    segredo: "Viu Rufo e Lúcia conversando no beco atrás da estalagem na noite da cerimônia, mas acha que foi 'namoro'." },
+  { nome: "Dona Filomena", sexo: "f", idade: 49, papel: "Dona da Estalagem das Quatro Estradas", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Mangas arregaçadas, vassoura como extensão do braço, cabelo grisalho preso com um lápis, avental sempre limpo apesar de tudo. Chaves no pescoço.",
+    humor: "Mãe de todo mundo: reclama da lama, do barulho e da hora, e depois deixa o prato cheio na porta do quarto.",
+    fala: "Bota na porta, lavaram? Lavaram nada. Entra. Tem sopa. E se eu ouvir espada depois da meia-noite, dormem no estábulo.",
+    uso: "Base dos jogadores na Encruzilhada. Cama, comida, recados deixados por outros NPCs. Um lugar seguro que a organização pode invadir num arco posterior.",
+    segredo: "" },
+
+  /* ---- Alta Lumen e a Ordem ---- */
+  { nome: "Capitão-Geral Teobaldo Ferrolho", sexo: "m", idade: 61, papel: "Comandante da Ordem dos Cavaleiros Mágicos", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+    aparencia: "Imponente, manto branco e ouro, bigode grisalho enorme e encerado, bastão de comando que ele bate no chão para pontuar frases. Cicatrizes antigas no rosto que ele não esconde.",
+    humor: "Nenhum, e isso é a piada: diz 'não vejo a graça' com toda a seriedade. Uma vez por sessão deixa escapar uma ironia seca, e nega.",
+    fala: "A Ordem é uma. Sempre foi uma. Dividi-la é dividir a espada ao meio e esperar que corte o dobro.",
+    uso: "Resiste à divisão em esquadrões. Tradicionalista, honesto e sobrecarregado. Pode ser o próximo alvo da marca, ou o chefe controlado de um arco.",
+    segredo: "Confia cegamente em Lúcia Valmorada. É por isso que nunca viu os relatórios." },
+  { nome: "Cavaleira Serena Alvorecer", sexo: "f", idade: 24, papel: "Cavaleira jovem da Ordem", origem: "Alta Lumen (filha de lavadeira)", grupo: "Alta Lumen e Ordem",
+    aparencia: "Cabelo loiro curto, armadura leve com marcas de uso real (não polida), mapa dobrado sempre no cinto, sorriso fácil. Grimório de capa gasta na bolsa.",
+    humor: "Autodepreciativo: ri dos próprios erros antes que os outros riam, e conta cada vexame como história de guerra.",
+    fala: "Na minha primeira missão eu salvei a vila errada. Ficou todo mundo grato. A vila certa também sobreviveu, então... empate?",
+    uso: "A aliada que defende a divisão em esquadrões. Plebeia na Ordem, entende os jogadores. É quem propõe que eles liderem no final.",
+    segredo: "Foi quem apresentou os jogadores a Lúcia. Vai se sentir culpada na revelação." },
+  { nome: "Escrivão Pascoal Tinteiro", sexo: "m", idade: 40, papel: "Escrivão-chefe da Ordem", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+    aparencia: "Magro, nervoso, tinta nas mangas, nos dedos e numa bochecha, óculos escorregando, pilhas de papel que ele carrega como escudo. Treme a perna quando sentado.",
+    humor: "Riso nervoso no fim de cada frase e piadas de papelada ('isso precisa de três vias, inclusive a piada').",
+    fala: "Três ofícios de Porto Salgado? Eu protocolei. Eu lembro. Eles... não estão aqui. Ha ha. Não estão aqui.",
+    uso: "A pista contra Lúcia: os relatórios dos vilarejos entram no arquivo e somem. Ele lembra de cada um e tem medo de dizer para quem os entregou.",
+    segredo: "" },
+  { nome: "Marquesa Doroteia Vinhedo-Alto", sexo: "f", idade: 50, papel: "Nobre patrona da Ordem", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+    aparencia: "Vestido cor de vinho, pescoço longo, colar de safiras, leque que ela abre quando alguém a aborrece. Penteado alto que nunca se move.",
+    humor: "Crueldade elegante: insultos embrulhados em elogios ('que armadura interessante, é de verdade?').",
+    fala: "Plebeus com grimórios. Que época encantadora. Por favor, não toquem nas cortinas.",
+    uso: "Financia a Ordem e despreza os vilarejos. Obstáculo político: pode cortar o apoio aos jogadores. Não é da organização, só é desagradável.",
+    segredo: "Odeia Caliste Umbrão por um motivo antigo de família. Pode virar aliada improvável no arco final." },
+  { nome: "Rei Adalberto II", sexo: "m", idade: 71, papel: "Rei de Alvorada", origem: "Alta Lumen", grupo: "Alta Lumen e Ordem",
+    aparencia: "Cansado, magro dentro das vestes largas, coroa que ele tira e põe na mesa quando ninguém está olhando. Olhos bondosos. Mãos trêmulas segurando sempre uma xícara.",
+    humor: "Piadas de pai cansado, quase todas sobre o peso da coroa e sobre não lembrar nomes ('você é o do fogo, não é? Todos são do fogo').",
+    fala: "Me disseram que vocês desobedeceram a Ordem para salvar um vilarejo. Me contem de novo. Devagar. Eu gosto dessa parte.",
+    uso: "Quer paz e sabe que a Ordem única não alcança o reino. É quem nomeia os esquadrões na cerimônia final.",
+    segredo: "Foi marcado há anos; a marca nunca foi ativada porque Caliste o considera inofensivo. Pode virar reviravolta se o mestre quiser." },
+
+  /* ---- Estradas e lugares estranhos ---- */
+  { nome: "Zacarias Bugigangas", sexo: "m", idade: 60, papel: "Mascate das estradas", origem: "Nenhum lugar (nasceu numa carroça entre o Vale e o Porto)", grupo: "Estradas",
+    aparencia: "Carroça puxada por uma mula chamada Senhora, casaco de retalhos com cem bolsos, chapéu com penduricalhos que tilintam. Dentes de madeira. Sotaque de todos os vilarejos ao mesmo tempo.",
+    humor: "Vendedor absurdo: promete que cada bugiganga 'salvou um rei', inventa origens cada vez mais improváveis e dá desconto para quem ri.",
+    fala: "Esta colher? Pertenceu ao primeiro cavaleiro mágico. Ele comia sopa com ela. Sopa mágica. Três moedas.",
+    uso: "Aparece em qualquer estrada quando o mestre quer entregar um item (um verdadeiro no meio do lixo). Leva boatos entre os vilarejos.",
+    segredo: "A mula Senhora reage à marca: zurra e empaca perto de marcados. Zacarias acha que ela é 'chata com estranhos'." },
+  { nome: "Quintino Ventoso", sexo: "m", idade: 30, papel: "Bardo andarilho", origem: "Porto Salgado (fugiu de casa aos 15)", grupo: "Estradas",
+    aparencia: "Alaúde às costas, botas de dois pares diferentes, cabelo comprido com fitas que as moças dos vilarejos deram, sorriso de quem nunca pagou uma conta inteira.",
+    humor: "Rima tudo, canta o que não devia e faz canções de deboche sobre nobres, prefeitos e, se pagarem, sobre os próprios jogadores.",
+    fala: "Oito plebeus com livros no cinto / um fez um feitiço, os outros fingiram... ei, é rascunho, calma.",
+    uso: "Leva notícias entre os vilarejos (mais rápido que a Ordem). As canções dele contam o que os jogadores fizeram e viram os primeiros 'lemas' dos esquadrões.",
+    segredo: "Sem saber, é espião da organização: Rufo paga as bebidas dele e ouve tudo o que ele canta." },
+  { nome: "Esmeralda do Lago", sexo: "f", idade: 44, papel: "Eremita do Lago Espelhado", origem: "Pedra Velha (sumiu da vila aos 20)", grupo: "Estradas",
+    aparencia: "Cabelo comprido escuro sempre molhado nas pontas, vestido cinza simples, pés descalços na margem, olhos da cor da água. Não se sabe onde dorme.",
+    humor: "Responde perguntas com perguntas e ri de um jeito que parece eco. Acha graça em quem tem pressa.",
+    fala: "Você quer saber que grimório o lago mostra? E se ele mostrar o que você já tem? Vai ficar decepcionado ou aliviado?",
+    uso: "Para a cena do Lago Espelhado (sem segredo definido): oráculo, descanso ou espelho do que cada jogador tem medo de ser. O mestre preenche.",
+    segredo: "A decidir. Ideia: foi a primeira pessoa que Caliste tentou marcar, e a marca não pegou. O lago a protege." }
+];
+
+var filtroNpc = { grupo: "todos", sexo: "todos" };
+
+function viewPersonagens() {
+  var m = PERSONAGENS.filter(function (p) { return p.sexo === "m"; }).length;
+  return "<h1>Personagens</h1>" +
+    '<p class="lead">O elenco do Reino de Alvorada para o mestre usar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história. São ' + PERSONAGENS.length + " personagens (" + m + " homens e " + (PERSONAGENS.length - m) + " mulheres). Esta aba é só do mestre: os vilões e os segredos estão aqui.</p>" +
+    '<div class="controls"><div class="fgroup"><span>Grupo</span><div class="chips" id="fNpcGrupo">' +
+    ["todos"].concat(GRUPOS_NPC).map(function (g) {
+      return '<button type="button" class="chip" data-npcgrupo="' + esc(g) + '" aria-pressed="' + (filtroNpc.grupo === g) + '">' + (g === "todos" ? "Todos" : esc(g)) + "</button>";
+    }).join("") + "</div></div>" +
+    '<div class="fgroup"><span>Sexo</span><div class="chips" id="fNpcSexo">' +
+    [["todos", "Todos"], ["f", "Mulheres"], ["m", "Homens"]].map(function (s) {
+      return '<button type="button" class="chip" data-npcsexo="' + s[0] + '" aria-pressed="' + (filtroNpc.sexo === s[0]) + '">' + s[1] + "</button>";
+    }).join("") + "</div></div></div>" +
+    '<p id="contaNpc" role="status"></p><div id="listaNpc"></div>' +
+    panel("Como usar", "<ul><li>Os <b>infiltrados</b> seguem a regra dos 3 momentos (ajuda, pista pequena, revelação). A pista de cada um está no segredo.</li>" +
+      "<li>A <b>marca</b> aparece sempre num lugar coberto: pulseira, anel, luva, trança, tinta. Repetir esse detalhe é o que faz a traição parecer justa depois.</li>" +
+      "<li>Os moradores com <b>uso</b> ligado a um infiltrado (Celina, Pascoal, Beatriz, Vó Ludmila, Pipa) são as pistas que os jogadores podem achar sozinhos.</li>" +
+      "<li>Mira, Joca, Serena e Bruna são bons <b>futuros membros de esquadrão</b>.</li></ul>");
+}
+
+function npcCard(p) {
+  var vilao = p.grupo === "Organização";
+  return '<article class="panel npc' + (vilao ? " npc-vilao" : "") + '"><h3>' + ic(p.sexo === "f" ? "grupo" : "grupo") + esc(p.nome) + ' <small>' + p.idade + " anos</small></h3>" +
+    '<p class="npc-papel"><b>' + esc(p.papel) + "</b><br><small>Cresceu em: " + esc(p.origem) + "</small></p>" +
+    "<p><b>Aparência:</b> " + esc(p.aparencia) + "</p>" +
+    "<p><b>Humor:</b> " + esc(p.humor) + "</p>" +
+    '<p class="npc-fala">“' + esc(p.fala) + "”</p>" +
+    "<p><b>Uso na história:</b> " + esc(p.uso) + "</p>" +
+    (p.segredo ? '<p class="bnote"><b>Segredo (só o mestre):</b> ' + esc(p.segredo) + "</p>" : "") + "</article>";
+}
+
+function desenharPersonagens() {
+  var cont = document.getElementById("listaNpc"), conta = document.getElementById("contaNpc");
+  if (!cont) return;
+  var grupos = filtroNpc.grupo === "todos" ? GRUPOS_NPC : [filtroNpc.grupo], total = 0, h = "";
+  grupos.forEach(function (g) {
+    var lista = PERSONAGENS.filter(function (p) { return p.grupo === g && (filtroNpc.sexo === "todos" || p.sexo === filtroNpc.sexo); });
+    if (!lista.length) return;
+    total += lista.length;
+    h += "<h2>" + esc(g) + (g === "Organização" ? " <small>(spoiler)</small>" : "") + '</h2><div class="cols">' + lista.map(npcCard).join("") + "</div>";
+  });
+  cont.innerHTML = h || '<p class="mdica">Nenhum personagem com esse filtro.</p>';
+  if (conta) conta.textContent = total + (total === 1 ? " personagem." : " personagens.");
+}
+
 /* ============================ LIGAÇÃO COM O APP ============================ */
 
 VIEWFN.inicio = viewInicio;
 VIEWFN.grimorios = viewGrimorios;
 VIEWFN.bestiario = viewBestiario;
+VIEWFN.personagens = viewPersonagens;
 VIEWFN.sorteio = viewSorteio;
 VIEWFN.jogadores = viewJogadores;
 VIEWFN["sessao-zero"] = viewSessaoZero;
@@ -3933,7 +4232,7 @@ VIEWFN.cenarios = viewCenarios;
 
 MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
-  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
@@ -3942,7 +4241,7 @@ MESTRE = {
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,
   views: [
-    ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"],
+    ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"], ["personagens", "Personagens", "grupo"],
     ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
@@ -3967,6 +4266,7 @@ MESTRE = {
   depois: function (r) {
     if (r === "grimorios") desenharGrimorios();
     if (r === "bestiario") desenharBestiario();
+    if (r === "personagens") desenharPersonagens();
     if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
     if (r === "cenarios") desenharCenPreview();
   },
@@ -4081,6 +4381,13 @@ MESTRE = {
       filtro.elem = b.dataset.elem;
       document.querySelectorAll("#fElem .chip, #fTipo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.elem === filtro.elem)); });
       desenharGrimorios();
+      return true;
+    }
+    if (b.dataset.npcgrupo || b.dataset.npcsexo) {
+      if (b.dataset.npcgrupo) filtroNpc.grupo = b.dataset.npcgrupo; else filtroNpc.sexo = b.dataset.npcsexo;
+      document.querySelectorAll("#fNpcGrupo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.npcgrupo === filtroNpc.grupo)); });
+      document.querySelectorAll("#fNpcSexo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.npcsexo === filtroNpc.sexo)); });
+      desenharPersonagens();
       return true;
     }
     if (b.dataset.fase) {
