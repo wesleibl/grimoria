@@ -3602,11 +3602,23 @@ function atualizarJogadores() {
     if (jogSel || Object.keys(jogSujos).length || jogEmAberto || invEmAberto || pendentes || versaoInv !== invVersao || !d.jogadores) return;
     jogs = d.jogadores;
     CONTAS = d.usuarios || CONTAS;
+    montarNav(rotaAtual()); /* atualiza o contador de pendências do menu */
     if ((rotaAtual() === "jogadores" && !jogSel) || rotaAtual() === "itens" || rotaAtual() === "experiencia") renderizar();
     /* O deslocamento dos jogadores depende dos itens equipados: ao abrir a Ação, recalcula com os inventários atuais. */
     if (rotaAtual() === "acao" && EST.acao) { salvarAcao(); renderAcaoUI(); }
   }, function () { /* sem conexão: fica com a lista que já tem */ });
 }
+
+/* A cada minuto confere os pedidos de aprimoramento e atualiza o contador do menu, sem redesenhar a tela nem mexer em edições em curso. */
+setInterval(function () {
+  if (document.hidden || !USUARIO) return;
+  api("inicio").then(function (d) {
+    if (!d || !d.jogadores) return;
+    var antes = pendNav("experiencia");
+    d.jogadores.forEach(function (n) { (jogs || []).forEach(function (j) { if (j.id === n.id) j.aprimoramentos = n.aprimoramentos; }); });
+    if (pendNav("experiencia") !== antes) montarNav(rotaAtual());
+  }, function () {});
+}, 60000);
 
 /* ============================ DROPS DO BESTIÁRIO ============================ */
 
@@ -4427,6 +4439,12 @@ MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
   nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "experiencia", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
+  pendencias: function (id) {
+    if (id !== "experiencia") return 0;
+    var n = 0;
+    (jogs || []).forEach(function (j) { (j.aprimoramentos || []).forEach(function (a) { if (a.status === "pendente") n++; }); });
+    return n;
+  },
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
   modeloIni: modeloIniMestre,

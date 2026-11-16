@@ -2812,7 +2812,13 @@ function viewInfo(id) { var r = null; listaViews().forEach(function (v) { if (v[
 function linkNav(id, atual) {
   var v = viewInfo(id);
   var aviso = id === "perfil" && !MESTRE && perfilSujo() ? ' <span class="pt" title="Alterações não salvas no Perfil" aria-label="Alterações não salvas">●</span>' : "";
-  return v ? '<a href="#' + id + '"' + (id === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + aviso + "</a>" : "";
+  return v ? '<a href="#' + id + '"' + (id === atual ? ' aria-current="page"' : "") + ">" + ic(v[2]) + v[1] + aviso + contadorNav(id) + "</a>" : "";
+}
+/* Contador de pendências no menu (só o mestre tem: MESTRE.pendencias(id) devolve quantas coisas aguardam por ele). */
+function pendNav(id) { return MESTRE && MESTRE.pendencias ? MESTRE.pendencias(id) : 0; }
+function contadorNav(id) {
+  var n = pendNav(id);
+  return n ? ' <span class="cont-nav" title="' + n + ' aguardando sua aprovação" aria-label="' + n + ' aguardando aprovação">' + n + "</span>" : "";
 }
 
 function fecharMenus(tudo) {
@@ -2828,7 +2834,7 @@ function fecharMenus(tudo) {
 function montarNav(atual) {
   document.getElementById("nav").innerHTML = USUARIO ? navAtual().map(function (n, k) {
     if (typeof n === "string") return "<li>" + linkNav(n, atual) + "</li>";
-    return '<li class="grupo' + (n.i.indexOf(atual) !== -1 ? " ativo" : "") + '"><button type="button" class="grupo-btn" aria-haspopup="true" aria-expanded="false" data-grupo="' + k + '">' + n.g + ' <span aria-hidden="true">▾</span></button>' +
+    return '<li class="grupo' + (n.i.indexOf(atual) !== -1 ? " ativo" : "") + '"><button type="button" class="grupo-btn" aria-haspopup="true" aria-expanded="false" data-grupo="' + k + '">' + n.g + (function () { var s = 0; n.i.forEach(function (id) { s += pendNav(id); }); return s ? ' <span class="cont-nav" aria-label="' + s + ' aguardando aprovação">' + s + "</span>" : ""; })() + ' <span aria-hidden="true">▾</span></button>' +
       '<ul class="submenu" hidden>' + n.i.map(function (id) { return "<li>" + linkNav(id, atual) + "</li>"; }).join("") + "</ul></li>";
   }).join("") : "";
   document.getElementById("menuBtn").hidden = !USUARIO;
