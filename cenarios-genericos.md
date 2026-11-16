@@ -1,13 +1,12 @@
 # Cenários genéricos: prompts de imagem
 
-Os 18 cenários abaixo já foram criados na aba **Cenários** (ocultos, com resumo e notas do mestre) e esperam só a imagem. Eles aparecem com uma imagem provisória escura que diz "Imagem aguardando".
+As 18 imagens finais estão em `image/cenarios-genericos/`, em JPEG 16:9. Os cenários continuam ocultos até o mestre liberá-los.
 
 Como usar:
 
-1. Gere uma imagem por cenário com o prompt (já inclui o estilo base).
-2. Proporção **16:9** (paisagem), como as imagens de `misterio/` (cerca de 1700×930).
-3. Em **Cenários**, abra o cenário e use **Trocar a foto**.
-4. Para combater nele, use **Adicionar imagem de grid** (ver `grids.md`). Para o grid, peça a mesma cena em vista de cima (veja "Versão para grid" no fim).
+1. Em **Cenários**, clique em **Aplicar fotos prontas** para substituir as fotos dos cenários genéricos já criados. O envio mostra o progresso e pode ser retomado se parar.
+2. Cenários genéricos criados daqui em diante já recebem a foto pronta.
+3. Para combater neles, use **Adicionar imagem de grid** (ver `grids.md`). Para o grid, peça a mesma cena em vista de cima (veja "Versão para grid" no fim).
 
 ## Estilo base (já incluído em todos os prompts)
 
