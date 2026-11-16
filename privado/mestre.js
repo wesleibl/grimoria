@@ -2540,9 +2540,9 @@ function campoOp(op, dados) {
   });
 }
 
-function enviarPos(lista, extra) {
+function enviarPos(lista, extra, dir) {
   var pos = {};
-  lista.forEach(function (t) { pos[t.id] = { x: t.x | 0, y: t.y | 0, gasto: parseInt(t.gasto, 10) || 0 }; });
+  lista.forEach(function (t) { pos[t.id] = { x: t.x | 0, y: t.y | 0, gasto: parseInt(t.gasto, 10) || 0 }; if (dir) pos[t.id].dir = dir; });
   return campoOp("pos", extras({ pos: pos }, extra || {}));
 }
 
@@ -2675,10 +2675,19 @@ function virarBotoesMestreHTML(t) {
   return virarBotoesHTML(t.dir).replace(/data-virar=/g, 'data-tvirar="' + t.id + '" data-dir=');
 }
 
+/* Seções recolhíveis do painel do token: o que o mestre deixou aberto continua aberto quando o painel redesenha. */
+var tokAbertos = {};
+
+/* Uma linha com o que o mestre mais consulta do inimigo do Bestiário (a ficha completa fica recolhida). */
+function resumoBestiario(t) {
+  var m = t.bestiario ? INIMIGOS.filter(function (x) { return x.nome === t.bestiario; })[0] : null;
+  return m ? "Def " + m.defesa + " · Atq d20 " + m.ataque + " · Dano " + m.dano : "";
+}
+
 /* Efeitos temporários do token: chips com "−1 turno" e ✕, e o formulário para adicionar. O servidor conta os turnos. */
 function efeitosEditorHTML(t) {
   var lista = (CAMPO.efeitos || {})[t.id] || [];
-  var h = '<fieldset class="ef-ed"><legend>Efeitos (buffs e debuffs)</legend><div class="ef-lista">' + (lista.length ? lista.map(function (e) {
+  var h = '<details class="tok-det ef-ed" data-tdet="ef"' + (tokAbertos.ef ? " open" : "") + '><summary>Efeitos (buffs e debuffs)' + (lista.length ? ' <span class="tok-badge">' + lista.length + "</span>" : "") + '</summary><div class="ef-lista">' + (lista.length ? lista.map(function (e) {
     return '<span class="ef ef-' + (e.tipo === "buff" ? "buff" : "debuff") + '" title="' + esc(e.nota || "") + '">' + esc(e.nome) + (e.turnos != null ? " · " + turnosTxt(e.turnos) : "") + (e.teste ? " ⚠" : "") +
       (e.turnos != null ? ' <button type="button" data-efmenos="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Tirar 1 turno de ' + esc(e.nome) + '">−1 turno</button>' : "") +
       ' <button type="button" data-efrm="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Remover ' + esc(e.nome) + '">✕</button></span>';
@@ -2689,7 +2698,7 @@ function efeitosEditorHTML(t) {
     '<label class="tok-num">Turnos <input class="sorteio-in num" type="number" min="0" max="99" id="efTurnos" placeholder="∞"></label></div>' +
     '<label>Nota (só você vê)<input class="sorteio-in" type="text" maxlength="120" id="efNota"></label>' +
     '<label class="rev-label"><input type="checkbox" id="efTeste"> Exige resistência</label>' +
-    '<div class="controls"><button type="button" data-efadd="' + t.id + '">Adicionar efeito</button></div></fieldset>';
+    '<div class="controls"><button type="button" data-efadd="' + t.id + '">Adicionar efeito</button></div></details>';
   return h;
 }
 
@@ -2698,31 +2707,44 @@ function tokPainelHTML() {
   if (!t) return '<section class="panel"><h3>Token</h3><p class="mdica">Clique num token no mapa ou na lista para editar.</p></section>';
   var trap = t.tipo === "armadilha";
   var h = '<section class="panel tok-painel"><h3>' + (trap ? ic("alerta") : "") + esc(t.nome || "Token") + "</h3>" +
-    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>' + fichaBestiarioHTML(t);
+    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>';
   if (trap) {
     h += '<label>Efeito<input class="sorteio-in" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="ex.: 2d6 de dano, Destreza contra 13"></label>' +
       '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (acionada(t) ? " (já acionada)" : "") + "</label>";
   } else {
-    var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0;
-    var dirs = '<div class="tok-linha"><span class="tok-desl">Virado para</span> ' + virarBotoesMestreHTML(t) + "</div>";
-    h += '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
-      return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
-    }).join("") + "</select></label>" +
+    var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0, resumo = resumoBestiario(t);
+    /* À vista: vida, estados e direção. O resto fica em seções recolhidas logo abaixo. */
+    h += '<div class="tok-vida"><label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? (t.vidaMax || "") : t.vida) + '"></label>' +
+      '<span class="tok-barra">/</span><label class="tok-num">Máx. <input class="sorteio-in num" type="number" min="0" max="999" data-tvidamax="' + t.id + '" value="' + (t.vidaMax || "") + '"></label>' +
+      (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
+      '<div class="tok-estados">' +
+      '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado</label>" +
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto</label>" +
+      (t.tipo !== "jogador" ? '<label class="rev-label"><input type="checkbox" data-timg="' + t.id + '"' + (t.imgOculta ? "" : " checked") + "> Imagem visível</label>" : "") + "</div>" +
+      '<div class="tok-linha"><span class="tok-desl">Virado para</span> ' + virarBotoesMestreHTML(t) + "</div>";
+    if (t.bestiario) {
+      h += '<details class="tok-det" data-tdet="ficha"' + (tokAbertos.ficha ? " open" : "") + "><summary>Ficha do inimigo" + (resumo ? ' <small class="mdica">' + esc(resumo) + "</small>" : "") + "</summary>" + fichaBestiarioHTML(t) + "</details>";
+    }
+    h += efeitosEditorHTML(t) +
+      '<details class="tok-det" data-tdet="mov"' + (tokAbertos.mov ? " open" : "") + "><summary>Tipo e deslocamento</summary>" +
+      '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
+        return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("") + "</select></label>" +
       '<div class="tok-grade">' +
       '<label class="tok-num">Destreza ' + (jog ? '<b title="Vem do perfil do jogador">' + tokDex(t) + "</b>" : '<input class="sorteio-in num" type="number" min="-5" max="30" data-tdex="' + t.id + '" value="' + (parseInt(t.dex, 10) || 0) + '">') + "</label>" +
       '<label class="tok-num" title="Ajuste manual do deslocamento, por exemplo -2 se estiver lento">Ajuste <input class="sorteio-in num" type="number" min="-10" max="10" data-taj="' + t.id + '" value="' + (parseInt(t.aj, 10) || 0) + '"></label>' +
       '<label class="tok-num" title="Casas já andadas neste turno">Gasto <input class="sorteio-in num" type="number" min="0" max="99" data-tgasto="' + t.id + '" value="' + gasto + '"></label></div>' +
-      '<p class="tok-desl" id="tokDesl"></p>' +
-      '<div class="tok-grade"><label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? (t.vidaMax || "") : t.vida) + '"></label>' +
-      '<label class="tok-num">Máx. <input class="sorteio-in num" type="number" min="0" max="999" data-tvidamax="' + t.id + '" value="' + (t.vidaMax || "") + '"></label>' +
-      (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
-      '<div class="tok-vida-btn">' + [-5, -1, 1, 5].map(function (d) { return '<button type="button" data-vdelta="' + d + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + "</button>"; }).join("") + "</div>" +
-      '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado (sai dos turnos)</label>" +
-      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto dos jogadores</label>" +
-      (t.tipo !== "jogador" ? '<label class="rev-label"><input type="checkbox" data-timg="' + t.id + '"' + (t.imgOculta ? "" : " checked") + "> Imagem visível aos jogadores</label>" : "") +
-      dirs + efeitosEditorHTML(t);
+      '<p class="tok-desl" id="tokDesl"></p></details>';
   }
   return h + '<div class="controls"><button type="button" data-tdup="' + t.id + '">Duplicar</button><button type="button" data-tdel="' + t.id + '">Remover</button></div></section>';
+}
+
+/* O evento "toggle" não borbulha: ouve na captura e guarda quais seções do painel do token estão abertas. */
+if (document.addEventListener) {
+  document.addEventListener("toggle", function (e) {
+    var d = e.target;
+    if (d && d.dataset && d.dataset.tdet) tokAbertos[d.dataset.tdet] = !!d.open;
+  }, true);
 }
 
 function atualizarDesl(t) {
@@ -2816,6 +2838,8 @@ function renderAcaoUI() {
   atualizarHud();
   var c = document.getElementById("combatePainel");
   if (c && !emEdicao("combatePainel")) c.innerHTML = combatePainelHTML();
+  var lado = document.getElementById("acaoLado");
+  if (lado) lado.classList.toggle("tem-sel", !!(tokSel && acharTok(tokSel)));
   var p = document.getElementById("tokPainel");
   if (p && !emEdicao("tokPainel")) { p.innerHTML = tokPainelHTML(); var t = tokSel ? acharTok(tokSel) : null; if (t) atualizarDesl(t); }
   var l = document.getElementById("tokLista");
@@ -2935,7 +2959,7 @@ function viewAcaoMestre() {
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
   h += '<p class="mdica" id="tokInfo" role="status">' + esc(INFO_PADRAO) + "</p>";
-  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado" id="acaoLado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   var faltam = (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); });
   h += '<div class="controls"><label class="tok-best">Jogador <select class="sorteio-in" id="tokJogSel"' + (faltam.length ? "" : " disabled") + ">" +
     (faltam.length ? faltam.map(function (j) { return '<option value="' + esc(j.id) + '">' + esc(j.personagem || j.nome || "Jogador") + "</option>"; }).join("") : "<option>Todos já estão no mapa</option>") +
@@ -3020,6 +3044,7 @@ function avisarSelecao(t) {
 }
 
 function limparSelecao() {
+  fecharSeletorDir();
   tokSel = null;
   renderAcaoUI();
   infoTok(INFO_PADRAO);
@@ -3063,14 +3088,26 @@ function armadilhasEm(c, exceto) {
   return acaoEst().tokens.filter(function (t) { return t.tipo === "armadilha" && t.id !== exceto.id && (t.x | 0) === c.x && (t.y | 0) === c.y; });
 }
 
-function moverTok(t, c, ox, oy, desdeArrasto) {
+/* Toque na casa de destino: o token que tem lado (não a armadilha) pergunta para onde fica virado antes de ir. */
+function pedirDirEMover(t, c) {
+  if (t.tipo === "armadilha") { moverTok(t, c, t.x, t.y); return; }
+  var id = t.id;
+  abrirSeletorDir(c.x, c.y, function (d) {
+    var t2 = acharTok(id);
+    if (t2 && tokSel === id) moverTok(t2, c, t2.x, t2.y, false, d);
+  });
+  infoTok("Escolha para que lado " + (t.nome || "o token") + " fica virado em " + coordNome(c.x, c.y) + ", ou ✓ para ir direto. Esc cancela.", false, true);
+}
+
+function moverTok(t, c, ox, oy, desdeArrasto, dir) {
   var r = textoDistancia(t, ox, oy, c), txt = r[0], aviso = r[1];
   /* Ao arrastar, o token já está na casa onde foi solto: o redesenho não deve levá-lo de volta à origem para deslizar. */
   if (desdeArrasto && tabGeo) posTokAnt[t.id] = { px: (c.x + 0.5) * tabGeo.cw, py: (c.y + 0.5) * tabGeo.ch };
   if (movel(t) && emTurnos()) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
   t.x = c.x;
   t.y = c.y;
-  enviarPos([t]);
+  if (dir) t.dir = dir;
+  enviarPos([t], null, dir);
   renderAcaoUI();
   if (movel(t)) {
     armadilhasEm(c, t).forEach(function (a) {
@@ -3111,6 +3148,7 @@ function ligarArraste() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
   botaoVisao();
+  if (visaoJog || !tokSel) fecharSeletorDir(); else desenharSeletorDir();
   if (visaoJog) {
     svg.classList.remove("editavel", "esperando");
     svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = svg.onpointerleave = svg.oncontextmenu = null;
@@ -3126,6 +3164,7 @@ function ligarArraste() {
   };
   svg.onpointerdown = function (ev) {
     var g = ev.target.closest ? ev.target.closest(".token") : null;
+    if (g) fecharSeletorDir();
     if (!g) {
       /* Toque numa casa vazia: só vira movimento ao soltar, sem arrasto (assim dá para arrastar o mapa ampliado). */
       toque = tokSel ? { x: ev.clientX, y: ev.clientY } : null;
@@ -3168,7 +3207,7 @@ function ligarArraste() {
       toque = null;
       if (tq && ev && ev.type === "pointerup" && !zoomGesto && Math.abs(ev.clientX - tq.x) < 8 && Math.abs(ev.clientY - tq.y) < 8) {
         var sel = tokSel ? acharTok(tokSel) : null, c = celulaTab(svg, ev);
-        if (sel && c && (c.x !== sel.x || c.y !== sel.y)) { esconderHover(svg); moverTok(sel, c, sel.x, sel.y); }
+        if (sel && c && (c.x !== sel.x || c.y !== sel.y)) { esconderHover(svg); pedirDirEMover(sel, c); }
       }
       return;
     }
@@ -3245,7 +3284,7 @@ function inputAcao(el) {
     adiar("pos-" + t.id, function () { enviarPos([t]); }, 400);
     return true;
   }
-  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); salvarAcao(); desenharAcaoMestre(); return true; }
+  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); if (el.value !== "" && t.vidaMax) t.morto = t.vida === 0; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.tvidamax && (t = acharTok(d.tvidamax))) { t.vidaMax = Math.max(0, parseInt(el.value, 10) || 0) || null; if (t.vidaMax && t.vida == null) t.vida = t.vidaMax; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.cenanome) {
     var ce = acharEnvio(parseInt(d.cenanome, 10));
@@ -3399,15 +3438,6 @@ function clickAcao(b) {
     a.tokens.push(cp);
     tokSel = cp.id;
     enviarPos([cp]); salvarAcao(); renderAcaoUI();
-    return true;
-  }
-  if (b.dataset.vdelta && tokSel && (t = acharTok(tokSel))) {
-    var max = t.vidaMax || 0, atual = t.vida == null ? max : t.vida;
-    if (!max) { infoTok("Defina a vida máxima do token para usar os botões de vida."); return true; }
-    t.vida = Math.max(0, Math.min(max, atual + parseInt(b.dataset.vdelta, 10)));
-    t.morto = t.vida === 0;
-    salvarAcao();
-    renderAcaoUI();
     return true;
   }
   if (b.id === "tokSemInimigos") {
@@ -3918,11 +3948,337 @@ function inputItens(el) {
   return false;
 }
 
+/* ============================ PERSONAGENS (NPCs) ============================ */
+
+/* Elenco de apoio de Grimória (outono de 1400), alinhado com o Notion (Mundo mágico, NPC, Ordem Oculta, Ordem dos Cavaleiros e os contos): vilões, gente dos vilarejos, comerciantes, Ordem e estradas. Cada um tem o que o mestre precisa
+   para interpretar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história.
+   "segredo" é só do mestre (esta aba nunca vai para os jogadores). "sexo" é m ou f. */
+var GRUPOS_NPC = ["Ordem Oculta", "Família Jimmer e Arkonte", "Vale das Colheitas", "Porto Salgado", "Floresta dos Cedros", "Pedra Velha", "Encruzilhada", "Alta Lumen e Cavaleiros", "Estradas"];
+var PERSONAGENS = [
+  /* ---- Ordem Oculta (SPOILER) ---- */
+  { nome: "Benedita Sarrão", sexo: "f", idade: 54, papel: "Curandeira itinerante (infiltrada 1 da Ordem Oculta)", origem: "Vale das Colheitas", grupo: "Ordem Oculta",
+    aparencia: "Baixa e redonda, mãos manchadas de verde pelas ervas, lenço cor de açafrão na cabeça e um cesto de vime que nunca larga. Pulseira grossa de fibra trançada no pulso esquerdo. Sorriso de avó e olhos que não sorriem junto.",
+    humor: "Maternal e provocador: trata todo mundo como criança desnutrida (\"menino, com essa cor você precisa é de sopa\") e ri baixinho das próprias receitas.",
+    fala: "Senta aí que esse corte eu fecho antes de a sopa esfriar. Não, não é mágica. É alho.",
+    uso: "Aparece logo depois do ataque aos campos, cuida dos feridos de graça e ganha a confiança de todos. É a primeira 'ajuda' da organização.",
+    segredo: "Soltou o Devorador pela Fenda de Mana. A marca fica debaixo da pulseira de fibra. Pista: sabe o nome do fazendeiro ferido antes de alguém dizer. Nunca usa o grimório na frente dos jogadores." },
+  { nome: "Capitão Rufo Maravalha", sexo: "m", idade: 47, papel: "Mercador marítimo e capitão (infiltrado 2 da Ordem Oculta)", origem: "Porto Salgado", grupo: "Ordem Oculta",
+    aparencia: "Barba ruiva trançada com argolas de cobre, casaco comprido de couro de foca, dente de ouro à esquerda. Arrasta um pouco o pé esquerdo (ferida antiga). Anel de sinete pesado na mão direita, que ele gira quando mente.",
+    humor: "Exagerado: toda história de mar cresce a cada versão, e ele é o primeiro a gargalhar da própria mentira.",
+    fala: "Eu naveguei com o Barto, na Lágrima de Nemus. Tá bom, naveguei perto. Tá bom, vi de longe. Mas vi, isso eu juro.",
+    uso: "Chega com suprimentos e informações sobre o navio misterioso, 'sem querer nada em troca'. Oferece passagem e mapas.",
+    segredo: "O Navio Silencioso é dele; a tripulação inteira é marcada e faz a ponte com a Ilha Nebulosa. A marca está gravada por dentro do anel de sinete. Nunca navegou com Barto: usa a lenda da Lágrima de Nemus para ganhar o porto. Pista: sabe quantos tripulantes o navio tem, e ninguém desceu dele." },
+  { nome: "Ísolde Varanó", sexo: "f", idade: 36, papel: "Caçadora-guia (infiltrada 3 da Ordem Oculta)", origem: "Floresta dos Cedros", grupo: "Ordem Oculta",
+    aparencia: "Alta e magra, cabelo raspado de um lado e trançado do outro, cicatriz de galho no queixo. Anda descalça na mata e carrega um arco curto de cedro. Marca de 'queimadura' fina atrás da orelha, escondida pela trança.",
+    humor: "Seco e econômico: uma frase, no máximo duas, e um riso pelo nariz quando alguém erra o caminho.",
+    fala: "Pisou no galho. O cervo já sabe que vocês estão aqui. Eu também soube, a duzentos passos.",
+    uso: "Oferece guiar os jogadores pela mata atrás dos caçadores sumidos. É boa de verdade, e salva alguém de uma armadilha no caminho.",
+    segredo: "Mandou marcar os caçadores no ritual da Clareira do Cervo e é o elo da Ordem Oculta com a tribo Arkonte (foi ela que levou a proposta ao pai de Lucian). Pista: conhece atalhos que 'ninguém' conhece e nunca se perde à noite. Pode ser a que se redime, se a mesa criar laço com ela." },
+  { nome: "Mestre Aurélio Pensamonte", sexo: "m", idade: 61, papel: "Estudioso de ruínas e magia antiga (infiltrado 4 da Ordem Oculta)", origem: "Alta Lumen (mora em Pedra Velha)", grupo: "Ordem Oculta",
+    aparencia: "Magro, curvado, óculos de aro de latão remendados com arame, dedos azuis de tinta. Túnica cinza com bolsos cheios de lascas de pedra que tilintam quando anda. Um caderno encadernado em couro escuro que nunca abre perto de ninguém.",
+    humor: "Pedante e distraído: trocadilhos eruditos que só ele acha graça, seguidos de um 'não entenderam, claro'.",
+    fala: "Esse símbolo é anterior a Alta Lumen. É de quando os livros ainda chegavam de Manthus sem pedir licença. Anterior a mim, inclusive, o que é dizer muito.",
+    uso: "Traduz os símbolos das Ruínas Antigas para os jogadores e pede 'só uma olhadinha' na mina lacrada. Ajuda de verdade a passar pelo guardião.",
+    segredo: "Quer o altar da Câmara Selada para o ritual de controle absoluto dos marcados. Sabe que há 15 anos um bebê foi deixado na entrada da mina (Elena) e procura os registros disso. Pista: o caderno dele já tinha os símbolos desenhados antes de ele 'descobri-los'. A marca fica na palma da mão, sob a tinta." },
+  { nome: "Comandante Lúcia Valmorada", sexo: "f", idade: 42, papel: "Comandante dos Cavaleiros de Grimória (infiltrada 5 da Ordem Oculta)", origem: "Alta Lumen", grupo: "Ordem Oculta",
+    aparencia: "Capa azul-escura da Ordem, armadura polida demais para quem diz viver na estrada, cabelo preto num coque militar, cicatriz fina atravessando a mão direita. Postura perfeita. Luva só na mão direita.",
+    humor: "Ironia elegante: provoca com classe, ri da burocracia da Ordem e dos nobres, e faz os jogadores se sentirem os únicos competentes do reino.",
+    fala: "Os Cavaleiros vão chegar. Daqui a três semanas, com dois estagiários e um formulário. Otimus faz o que pode. Enquanto isso, temos vocês.",
+    uso: "É o apoio dos jogadores dentro da Ordem: defende os relatórios deles, consegue autorizações, abre portas na capital. A traição mais dolorosa.",
+    segredo: "É uma das infiltradas que arruinaram a fama dos Cavaleiros: filtra e some com os relatórios dos vilarejos, e é por ela que Otimus nunca vê nada. A marca está na mão direita, sob a luva. Boa candidata a redenção: foi marcada contra a vontade há anos, na guerra contra os Jimmer, e luta por dentro." },
+  { nome: "Dom Caliste Umbrão", sexo: "m", idade: 70, papel: "Líder da Ordem Oculta (oculto até o arco final)", origem: "Extremo norte, junto da grande torre dos primeiros magos", grupo: "Ordem Oculta",
+    aparencia: "Até o arco final, só uma voz calma e uma silhueta na névoa. Quando aparece: cabelo prateado comprido, olhos leitosos de cego, manto cor de cinza, um aro de ferro na testa que esconde a marca original, a primeira de todas.",
+    humor: "Calmo e paternal, nunca levanta a voz. Humor de 'pai decepcionado': ironias suaves sobre a pequenez das pessoas e piadas filosóficas que ninguém ri.",
+    fala: "Manthus escolhe ao acaso e Grimória chama isso de cerimônia. Eu só quero dar ao acaso uma direção. O meu grimório concorda.",
+    uso: "Cérebro do plano. Fala pela boca dos marcados antes de aparecer em pessoa. Chefe do arco final, no Santuário da Ilha Nebulosa. Quer de volta 'a cobaia': o Primeiro Marcado (Caspian), que tocou Manthus quando foi marcado.",
+    segredo: "Há décadas é controlado pelo próprio grimório, que só quer poder; ele acredita que é o contrário. Objetivo da Ordem Oculta: concluir o ritual que controla todos os marcados de uma vez e governar Grimória com um exército de magos. Os grandes senhores de Alta Lumen que o financiaram no começo hoje têm medo dele. (Nome e rosto a confirmar: o Notion ainda não nomeia o líder.)" },
+  { nome: "Tião Serrote", sexo: "m", idade: 29, papel: "Capanga marcado (ex-lenhador)", origem: "Floresta dos Cedros", grupo: "Ordem Oculta",
+    aparencia: "Enorme, ombros de lenhador, barba por fazer, machado de cabo comprido. Olhos vidrados. Emblema da marca pendurado no pescoço, por fora da camisa, como se fosse honra.",
+    humor: "O que sobrou: repete as piadas que contava antes, sem rir e no tom errado, como se lesse de um papel.",
+    fala: "Por que o lenhador não... não... Eu contava essa. Era engraçada.",
+    uso: "O rosto dos capangas marcados: mostra o que a marca faz com alguém. Pode ser libertado (dificuldade 12) e virar aliado, com memória cheia de buracos.",
+    segredo: "Foi um dos caçadores sumidos na Clareira do Cervo. Se libertado, lembra da voz de Ísolde no ritual e de um cheiro forte de mana arcana (os Arkonte estavam lá)." },
+  { nome: "Nerissa Dobra-Maré", sexo: "f", idade: 25, papel: "Marinheira marcada do Navio Silencioso", origem: "Porto Salgado", grupo: "Ordem Oculta",
+    aparencia: "Pele queimada de sol, cabelo encaracolado cheio de sal, tatuagem de âncora no antebraço e, por cima dela, a marca. Pés descalços, calça arregaçada. Cantava nas tabernas: a voz ainda é bonita.",
+    humor: "Antes da marca: piadas de marinheiro e canções de deboche. Agora só cantarola, e às vezes a melodia certa escapa com a letra errada.",
+    fala: "(cantarolando) ...e o mar guardou o nome dela... O nome. Qual era o nome?",
+    uso: "Primeira marcada que os jogadores podem conhecer de perto. Mãe Zefa, da taberna, a conhece desde criança e pede ajuda.",
+    segredo: "Subiu no navio de Rufo por um contrato de trabalho. Se libertada, sabe o caminho pela névoa até a Ilha Nebulosa." },
+
+  /* ---- Família Jimmer e tribo Arkonte (SPOILER) ---- */
+  { nome: "Altergon Jimmer", sexo: "m", idade: 66, papel: "Patriarca da família Jimmer", origem: "Ilha Jimmer, ao lado da Ilha Nebulosa", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Muito alto, cabelo grisalho comprido e liso, casaco de pele branca com neve que nunca derrete. Cicatriz funda no braço direito (o tiro de canhão de Barto, em 1390). O ar esfria quando ele se irrita.",
+    humor: "Desprezo frio: ri sem som, chama todo mundo de 'isso' e acha graça em ver gente pobre tentar ser educada.",
+    fala: "Uma frota inteira dos Cavaleiros veio me prender. Voltou em pedaços de gelo. Vocês são oito. Façam as contas.",
+    uso: "O poder que ninguém enfrenta: destruiu uma frota da Ordem e matou Barto. Chefe de arco próprio ou aliado de conveniência da Ordem Oculta, que o quer marcado também. Pai de Escanor, avô de Elena.",
+    segredo: "O grimório dele foi feito para ele, o que o torna o alvo mais cobiçado do ritual. Não sabe que Elena, a filha de Escanor, está viva. Se descobrir, vai querê-la de volta na família, pelo bem ou pelo mal." },
+  { nome: "Sável Jimmer", sexo: "m", idade: 34, papel: "Filho mais velho de Altergon", origem: "Ilha Jimmer", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Cópia mais jovem do pai, sem a cicatriz e com o dobro de anéis. Luvas de seda, cabelo preso num rabo com fio de prata, sorriso ensaiado. Cospe no chão antes de falar com plebeu.",
+    humor: "Sádico e teatral: faz piada da pobreza alheia, bate palmas devagar e imita o sotaque dos vilarejos.",
+    fala: "Sapatos remendados. Que coragem. Meu pai congela gente por menos. Eu sou o filho bonzinho: só congelo os sapatos.",
+    uso: "A cara da família que o povo odeia. Primeiro Jimmer que os jogadores encontram (num porto, numa cobrança, numa festa do prefeito). Poder quase igual ao do pai: use primeiro como ameaça social, não como combate.",
+    segredo: "Odiava o irmão Escanor por ter 'escolhido os pobres' e foi quem entregou o esconderijo dele à Ordem Oculta há 15 anos. Se Elena descobrir, é o vilão pessoal dela." },
+  { nome: "Harkon Ashmore", sexo: "m", idade: 58, papel: "Chefe da tribo Arkonte (corrompido pela Ordem Oculta)", origem: "Tribo Arkonte, na mata perto dos Cedros", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Peito largo pintado de ocre, colar de dentes de javali, cabelo trançado com penas de coruja, olhos injetados. Uma faixa de couro cobre o pulso esquerdo (a marca).",
+    humor: "Rude e orgulhoso: ri alto das 'pessoas de parede' (quem mora em casa) e trata toda pergunta como desafio de força.",
+    fala: "A mata era nossa antes de vocês aprenderem a fechar porta. O cervo, o rio, o grimório do menino: tudo nosso.",
+    uso: "Explica por que a tribo, que era livre, virou braço da Ordem Oculta: rouba artefatos da natureza sem saber o valor e caça os jovens de Cedros antes da Primeira Conexão. Convenceu o filho a atacar o irmão de River.",
+    segredo: "Foi marcado por Ísolde em troca de 'manter a tribo no poder'. Já não distingue a própria vontade da marca. Se libertado, entrega Lucian e chora pelo filho." },
+  { nome: "Lucian Ashmore", sexo: "m", idade: 19, papel: "Jovem promissor da tribo Arkonte, Grimório do Arcano", origem: "Tribo Arkonte", grupo: "Família Jimmer e Arkonte",
+    aparencia: "Magro e rápido, pintura arcana azul nos braços que brilha quando conjura, cabelo preto curto, cicatriz de adaga no antebraço (do irmão de River). Grimório roxo preso por uma corrente à cintura.",
+    humor: "Arrogante e nervoso: provoca quando está em vantagem e fica mudo quando não está. Ri alto demais das próprias ameaças.",
+    fala: "Reflexos bons o seu irmão tinha. Costas largas também. Foi fácil mirar.",
+    uso: "O vilão pessoal de River: matou o irmão dele com uma rajada de mísseis arcanos, pelas costas, junto ao rio dos Cedros. Chefe do arco da Floresta, antes ou depois de Ísolde cair.",
+    segredo: "Não é marcado: faz tudo por medo do pai e por orgulho. Isso o torna o único vilão do arco que pode escolher parar, se River lhe der o motivo (ou a chance)." },
+
+  /* ---- Vale das Colheitas ---- */
+  { nome: "Dona Rosalva Terrabranda", sexo: "f", idade: 63, papel: "Fazendeira e matriarca do vilarejo", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Braços grossos de quem carrega saco de milho, avental com bolsos cheios de sementes, chapéu de palha furado, pés largos. Cabelo branco preso com um garfo de madeira.",
+    humor: "De sogra: provoca com carinho, chama todo mundo de 'magrelo' e dá comida antes de ouvir o problema.",
+    fala: "Cavaleiro mágico, é? Bonito. Come o pão primeiro, que cavaleiro com fome só serve pra cair do cavalo.",
+    uso: "Os campos dela foram os primeiros atacados. Dá cama, comida e o sermão. Pode ser mãe, tia ou vizinha de um dos jogadores.",
+    segredo: "Desconfia de Benedita ('curandeira que chega antes do doente'), mas guarda pra si porque a mulher curou o neto." },
+  { nome: "Joca Pé-de-Milho", sexo: "m", idade: 14, papel: "Ajudante de fazenda que quer ser cavaleiro", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Sardento, dentes separados, cabelo espetado com palha, calça curta demais. Espada de pau na cintura, com 'nome' entalhado: Trovão.",
+    humor: "Pastelão: tropeça, imita os jogadores pelas costas, inventa golpes com nomes ridículos e cai sozinho.",
+    fala: "Eu vi a pegada! Era deste tamanho! Tá, era menor. Mas eu tava mais perto que vocês.",
+    uso: "Segue os jogadores escondido. Serve para mostrar o que eles representam para o vilarejo e para um resgate no meio do arco. Futuro recruta de esquadrão.",
+    segredo: "" },
+  { nome: "Olívio Moinheiro", sexo: "m", idade: 48, papel: "Moleiro", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Coberto de farinha até as sobrancelhas, surdo do ouvido esquerdo, mãos grossas, cheiro de pão. Anda com a cabeça inclinada para ouvir melhor.",
+    humor: "Repete a mesma piada mais alto, convencido de que ninguém ouviu da primeira vez, e ri antes do final.",
+    fala: "Eu disse: O MILHO TÁ COM MEDO! Porque... o milho... tá com medo! Entendeu? Do bicho!",
+    uso: "O moinho fica na beira dos campos: ele ouviu o 'barulho de coisa sendo mastigada' na noite do ataque e sabe de que lado veio (a Fenda de Mana).",
+    segredo: "" },
+  { nome: "Celina Ervasdoces", sexo: "f", idade: 31, papel: "Herbalista do vilarejo", origem: "Vale das Colheitas", grupo: "Vale das Colheitas",
+    aparencia: "Dedos manchados de verde, trança comprida com raminhos presos, voz baixa, saia cheia de bolsos costurados. Olheiras de quem colhe de madrugada.",
+    humor: "Sarcasmo seco, principalmente sobre 'remédio de viajante' e sobre gente que não sabe distinguir hortelã de erva-cicuta.",
+    fala: "Alho não fecha corte. Alho tempera. Quem te disse isso devia saber a diferença. Ou sabe, e quer que você não saiba.",
+    uso: "Rival de Benedita e a melhor pista contra ela: percebe que as curas da 'curandeira' são rápidas demais para ervas. Vende poções e antídotos.",
+    segredo: "" },
+
+  /* ---- Porto Salgado ---- */
+  { nome: "Mãe Zefa", sexo: "f", idade: 52, papel: "Dona da taberna O Caranguejo Bêbado", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Grande, braços de quem carrega barril, voz que atravessa chuva, lenço vermelho e um pano de prato no ombro que ela usa como chicote. Brincos de concha.",
+    humor: "Debochado: dá apelido na primeira olhada, cobra dívida em rima e grita as fofocas do balcão para a sala inteira.",
+    fala: "Chegou o Cabelo-de-Rede e a Botinha-Nova! Senta, bebe, e me conta por que o cheiro de mana tá entrando pela porta.",
+    uso: "Centro de informação do porto: todo marinheiro bêbado fala com ela. Pede aos jogadores que tragam Nerissa de volta.",
+    segredo: "Guarda a chave de um depósito de contrabando do Lelé. Não conta, mas aceita trocar a informação por um favor." },
+  { nome: "Lelé Três-Dedos", sexo: "m", idade: 21, papel: "Contrabandista e vendedor de informação", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Magro, rápido, dois dedos a menos na mão esquerda (rede de pesca), colete com mais bolsos que tecido, sempre mastigando alguma coisa. Sorriso torto.",
+    humor: "Malandro: promete, não cumpre, ri com os ombros e culpa a maré. Chama todo mundo de 'patrão'.",
+    fala: "Patrão, informação de graça não vale nada. Por duas moedas eu te conto onde o navio acende as luzes. Por três, quem apaga.",
+    uso: "Sabe o horário em que o Navio Silencioso acende as luzes e tem um bote. Vende itens 'caídos do navio' na aba Itens.",
+    segredo: "Já subiu no navio uma vez, viu a tripulação parada no convés e fugiu. Tem pesadelos e não conta de graça." },
+  { nome: "Amélia Brisaforte", sexo: "f", idade: 35, papel: "Fiscal do porto", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Casaco azul do reino com os punhos puídos, caderno de registros debaixo do braço, pena atrás da orelha, cabelo preso de qualquer jeito. Cansaço honesto.",
+    humor: "Sarcasmo burocrático: comenta tudo como se fosse preencher um formulário, inclusive o próprio funeral.",
+    fala: "Navio sem registro, sem bandeira, sem desembarque. No papel ele não existe. Pena que ele não leu o papel.",
+    uso: "Mostra que a Ordem foi avisada três vezes e nunca respondeu. Os ofícios dela passam por Alta Lumen (e somem nas mãos de Lúcia).",
+    segredo: "" },
+  { nome: "Velho Nuno Remendo", sexo: "m", idade: 74, papel: "Remendador de redes", origem: "Porto Salgado", grupo: "Porto Salgado",
+    aparencia: "Quase cego, olhos azulados de catarata, dedos finos e precisos, senta no mesmo caixote do cais há quarenta anos. Chapéu de lona, cachimbo apagado.",
+    humor: "Humor de velho sobre a própria morte ('já me enterraram duas vezes, não pegou') e risadinhas sozinho no meio da conversa.",
+    fala: "Eu não vejo o navio, filho. Mas eu ouço. E navio não zumbe. Aquele ali zumbe que nem colmeia.",
+    uso: "Ouve o que ninguém vê: o zumbido de mana do navio e os passos sincronizados da tripulação. Testemunha que ninguém leva a sério.",
+    segredo: "" },
+  { nome: "Teodora Marés", sexo: "f", idade: 28, papel: "Mercadora de especiarias e tecidos", origem: "Porto Salgado (nasceu em Alta Lumen)", grupo: "Porto Salgado",
+    aparencia: "Vestido de corte da capital, mas já remendado três vezes; cabelo castanho com um lenço de seda; unhas curtas de quem conta moeda. Balança de bronze sempre na mesa.",
+    humor: "Vende até a piada: 'isso vai te custar', 'essa resposta é de graça, a próxima não'. Ri só com o canto da boca.",
+    fala: "Pimenta do sul, seda do norte e uma informação do leste. A informação é mais cara. E não tem desconto.",
+    uso: "Fornecedora da aba Itens no porto. Concorrente de Rufo: foi a única que recusou o negócio dele e sabe que as contas dele não fecham.",
+    segredo: "" },
+
+  /* ---- Floresta dos Cedros ---- */
+  { nome: "Ancião Baltazar Cedro-Torto", sexo: "m", idade: 77, papel: "Chefe do vilarejo", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Curvado como a árvore que lhe dá o nome, cajado de cedro mais alto que ele, barba comprida onde cresceu musgo de verdade. Capa de pele de urso velha. Olhos muito vivos.",
+    humor: "Enigmático: conta fábulas sem final e diz 'o fim você termina'. Ri quando alguém se irrita com isso.",
+    fala: "Um caçador seguiu um cervo branco até a clareira. O cervo olhou para ele e disse... Bom. O resto você vai me contar quando voltar.",
+    uso: "Autoriza a entrada na mata e conhece a lenda do Cervo. Pede que tragam os caçadores vivos, 'mesmo que não pareçam vivos'.",
+    segredo: "Sabe que o cervo da clareira é sagrado e está sofrendo, e prefere que o libertem a que o matem. Sabe também que o cheiro de mana arcana na noite em que o irmão de River morreu era da tribo Arkonte, e tem medo de dizer o nome Ashmore em voz alta." },
+  { nome: "Mira Passo-Leve", sexo: "f", idade: 22, papel: "Caçadora, irmã de um caçador sumido", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Pequena e rápida, cabelo escuro curto, carvão pintado sob os olhos, faca de osso na coxa, botas com sola de pele. Mordida de lobo cicatrizada no antebraço.",
+    humor: "Competitiva: aposta tudo ('aposto que não acerta aquele galho'), comemora alto e cobra as apostas que ganha.",
+    fala: "Aposta: eu acho o rastro antes de você terminar essa frase. Pronto. Achei. Me deve uma moeda.",
+    uso: "Aliada natural dos jogadores na mata. Admira Ísolde, o que torna a revelação dolorosa. Futura membro de esquadrão.",
+    segredo: "O irmão dela é Tião Serrote. Ela ainda não sabe que ele virou capanga marcado." },
+  { nome: "Gaspar Curtume", sexo: "m", idade: 41, papel: "Curtidor de peles", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Mãos vermelhas de tanino, avental de couro endurecido, cheiro forte que chega antes dele. Fala pouco e olha muito. Faca curva sempre afiada.",
+    humor: "Humor negro de açougue: conversa com as peles ('esse aqui também não me pagou') e faz piada com o que ninguém quer olhar.",
+    fala: "Pelo queimado em forma de desenho. Não é fogo. Fogo não desenha. Alguém marcou esse bicho como a gente marca gado.",
+    uso: "Identifica a marca queimada no pelo das Feras Marcadas e sabe que é feita 'de dentro para fora'. Compra e vende peles e couro na aba Itens.",
+    segredo: "" },
+  { nome: "Vó Ludmila", sexo: "f", idade: 81, papel: "Parteira e contadora de histórias", origem: "Floresta dos Cedros", grupo: "Floresta dos Cedros",
+    aparencia: "Minúscula, enrolada em três xales, cachimbo de barro, cabelo branco que ela nunca prende. Senta na soleira e tricota sem olhar.",
+    humor: "Dramática: tudo é 'no meu tempo', tudo era maior, mais frio e mais perigoso, e ela sobreviveu a tudo 'de camisola'.",
+    fala: "No meu tempo o cervo falava, menina. E o que ele dizia a gente não repetia depois do escuro.",
+    uso: "Guarda a versão antiga da lenda do Cervo e do ritual da clareira. Fez o parto de metade do vilarejo, inclusive de Ísolde: conhece a 'queimadura' atrás da orelha dela.",
+    segredo: "" },
+
+  /* ---- Pedra Velha ---- */
+  { nome: "Dário Picarocha", sexo: "m", idade: 53, papel: "Mestre-mineiro, chefe da mina", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Baixo e largo, sem a sobrancelha esquerda (explosão antiga), voz rouca de poeira, mãos como pás. Lanterna de mineiro pendurada no cinto mesmo de dia.",
+    humor: "Grosso: xinga em dialeto de mina, faz piada de desabamento e ri como quem tosse.",
+    fala: "Lacrei a mina eu mesmo, com estas mãos. Se vocês abrirem, abram sabendo que o que tá lá dentro bateu na porta primeiro.",
+    uso: "Dono da decisão de lacrar a mina. Orgulhoso, culpado e teimoso: só libera a entrada se os jogadores provarem que valem a pena.",
+    segredo: "Foi ele quem achou o bebê na entrada da mina há 15 anos, numa noite de confronto. Guarda o manto bordado com o nome 'Elena Jimmer' numa caixa de ferramentas e nunca contou o sobrenome a ninguém: ninguém quer encrenca com os Jimmer nem com a Ordem Oculta. Também ouviu o 'tremor estranho' da Câmara Selada: foi uma batida ritmada, como um coração." },
+  { nome: "Beatriz Lanterna", sexo: "f", idade: 17, papel: "Guardiã das lanternas da mina", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Magra, cabelo preso num pano cheio de fuligem, dedos queimados de óleo, um chaveiro enorme de lanternas penduradas. Olhos acostumados ao escuro.",
+    humor: "Nerd de túnel: conta tudo em números (passos, metros, litros de óleo) e acha graça quando os outros não acompanham.",
+    fala: "Do portão até o lacre são 412 passos meus, 380 dos seus. Depois do lacre eu não contei. Ninguém contou.",
+    uso: "Conhece cada túnel. Viu Aurélio entrando na mina de madrugada 'pra medir' e achou estranho que ele não levou lanterna.",
+    segredo: "" },
+  { nome: "Cosme Ferreiro", sexo: "m", idade: 38, papel: "Ferreiro", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Braços cobertos de pequenas queimaduras, avental de couro, cabelo preso com uma tira de ferro, barba chamuscada num lado. Martelo pequeno no cinto que ele bate na coxa quando pensa.",
+    humor: "Literal: entende a piada cinco segundos depois e então ri alto demais, batendo na mesa. Cai em qualquer trocadilho.",
+    fala: "Afiar a lâmina? Sim. Afiar a língua, não sei fazer. ...Ah! Era brincadeira. Boa. Boa!",
+    uso: "Conserta e vende armas e armaduras (aba Itens). Reforça equipamento com minério das ruínas, o que pode ser gancho para itens especiais.",
+    segredo: "" },
+  { nome: "Iolanda Carvão", sexo: "f", idade: 46, papel: "Dona do armazém e da hospedaria O Pico", origem: "Pedra Velha", grupo: "Pedra Velha",
+    aparencia: "Rechonchuda, bochechas vermelhas, dedos pretos de carvão que ela limpa no avental sem parar, brinco de pedra verde. Fala com as mãos.",
+    humor: "Fofoqueira: conta cada segredo 'só para você' para todo mundo, e fica ofendida se a fofoca volta.",
+    fala: "Eu não devia contar, mas o estudioso paga o quarto com moeda da capital. Moeda nova. Quem tem moeda nova em Pedra Velha?",
+    uso: "Hospeda Aurélio e os jogadores. Fonte de boatos (metade verdadeiros). Vende suprimentos e aluga quartos.",
+    segredo: "" },
+
+  /* ---- Encruzilhada ---- */
+  { nome: "Prefeito Honório Quatrocaminhos", sexo: "m", idade: 56, papel: "Prefeito da Encruzilhada", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Gordo, anéis em todos os dedos, faixa vermelha de prefeito por cima de uma barriga de prefeito. Suor permanente na testa e um lenço bordado para enxugar.",
+    humor: "Político: tudo vira discurso, inclusive pedir sal. Elogia a si mesmo na terceira pessoa.",
+    fala: "A Encruzilhada, sob esta administração, nunca viu um ritual tão... Vocês estão ouvindo? Alguém anota o que eu disse.",
+    uso: "Organiza a cerimônia dos grimórios. Quer o crédito pela segurança da cidade e detesta que a Ordem o ignore.",
+    segredo: "Deve dinheiro a Teodora Marés e a Rufo Maravalha. O segundo é quem paga as festas da cerimônia." },
+  { nome: "Bruna Cantoneira", sexo: "f", idade: 33, papel: "Chefe da guarda da cidade", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Nariz quebrado duas vezes, cabelo raspado dos lados, cota de malha remendada, lança curta. Mastiga raiz de gengibre para ficar acordada.",
+    humor: "Sarcasmo de quartel: curto, seco e sempre contra quem está no comando (inclusive ela mesma).",
+    fala: "Pedi reforço aos Cavaleiros na primavera. Mandaram um selo bonito. Eu emoldurei.",
+    uso: "A primeira a dizer em voz alta que os Cavaleiros não dão conta e que 'tem gente podre lá dentro'. Aliada prática dos jogadores na Sessão 1: entrega o primeiro combate (os bandidos) e os guarda nas costas.",
+    segredo: "" },
+  { nome: "Sr. Évaro", sexo: "m", idade: 68, papel: "Cerimonialista da Primeira Conexão", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Alto e ossudo, túnica branca bordada de dourado já amarelada, bastão com um livro de pedra na ponta. Fala com pausas longas e olhos fechados. Cheira a incenso.",
+    humor: "Solene e teatral em público, com pausas dramáticas. Em particular, adora uma fofoca e ri com a mão na boca.",
+    fala: "Manthus... escolhe. (pausa) Na segunda semana do outono. (pausa) Agora me conta, o filho da Rosalva foi mesmo sorteado com Sangue?",
+    uso: "Conduz a Primeira Conexão da Sessão 1 e explica os grimórios: a ponte com Manthus, os 15 anos de conjuração, o grimório que pode usar o mago. Sabe onde fica o Cemitério de Grimórios e o que dorme lá.",
+    segredo: "Guardou o card do Antimagia fora do sorteio por ordem antiga que ele não entende. Sabe que a Ordem Oculta existe e, como todo sábio de Alta Lumen, finge que não sabe. Conheceu o líder dela quando os dois eram aprendizes no norte." },
+  { nome: "Pipa", sexo: "f", idade: 12, papel: "Garota de recados (e de bolsos alheios)", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Pequena, suja de propósito, cabelo cortado com faca, casaco de adulto com as mangas dobradas quatro vezes. Corre mais do que qualquer guarda.",
+    humor: "Rápida e insolente: xingamentos criativos ('cara de pão dormido') e imitações cruéis dos adultos.",
+    fala: "Recado custa um pão. Recado com resposta, dois. Vigiar o homem do anel, isso eu faço de graça, que ele me deu um tapa.",
+    uso: "Sabe quem entrou e saiu da cidade na noite da cerimônia. Pode levar recados entre os jogadores e os NPCs. Não enfrenta perigo: é criança, os jogadores a protegem.",
+    segredo: "Viu Rufo e Lúcia conversando no beco atrás da estalagem na noite da cerimônia, mas acha que foi 'namoro'." },
+  { nome: "Dona Filomena", sexo: "f", idade: 49, papel: "Dona da Estalagem das Quatro Estradas", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Mangas arregaçadas, vassoura como extensão do braço, cabelo grisalho preso com um lápis, avental sempre limpo apesar de tudo. Chaves no pescoço.",
+    humor: "Mãe de todo mundo: reclama da lama, do barulho e da hora, e depois deixa o prato cheio na porta do quarto.",
+    fala: "Bota na porta, lavaram? Lavaram nada. Entra. Tem sopa. E se eu ouvir espada depois da meia-noite, dormem no estábulo.",
+    uso: "Base dos jogadores na Encruzilhada. Cama, comida, recados deixados por outros NPCs. Um lugar seguro que a organização pode invadir num arco posterior.",
+    segredo: "" },
+
+  /* ---- Alta Lumen e a Ordem ---- */
+  { nome: "Otimus", sexo: "m", idade: 58, papel: "Líder dos Cavaleiros de Grimória", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Ombros largos sob um tabardo branco desbotado que ele se recusa a trocar, barba curta grisalha, mãos cheias de calos de espada, olheiras de quem dorme no quartel. Sem joias, sem capa de gala. Grimório gasto preso ao peito.",
+    humor: "Seco e autodepreciativo: ri da própria fama ('o mago exemplar que chega atrasado') e das piadas que o povo faz dos Cavaleiros, porque sabe que são merecidas.",
+    fala: "Eu sei o que dizem de nós. Que chegamos tarde. Que tem ladrão de tabardo. Tudo verdade. Por isso eu ainda estou aqui, e não na minha cama.",
+    uso: "O mago exemplar que combate o mal sem a admiração de ninguém. Sobrecarregado: poucos cavaleiros íntegros para um reino inteiro. É quem, no fim, reconhece que a Ordem única não dá conta e aceita os esquadrões.",
+    segredo: "Confia em Lúcia Valmorada como em ninguém: é por isso que nunca vê os relatórios. Há 15 anos lutou ao lado de Aurora e Escanor contra os Jimmer e acha que a filha deles morreu. Alvo óbvio do ritual da Ordem Oculta." },
+  { nome: "Cavaleira Serena Alvorecer", sexo: "f", idade: 24, papel: "Cavaleira jovem da Ordem", origem: "Alta Lumen (filha de lavadeira)", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Cabelo loiro curto, armadura leve com marcas de uso real (não polida), mapa dobrado sempre no cinto, sorriso fácil. Grimório de capa gasta na bolsa.",
+    humor: "Autodepreciativo: ri dos próprios erros antes que os outros riam, e conta cada vexame como história de guerra.",
+    fala: "Na minha primeira missão eu salvei a vila errada. Ficou todo mundo grato. A vila certa também sobreviveu, então... empate?",
+    uso: "A aliada que defende a divisão em esquadrões. Plebeia entre os Cavaleiros, entende os jogadores. É quem propõe que eles liderem no final.",
+    segredo: "Foi quem apresentou os jogadores a Lúcia. Vai se sentir culpada na revelação." },
+  { nome: "Escrivão Pascoal Tinteiro", sexo: "m", idade: 40, papel: "Escrivão-chefe dos Cavaleiros", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Magro, nervoso, tinta nas mangas, nos dedos e numa bochecha, óculos escorregando, pilhas de papel que ele carrega como escudo. Treme a perna quando sentado.",
+    humor: "Riso nervoso no fim de cada frase e piadas de papelada ('isso precisa de três vias, inclusive a piada').",
+    fala: "Três ofícios de Porto Salgado? Eu protocolei. Eu lembro. Eles... não estão aqui. Ha ha. Não estão aqui.",
+    uso: "A pista contra Lúcia: os relatórios dos vilarejos entram no arquivo e somem. Ele lembra de cada um e tem medo de dizer para quem os entregou.",
+    segredo: "" },
+  { nome: "Marquesa Doroteia Vinhedo-Alto", sexo: "f", idade: 50, papel: "Grande senhora de Alta Lumen, patrona dos Cavaleiros", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Vestido cor de vinho, pescoço longo, colar de safiras, leque que ela abre quando alguém a aborrece. Penteado alto que nunca se move.",
+    humor: "Crueldade elegante: insultos embrulhados em elogios ('que armadura interessante, é de verdade?').",
+    fala: "Plebeus com grimórios. Que época encantadora. Por favor, não toquem nas cortinas.",
+    uso: "Financia os Cavaleiros e despreza os vilarejos. Uma dos grandes senhores que sabem da Ordem Oculta e fingem que não: o assunto é proibido na mesa dela. Obstáculo político, não vilã.",
+    segredo: "Foi um dos grandes senhores que encomendaram a marca à Ordem Oculta para manipular Alta Lumen, há 15 anos, e hoje tem pavor do que ajudou a criar. Pode virar aliada improvável no arco final, por medo." },
+  { nome: "Rei Adalberto II", sexo: "m", idade: 71, papel: "Rei de Grimória (opcional)", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Cansado, magro dentro das vestes largas, coroa que ele tira e põe na mesa quando ninguém está olhando. Olhos bondosos. Mãos trêmulas segurando sempre uma xícara.",
+    humor: "Piadas de pai cansado, quase todas sobre o peso da coroa e sobre não lembrar nomes ('você é o do fogo, não é? Todos são do fogo').",
+    fala: "Me disseram que vocês desobedeceram os Cavaleiros para salvar um vilarejo. Me contem de novo. Devagar. Eu gosto dessa parte.",
+    uso: "Quer paz e sabe que os Cavaleiros, sozinhos, não alcançam o reino. É quem nomeia os esquadrões na cerimônia final. (O Notion fala em 'grandes senhores' e não num rei: se preferir, troque por um conselho e use a Marquesa como voz dele.)",
+    segredo: "Ideia opcional: foi marcado há anos e a marca nunca foi ativada porque a Ordem Oculta o considera inofensivo. Reviravolta, se o mestre quiser." },
+
+  /* ---- Estradas e lugares estranhos ---- */
+  { nome: "Zacarias Bugigangas", sexo: "m", idade: 60, papel: "Mascate das estradas", origem: "Nenhum lugar (nasceu numa carroça entre o Vale e o Porto)", grupo: "Estradas",
+    aparencia: "Carroça puxada por uma mula chamada Senhora, casaco de retalhos com cem bolsos, chapéu com penduricalhos que tilintam. Dentes de madeira. Sotaque de todos os vilarejos ao mesmo tempo.",
+    humor: "Vendedor absurdo: promete que cada bugiganga 'salvou um rei', inventa origens cada vez mais improváveis e dá desconto para quem ri.",
+    fala: "Esta colher? Pertenceu ao primeiro cavaleiro mágico. Ele comia sopa com ela. Sopa mágica. Três moedas.",
+    uso: "Aparece em qualquer estrada quando o mestre quer entregar um item (um verdadeiro no meio do lixo). Leva boatos entre os vilarejos.",
+    segredo: "A mula Senhora reage à marca: zurra e empaca perto de marcados. Zacarias acha que ela é 'chata com estranhos'." },
+  { nome: "Quintino Ventoso", sexo: "m", idade: 30, papel: "Bardo andarilho", origem: "Porto Salgado (fugiu de casa aos 15)", grupo: "Estradas",
+    aparencia: "Alaúde às costas, botas de dois pares diferentes, cabelo comprido com fitas que as moças dos vilarejos deram, sorriso de quem nunca pagou uma conta inteira.",
+    humor: "Rima tudo, canta o que não devia e faz canções de deboche sobre nobres, prefeitos e, se pagarem, sobre os próprios jogadores.",
+    fala: "Oito plebeus com livros no cinto / um fez um feitiço, os outros fingiram... ei, é rascunho, calma.",
+    uso: "Leva notícias entre os vilarejos (mais rápido que os Cavaleiros). Canta a balada da Lágrima de Nemus e de Barto em todo cais. As canções dele contam o que os jogadores fizeram e viram os primeiros 'lemas' dos esquadrões.",
+    segredo: "Sem saber, é espião da organização: Rufo paga as bebidas dele e ouve tudo o que ele canta." },
+  { nome: "Esmeralda do Lago", sexo: "f", idade: 44, papel: "Eremita do Lago Espelhado", origem: "Pedra Velha (sumiu da vila aos 20)", grupo: "Estradas",
+    aparencia: "Cabelo comprido escuro sempre molhado nas pontas, vestido cinza simples, pés descalços na margem, olhos da cor da água. Não se sabe onde dorme.",
+    humor: "Responde perguntas com perguntas e ri de um jeito que parece eco. Acha graça em quem tem pressa.",
+    fala: "Você quer saber que grimório o lago mostra? E se ele mostrar o que você já tem? Vai ficar decepcionado ou aliviado?",
+    uso: "Para a cena do Lago Espelhado (sem segredo definido): oráculo, descanso ou espelho do que cada jogador tem medo de ser. O mestre preenche.",
+    segredo: "A decidir. Ideia: descende do povo de Atlantus sem saber; a chave de Nemus brilharia para ela. Pode ser o elo de Tara com a cidade submersa." }
+];
+
+var filtroNpc = { grupo: "todos", sexo: "todos" };
+
+function viewPersonagens() {
+  var m = PERSONAGENS.filter(function (p) { return p.sexo === "m"; }).length;
+  return "<h1>Personagens</h1>" +
+    '<p class="lead">O elenco de Grimória (outono de 1400) para o mestre usar na hora: função, onde cresceu, aparência, estilo de humor, uma fala de exemplo e o uso na história. São ' + PERSONAGENS.length + " personagens (" + m + " homens e " + (PERSONAGENS.length - m) + " mulheres). Esta aba é só do mestre: a Ordem Oculta, os Jimmer e os segredos estão aqui. Os personagens dos contos do Notion (Caspian, Tara, Ketysuru, Dante, Emellyn, River, Elena) são dos jogadores e não entram.</p>" +
+    '<div class="controls"><div class="fgroup"><span>Grupo</span><div class="chips" id="fNpcGrupo">' +
+    ["todos"].concat(GRUPOS_NPC).map(function (g) {
+      return '<button type="button" class="chip" data-npcgrupo="' + esc(g) + '" aria-pressed="' + (filtroNpc.grupo === g) + '">' + (g === "todos" ? "Todos" : esc(g)) + "</button>";
+    }).join("") + "</div></div>" +
+    '<div class="fgroup"><span>Sexo</span><div class="chips" id="fNpcSexo">' +
+    [["todos", "Todos"], ["f", "Mulheres"], ["m", "Homens"]].map(function (s) {
+      return '<button type="button" class="chip" data-npcsexo="' + s[0] + '" aria-pressed="' + (filtroNpc.sexo === s[0]) + '">' + s[1] + "</button>";
+    }).join("") + "</div></div></div>" +
+    '<p id="contaNpc" role="status"></p><div id="listaNpc"></div>' +
+    panel("Como usar", "<ul><li>Os <b>infiltrados</b> seguem a regra dos 3 momentos (ajuda, pista pequena, revelação). A pista de cada um está no segredo.</li>" +
+      "<li>A <b>marca</b> aparece sempre num lugar coberto: pulseira, anel, luva, trança, tinta. Repetir esse detalhe é o que faz a traição parecer justa depois.</li>" +
+      "<li>Os moradores com <b>uso</b> ligado a um infiltrado (Celina, Pascoal, Beatriz, Vó Ludmila, Pipa) são as pistas que os jogadores podem achar sozinhos.</li>" +
+      "<li>Mira, Joca, Serena e Bruna são bons <b>futuros membros de esquadrão</b>.</li>" +
+      "<li>Ganchos dos contos: Dário guarda o manto de <b>Elena</b>; Lucian e Harkon são o alvo de <b>River</b>; o líder da Ordem Oculta quer <b>Caspian</b> de volta; Esmeralda e a chave de Nemus ligam a <b>Tara</b>; Rufo mente sobre a Lágrima de Nemus (<b>Ketysuru</b>).</li></ul>");
+}
+
+function npcCard(p) {
+  var vilao = p.grupo === "Ordem Oculta";
+  return '<article class="panel npc' + (vilao ? " npc-vilao" : "") + '"><h3>' + ic(p.sexo === "f" ? "grupo" : "grupo") + esc(p.nome) + ' <small>' + p.idade + " anos</small></h3>" +
+    '<p class="npc-papel"><b>' + esc(p.papel) + "</b><br><small>Cresceu em: " + esc(p.origem) + "</small></p>" +
+    "<p><b>Aparência:</b> " + esc(p.aparencia) + "</p>" +
+    "<p><b>Humor:</b> " + esc(p.humor) + "</p>" +
+    '<p class="npc-fala">“' + esc(p.fala) + "”</p>" +
+    "<p><b>Uso na história:</b> " + esc(p.uso) + "</p>" +
+    (p.segredo ? '<p class="bnote"><b>Segredo (só o mestre):</b> ' + esc(p.segredo) + "</p>" : "") + "</article>";
+}
+
+function desenharPersonagens() {
+  var cont = document.getElementById("listaNpc"), conta = document.getElementById("contaNpc");
+  if (!cont) return;
+  var grupos = filtroNpc.grupo === "todos" ? GRUPOS_NPC : [filtroNpc.grupo], total = 0, h = "";
+  grupos.forEach(function (g) {
+    var lista = PERSONAGENS.filter(function (p) { return p.grupo === g && (filtroNpc.sexo === "todos" || p.sexo === filtroNpc.sexo); });
+    if (!lista.length) return;
+    total += lista.length;
+    h += "<h2>" + esc(g) + ((g === "Ordem Oculta" || g === "Família Jimmer e Arkonte") ? " <small>(spoiler)</small>" : "") + '</h2><div class="cols">' + lista.map(npcCard).join("") + "</div>";
+  });
+  cont.innerHTML = h || '<p class="mdica">Nenhum personagem com esse filtro.</p>';
+  if (conta) conta.textContent = total + (total === 1 ? " personagem." : " personagens.");
+}
+
 /* ============================ LIGAÇÃO COM O APP ============================ */
 
 VIEWFN.inicio = viewInicio;
 VIEWFN.grimorios = viewGrimorios;
 VIEWFN.bestiario = viewBestiario;
+VIEWFN.personagens = viewPersonagens;
 VIEWFN.sorteio = viewSorteio;
 VIEWFN.jogadores = viewJogadores;
 VIEWFN["sessao-zero"] = viewSessaoZero;
@@ -3933,7 +4289,7 @@ VIEWFN.cenarios = viewCenarios;
 
 MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
-  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
@@ -3942,7 +4298,7 @@ MESTRE = {
   vilaExtra: vilaExtraMestre,
   vilaRodape: vilaRodapeMestre,
   views: [
-    ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"],
+    ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"], ["personagens", "Personagens", "grupo"],
     ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
@@ -3967,6 +4323,7 @@ MESTRE = {
   depois: function (r) {
     if (r === "grimorios") desenharGrimorios();
     if (r === "bestiario") desenharBestiario();
+    if (r === "personagens") desenharPersonagens();
     if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
     if (r === "cenarios") desenharCenPreview();
   },
@@ -4081,6 +4438,13 @@ MESTRE = {
       filtro.elem = b.dataset.elem;
       document.querySelectorAll("#fElem .chip, #fTipo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.elem === filtro.elem)); });
       desenharGrimorios();
+      return true;
+    }
+    if (b.dataset.npcgrupo || b.dataset.npcsexo) {
+      if (b.dataset.npcgrupo) filtroNpc.grupo = b.dataset.npcgrupo; else filtroNpc.sexo = b.dataset.npcsexo;
+      document.querySelectorAll("#fNpcGrupo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.npcgrupo === filtroNpc.grupo)); });
+      document.querySelectorAll("#fNpcSexo .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.npcsexo === filtroNpc.sexo)); });
+      desenharPersonagens();
       return true;
     }
     if (b.dataset.fase) {
