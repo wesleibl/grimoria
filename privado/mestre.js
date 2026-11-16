@@ -1087,7 +1087,7 @@ function viewBestiario() {
     ["todos"].concat(FASES, ["Segredo"]).map(function (f) {
       return '<button type="button" class="chip" data-fase="' + f + '" aria-pressed="' + (filtroBest === f) + '">' + (f === "todos" ? "Todos" : f) + "</button>";
     }).join("") + "</div></div></div>" +
-    dropSeletorHTML() + '<p id="contaBest" role="status"></p>' +
+    '<p id="contaBest" role="status"></p>' +
     '<div id="listaMonstros"></div>' +
     panel("Notas", "<ul><li>Como o jogador subtrai a redução de dano (1 para cada 2 de Poder) do dano, os inimigos precisam de dano um pouco mais alto do que parece. Se ninguém perde vida, suba o dado de dano um degrau.</li><li>Se o combate estiver fácil demais, aumente a Vida ou o Ataque. Se estiver difícil, reduza a Defesa.</li><li>Alguns inimigos têm redução de dano. Ela se aplica antes de tirar a Vida, e o dano mínimo continua sendo 1.</li><li>Para outros níveis, veja a tabela de referência na aba Níveis.</li></ul>");
 }
@@ -1184,7 +1184,7 @@ function viewMestre() {
     panel("Libertar um controlado", "<ol><li>Combate para enfraquecer (reduzir a vida pela metade, sem matar).</li><li>Quebrar o elo por um dos métodos acima durante o combate.</li><li>Cena de reencontro: o personagem acorda sem lembrar parte do que fez.</li></ol>") +
     panel("Se falhar", "<ul><li>O estágio avança, ou a marca “se alimenta” e causa 1d4 de dano ao portador.</li><li>Se o grupo falhar várias vezes, ofereça um novo caminho (item, aliado, local) em vez de travar a história.</li></ul>");
 
-  h += "<h2>Inimigos secretos</h2>" + dropSeletorHTML() + "<p>Os agentes e os controlados pela organização. Os números são para 4 jogadores (veja a regra para 8 no Bestiário).</p>" + '<div class="cols">' + INIMIGOS.filter(function (m) { return m.segredo; }).map(monstroCard).join("") + "</div>";
+  h += "<h2>Inimigos secretos</h2>" + "<p>Os agentes e os controlados pela organização. Os números são para 4 jogadores (veja a regra para 8 no Bestiário).</p>" + '<div class="cols">' + INIMIGOS.filter(function (m) { return m.segredo; }).map(monstroCard).join("") + "</div>";
 
   h += "<h2>Decisões em aberto</h2>" + panel("A definir", "<ul><li>Nome e símbolo da organização, e a aparência da marca (discreta ou chamativa).</li><li>Qual é a vantagem real da marca.</li><li>Quem é o líder e o que ele quer, além de controlar os magos.</li><li>Quem se redime, se alguém.</li><li>Nome da ordem, quem a comanda e quem nomeia os esquadrões.</li><li>Os grimórios dos infiltrados (usar os já criados).</li></ul>");
   return h;
@@ -3695,15 +3695,22 @@ function dropsHTML(m) {
       '</span> <small>' + d.pct + "% · " + d20De(d.pct) + "</small>" +
       (it && podeDar ? ' <button type="button" class="mini" data-dropdar="' + esc(d.id) + '">Dar</button>' : "") + "</li>";
   });
-  return h + "</ul></div>";
+  return h + "</ul>" + (podeDar ? dropSeletorHTML() : "") + "</div>";
 }
+/* O seletor de jogador fica logo abaixo da lista de drops de cada card; todos os seletores da tela andam juntos. */
 function dropSeletorHTML() {
   var l = jogs || [];
   if (!l.length) return "";
   if (!dropAlvo || !achaJog(dropAlvo)) dropAlvo = l[0].id;
-  return '<div class="controls"><label>Entregar drops a <select class="sorteio-in" id="dropJog">' + l.map(function (j) {
+  return '<div class="drop-entrega"><label>Entregar a <select class="sorteio-in" data-dropjog aria-label="Entregar drops a qual jogador">' + l.map(function (j) {
     return '<option value="' + j.id + '"' + (j.id === dropAlvo ? " selected" : "") + ">" + esc(j.personagem || j.nome || "Sem nome") + "</option>";
-  }).join("") + '</select></label><span id="dropMsg" role="status" class="mdica">' + esc(dropMsg) + "</span></div>";
+  }).join("") + '</select></label><span role="status" class="mdica drop-msg">' + "</span></div>";
+}
+function dropMsgMostrar(t, b) {
+  var card = b && b.closest ? b.closest(".drops") : null;
+  Array.prototype.forEach.call(document.querySelectorAll(".drop-msg"), function (e) { e.textContent = ""; });
+  var alvo = card && card.querySelector(".drop-msg");
+  if (alvo) alvo.textContent = t;
 }
 /* Antes de entregar um item: confere se o jogador aguenta o peso. Passando da capacidade, o mestre decide se entrega mesmo assim. */
 function cabeNaCarga(jog, item) {
@@ -3716,16 +3723,15 @@ function acoesDrops(b) {
   if (!id) return false;
   var it = itemDoCatalogo(id), jog = achaJog(dropAlvo);
   if (!it || !jog) return true;
-  if (!cabeNaCarga(jog, it)) { dropMsg = jog.personagem || jog.nome || "O jogador"; dropMsg += " não aguenta o peso de " + it.nome + "."; var mm = document.getElementById("dropMsg"); if (mm) mm.textContent = dropMsg; return true; }
+  if (!cabeNaCarga(jog, it)) { dropMsgMostrar((jog.personagem || jog.nome || "O jogador") + " não aguenta o peso de " + it.nome + ".", b); return true; }
   b.disabled = true;
   var antes = invJogId;
   invJogId = jog.id;
   invOp("add", { item: invDeTemplate(it, 1, true) }).then(function (r) {
     invJogId = antes;
     b.disabled = false;
-    if (r) { jog.inv = r.inv; jog.moedas = r.moedas; dropMsg = it.nome + " → " + (jog.personagem || jog.nome || "jogador") + "."; }
-    else dropMsg = "Não foi possível entregar. Veja o aviso no topo.";
-    var m = document.getElementById("dropMsg"); if (m) m.textContent = dropMsg;
+    dropMsgMostrar(r ? it.nome + " → " + (jog.personagem || jog.nome || "jogador") + "." : "Não foi possível entregar. Veja o aviso no topo.", b);
+    if (r) { jog.inv = r.inv; jog.moedas = r.moedas; }
   });
   return true;
 }
@@ -4508,7 +4514,11 @@ MESTRE = {
 
   change: function (el) {
     var d = el.dataset || {};
-    if (el.id === "dropJog") { dropAlvo = el.value; return; }
+    if (el.hasAttribute && el.hasAttribute("data-dropjog")) {
+      dropAlvo = el.value;
+      Array.prototype.forEach.call(document.querySelectorAll("[data-dropjog]"), function (o) { o.value = dropAlvo; });
+      return;
+    }
     if (changeItens(el)) return;
     if (el.id === "cenaUp") { enviarCenario(el); return; }
     if (el.id === "cenaTroca") { trocarFotoCenario(el); return; }
