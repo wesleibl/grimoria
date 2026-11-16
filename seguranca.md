@@ -88,3 +88,4 @@ Se o servidor ignorar o `.htaccess` e alguém abrir o arquivo pela internet, o P
 ## 5. Se algum dia a senha do banco aparecer em público
 
 Troque-a no painel da hospedagem e atualize o arquivo de credenciais. Como ela já foi colada numa conversa, **vale trocar agora**, por precaução.
+- **Rolador de dados**: quem pode rolar, o dado e o resultado são decididos só no servidor (`random_int`); o navegador nunca manda o valor. Jogador só rola o próprio token; aliado e inimigo, só o mestre. Limite de ~1 rolagem por segundo por usuário. Rolagem e escolha de token oculto não vão no payload público nem no registro dos jogadores (só o mestre vê). As cores do dado de um jogador aparecem para os outros: o servidor só aceita `#rrggbb` e o navegador confere de novo antes de desenhar. A foto do dado é um tipo próprio de imagem (`dado`), com limite de ~200 KB e 640 px, só JPEG/PNG/WebP/GIF (sem SVG); quem a vê é o dono e quem está assistindo à rolagem que a usa.
