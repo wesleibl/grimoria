@@ -473,6 +473,7 @@ button.lib[aria-pressed="true"] { background: var(--accent); color: var(--accent
 body.sem-rolagem { overflow: hidden; }
 /* Rolador de dados: botão, painel lateral e o dado no meio do mapa (tudo dentro do .tab-box, vale em tela cheia) */
 .zoom-ctl button[hidden] { display: none; }
+@media (max-width: 520px) { .zoom-ctl { gap: 4px; left: 8px; justify-content: flex-end; flex-wrap: wrap; } .zoom-ctl button { min-width: 38px; padding: 4px 6px; } }
 .zoom-ctl button .ic { width: 1.35em; height: 1.35em; vertical-align: middle; }
 .zoom-ctl button[aria-pressed="true"][data-zoom="dados"] { background: var(--accent); color: var(--accent-ink); }
 .zoom-ctl button.destaque { animation: dBtnPulso .7s ease-in-out 4; box-shadow: 0 0 0 3px #f5c43c; }
@@ -487,7 +488,7 @@ body.sem-rolagem { overflow: hidden; }
 .dado-op { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 66px; padding: 4px 2px; border-radius: 8px; background: rgba(255, 255, 255, .1); color: #fff; border: 2px solid transparent; font-weight: 700; font-size: .78rem; line-height: 1.1; }
 .dado-op.sel { border-color: #f5c43c; background: rgba(245, 196, 60, .22); }
 .dado-op .dado-svg { width: 44px; height: 44px; display: block; }
-.dados-rolar { width: 100%; min-height: 50px; margin-top: 8px; font-size: 1.05rem; font-weight: 800; }
+.dados-rolar { width: 100%; min-height: 48px; margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; }
 .dados-msg { margin: 6px 0 0; color: #ffb4a8; }
 .dado-ov { position: absolute; left: 50%; top: 50%; z-index: 4; width: clamp(96px, 28%, 180px); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; line-height: 1.2; transition: opacity .5s; }
 .dado-ov.some { opacity: 0; }

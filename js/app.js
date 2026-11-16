@@ -1759,14 +1759,14 @@ function alternarDados() { dadosAberto = !dadosAberto; dadosMsg = ""; atualizarD
 
 function dadosPainelHTML(m) {
   var sel = m.rolagem && m.rolagem.estado === "escolhido" && m.rolagem.tok === m.tok ? m.rolagem.dado : 0;
+  /* O botão Rolar fica logo no alto: em mapa pequeno (celular) o painel rola e o botão continua à vista. */
   var h = '<div class="dados-cab"><b>' + ic("dado") + 'Dados</b><button type="button" class="dados-x" data-dados-fechar aria-label="Fechar o painel de dados">✕</button></div>' +
-    '<p class="dados-quem">' + esc(m.nome || "") + '</p><div class="dados-grade">';
+    '<p class="dados-quem">' + esc(m.nome || "") + '</p><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel ? " d" + sel : "") + '</button><div class="dados-grade">';
   DADOS.forEach(function (d) {
     h += '<button type="button" class="dado-op' + (sel === d ? " sel" : "") + '" data-dado="' + d + '" aria-pressed="' + (sel === d ? "true" : "false") + '" aria-label="Escolher o d' + d + '">' +
       dadoSVG(d, m.estilo, String(d), "p" + d) + "<span>d" + d + "</span></button>";
   });
-  return h + '</div><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel ? " d" + sel : "") + "</button>" +
-    (dadosMsg ? '<p class="dados-msg" role="status">' + esc(dadosMsg) + "</p>" : "");
+  return h + "</div>" + (dadosMsg ? '<p class="dados-msg" role="status">' + esc(dadosMsg) + "</p>" : "");
 }
 
 /* Chamado a cada desenho do mapa e depois de cada operação. Atualiza o botão, o painel e o dado no meio do mapa. */
