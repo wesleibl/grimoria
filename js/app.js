@@ -1200,10 +1200,14 @@ function desenharTabuleiro(cfg) {
     /* Foto do personagem no lugar das iniciais (as iniciais ficam por baixo, para o caso de a imagem não carregar). */
     var fotoSvg = "";
     var fotoUrl = t.foto ? API + "?a=img&amp;id=" + encodeURIComponent(t.foto) : (t.icone ? "image/bestiario/" + encodeURIComponent(t.icone) + ".jpg" : "");
+    /* Arte do bestiário (só o mestre a recebe) por cima do ícone, que fica de reserva se o arquivo não existir. */
+    var arteUrl = !t.foto && t.arte ? API + "?a=arte&amp;id=" + encodeURIComponent(t.arte) : "";
     if (fotoUrl && t.tipo !== "armadilha") {
       var cid = "cp" + (idxTok++);
+      var imgAt = ' x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>';
       fotoSvg = '<clipPath id="' + cid + '"><circle r="' + r.toFixed(1) + '"/></clipPath>' +
-        '<image href="' + fotoUrl + '" x="' + (-r).toFixed(1) + '" y="' + (-r).toFixed(1) + '" width="' + (r * 2).toFixed(1) + '" height="' + (r * 2).toFixed(1) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
+        '<image href="' + fotoUrl + '"' + imgAt +
+        (arteUrl ? '<image href="' + arteUrl + '"' + imgAt : "") +
         '<circle class="anel" r="' + r.toFixed(1) + '"/>';
     }
     /* O token selecionado ganha um halo que pulsa para fora: é a pista de que ele aguarda o destino. */
