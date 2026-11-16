@@ -305,16 +305,104 @@ function locaisParaJogador(array $lista): array
     return $out;
 }
 
-function grimParaJogador(array $g, string $nome): array
+const TIPOS_APRIMORAMENTO = [
+    'dano-dado' => ['categoria' => 'dano', 'texto' => 'Mais dano: +1 dado de dano'],
+    'dano-fixo' => ['categoria' => 'dano', 'texto' => 'Mais dano: +2 de dano fixo'],
+    'barato' => ['categoria' => 'barato', 'texto' => 'Mais barato: -1 de mana'],
+    'alcance-alvo' => ['categoria' => 'alcance', 'texto' => 'Mais alcance: +1 alvo'],
+    'alcance-area' => ['categoria' => 'alcance', 'texto' => 'Mais alcance: área maior'],
+    'duracao' => ['categoria' => 'duracao', 'texto' => 'Mais duradouro: +1 turno de duração'],
+    'resistencia-cd' => ['categoria' => 'resistencia', 'texto' => 'Mais difícil de resistir: +2 na dificuldade do teste'],
+    'resistencia-ataque' => ['categoria' => 'resistencia', 'texto' => 'Mais difícil de resistir: +2 na rolagem de ataque'],
+];
+
+function grimParaJogador(array $g, string $nome, array $aprimoramentos = []): array
 {
     $lib = (lerEstado('magias_lib') ?? [])[$nome] ?? [];
     if ($nome === 'Grimório do Capitão' && in_array('Navio Fantasma', $lib, true)) $lib[] = 'Lágrima de Nemus';
     $campos = array_flip(['nome', 'custo', 'tipo', 'texto', 'aplica', 'dot', 'limite', 'marco']);
     $spells = [];
     foreach (($g['spells'] ?? []) as $s) {
-        if (is_array($s) && in_array($s['nome'] ?? '', $lib, true)) $spells[] = array_intersect_key($s, $campos);
+        if (!is_array($s) || !in_array($s['nome'] ?? '', $lib, true)) continue;
+        $visivel = array_intersect_key($s, $campos);
+        foreach ($aprimoramentos as $a) {
+            if (!is_array($a) || ($a['status'] ?? '') !== 'aprovado' || ($a['grimorio'] ?? '') !== $nome || ($a['feitico'] ?? '') !== ($s['nome'] ?? '')) continue;
+            $tipo = TIPOS_APRIMORAMENTO[$a['tipo'] ?? ''] ?? null;
+            if (!$tipo) continue;
+            $visivel['melhorias'][] = $tipo['texto'];
+            if (($a['tipo'] ?? '') === 'barato' && is_int($visivel['custo'] ?? null)) $visivel['custo'] = max(($s['custo'] ?? 0) === 4 ? 3 : 1, $visivel['custo'] - 1);
+        }
+        $spells[] = $visivel;
     }
     return ['nome' => $nome, 'attr' => $g['attr'] ?? '', 'papel' => $g['papel'] ?? '', 'elem' => $g['elem'] ?? '', 'sub' => $g['sub'] ?? '', 'tier' => $g['tier'] ?? '', 'spells' => $spells];
+}
+
+function pedirAprimoramento(string $jogId, int $nivel, string $feitico, string $tipo): array
+{
+    if (!in_array($nivel, [2, 4], true) || !isset(TIPOS_APRIMORAMENTO[$tipo])) erro('Escolha um aprimoramento válido.');
+    $pdo = db();
+    $pdo->beginTransaction();
+    $st = $pdo->prepare('SELECT dados FROM jogadores WHERE id = ? FOR UPDATE');
+    $st->execute([$jogId]);
+    $json = $st->fetchColumn();
+    if ($json === false) { $pdo->rollBack(); erro('Jogador não encontrado.', 404); }
+    $dados = json_decode($json, true) ?: [];
+    if (nivelAtualJogador($dados) < $nivel) { $pdo->rollBack(); erro('Esse marco de nível ainda não foi alcançado.', 409); }
+    $grim = (string)($dados['grim'] ?? '');
+    $publicado = (lerEstado('grim_pub') ?? [])[$grim] ?? null;
+    if (!$grim || empty($dados['grimRev']) || !is_array($publicado)) { $pdo->rollBack(); erro('Seu grimório ainda não foi revelado.', 409); }
+    $spells = grimParaJogador($publicado, $grim, (array)($dados['aprimoramentos'] ?? []))['spells'];
+    $spell = null;
+    foreach ($spells as $s) if (($s['nome'] ?? '') === $feitico) $spell = $s;
+    if (!$spell) { $pdo->rollBack(); erro('Escolha um feitiço liberado no seu grimório.', 409); }
+    if ($tipo === 'barato' && (!is_int($spell['custo'] ?? null) || $spell['custo'] <= 1)) {
+        $pdo->rollBack(); erro('Este feitiço não pode ter o custo reduzido.', 409);
+    }
+    $lista = array_values(array_filter((array)($dados['aprimoramentos'] ?? []), 'is_array'));
+    if (count($lista) >= 100) { $pdo->rollBack(); erro('Histórico de aprimoramentos cheio. Avise o mestre.', 409); }
+    $noFeitico = 0;
+    foreach ($lista as $a) {
+        if (!in_array($a['status'] ?? '', ['pendente', 'aprovado'], true)) continue;
+        if ((int)($a['nivel'] ?? 0) === $nivel) { $pdo->rollBack(); erro('Você já escolheu o aprimoramento deste nível.', 409); }
+        if (($a['grimorio'] ?? '') !== $grim || ($a['feitico'] ?? '') !== $feitico) continue;
+        $noFeitico++;
+        $anterior = TIPOS_APRIMORAMENTO[$a['tipo'] ?? ''] ?? null;
+        if ($anterior && $anterior['categoria'] === TIPOS_APRIMORAMENTO[$tipo]['categoria']) { $pdo->rollBack(); erro('Este feitiço já tem um aprimoramento dessa categoria.', 409); }
+    }
+    if ($noFeitico >= 2) { $pdo->rollBack(); erro('Este feitiço já tem dois aprimoramentos.', 409); }
+    $lista[] = ['id' => bin2hex(random_bytes(8)), 'nivel' => $nivel, 'grimorio' => $grim, 'feitico' => $feitico, 'tipo' => $tipo, 'status' => 'pendente', 'em' => date('c')];
+    $dados['aprimoramentos'] = $lista;
+    $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([json_encode((object)$dados, JSON_UNESCAPED_UNICODE), $jogId]);
+    $pdo->commit();
+    return ['aprimoramentos' => $lista];
+}
+
+function decidirAprimoramento(string $jogId, string $pedidoId, string $decisao): array
+{
+    if (!in_array($decisao, ['aprovado', 'recusado'], true)) erro('Decisão inválida.');
+    $pdo = db();
+    $pdo->beginTransaction();
+    $st = $pdo->prepare('SELECT dados FROM jogadores WHERE id = ? FOR UPDATE');
+    $st->execute([$jogId]);
+    $json = $st->fetchColumn();
+    if ($json === false) { $pdo->rollBack(); erro('Jogador não encontrado.', 404); }
+    $dados = json_decode($json, true) ?: [];
+    $lista = array_values(array_filter((array)($dados['aprimoramentos'] ?? []), 'is_array'));
+    $encontrado = false;
+    foreach ($lista as &$a) {
+        if (($a['id'] ?? '') !== $pedidoId || ($a['status'] ?? '') !== 'pendente') continue;
+        if ($decisao === 'aprovado' && ($a['grimorio'] ?? '') !== ($dados['grim'] ?? '')) { $pdo->rollBack(); erro('O jogador mudou de grimório. Recuse este pedido.', 409); }
+        $a['status'] = $decisao;
+        $a['decididoEm'] = date('c');
+        $encontrado = true;
+        break;
+    }
+    unset($a);
+    if (!$encontrado) { $pdo->rollBack(); erro('Pedido pendente não encontrado.', 409); }
+    $dados['aprimoramentos'] = $lista;
+    $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([json_encode((object)$dados, JSON_UNESCAPED_UNICODE), $jogId]);
+    $pdo->commit();
+    return ['jogador' => $jogId, 'aprimoramentos' => $lista];
 }
 
 /* ============================ IMAGENS ============================ */

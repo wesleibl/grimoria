@@ -27,6 +27,8 @@ try {
         'GET img' => acaoImg(),
         'GET acao' => acaoAcao(),
         'GET xp_status' => acaoXpStatus(),
+        'POST aprimoramento_pedir' => acaoAprimoramentoPedir(),
+        'POST aprimoramento_decidir' => acaoAprimoramentoDecidir(),
         'GET cenas' => acaoCenas(),
         'GET campo' => acaoCampo(),
         'POST campo_op' => acaoCampoOp(),
@@ -164,8 +166,8 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'xp', 'xpLog', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
-        'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'xp', 'xpLog', 'aprimoramentos', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim'], (array)($jog['aprimoramentos'] ?? [])) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
         'vilaBonus' => $jog ? ((lerEstado('vilas_pub') ?? [])[$jog['vila'] ?? ''] ?? '') : '',
@@ -244,7 +246,7 @@ function acaoJogadorSalvar(): never
     $j = corpo()['jogador'] ?? null;
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
-    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito'], $j['xp'], $j['xpLog']); /* inventário e XP têm operações próprias */
+    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito'], $j['xp'], $j['xpLog'], $j['aprimoramentos']); /* inventário, XP e aprimoramentos têm operações próprias */
     /* Um grimório por jogador: dois jogadores nunca ficam com o mesmo. */
     $grim = trim((string)($j['grim'] ?? ''));
     if ($grim !== '') {
@@ -267,7 +269,25 @@ function acaoXpStatus(): never
     $u = exigirLogin();
     if ($u['papel'] === 'mestre') erro('Apenas jogadores consultam esta ficha.', 403);
     $j = jogadorDoUsuario($u['id']);
-    responder($j ? ['id' => $j['id'], 'xp' => max(0, (int)($j['xp'] ?? 0)), 'nivel' => $j['nivel'], 'xpLog' => array_values((array)($j['xpLog'] ?? []))] : ['id' => null]);
+    $grim = $j && !empty($j['grimRev']) && !empty($j['grim']) ? (lerEstado('grim_pub') ?? [])[$j['grim']] ?? null : null;
+    responder($j ? ['id' => $j['id'], 'xp' => max(0, (int)($j['xp'] ?? 0)), 'nivel' => $j['nivel'], 'xpLog' => array_values((array)($j['xpLog'] ?? [])), 'aprimoramentos' => array_values((array)($j['aprimoramentos'] ?? [])), 'grimorio' => $grim ? grimParaJogador($grim, (string)$j['grim'], (array)($j['aprimoramentos'] ?? [])) : null] : ['id' => null]);
+}
+
+function acaoAprimoramentoPedir(): never
+{
+    $u = exigirLogin();
+    if ($u['papel'] === 'mestre') erro('Escolha pelo perfil do jogador.', 403);
+    $j = jogadorDoUsuario($u['id']);
+    if (!$j) erro('Personagem não encontrado.', 404);
+    $c = corpo();
+    responder(pedirAprimoramento($j['id'], (int)($c['nivel'] ?? 0), trim((string)($c['feitico'] ?? '')), trim((string)($c['tipo'] ?? ''))));
+}
+
+function acaoAprimoramentoDecidir(): never
+{
+    exigirMestre();
+    $c = corpo();
+    responder(decidirAprimoramento(idValido($c['jogador'] ?? ''), (string)($c['pedido'] ?? ''), (string)($c['decisao'] ?? '')));
 }
 
 function acaoJogadorExcluir(): never

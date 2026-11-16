@@ -2029,12 +2029,12 @@ function viewNiveisMestre() {
   var h = "<h1>Níveis e evolução</h1>" +
     '<p class="lead">Os jogadores acumulam XP conforme você concede na aba Experiência. Ao atingir um marco do D&amp;D 5e, o nível sobe automaticamente e libera 1 ponto de atributo na ficha.</p>';
 
-  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Grimório"], [
-    ["1", "0", "20", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
-    ["2", "300", "24", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
-    ["3", "900", "28", "+1 ponto", "+4", "Nova habilidade"],
-    ["4", "2.700", "32", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
-    ["5", "6.500", "36", "+1 ponto", "+5", "Despertar do grimório"]
+  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Bônus de dano", "Grimório"], [
+    ["1", "0", "20", "+5 pontos para distribuir", "+3", "—", "Feitiços iniciais"],
+    ["2", "300", "24", "+1 ponto", "+3", "—", "Aprimorar 1 feitiço"],
+    ["3", "900", "28", "+1 ponto", "+4", "+1", "Nova habilidade"],
+    ["4", "2.700", "32", "+1 ponto", "+4", "+1", "Aprimorar 1 feitiço"],
+    ["5", "6.500", "36", "+1 ponto", "+5", "+2", "Despertar do grimório"]
   ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder ÷ 2) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
@@ -2042,7 +2042,7 @@ function viewNiveisMestre() {
     panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b> e <b>+2 a partir do nível 5</b>. O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço (níveis 2 e 4)",
       "<p>O jogador escolhe um feitiço do grimório e um aprimoramento:</p>" +
-      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo, ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
+      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
       "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. Você aprova cada escolha.</p>") +
     panel(ic("espada") + "Nova habilidade (nível 3)",
       "<p>No nível 3, todo grimório ganha uma habilidade nova, já pronta. Ela aparece no card, marcada como Nível 3, com o custo indicado.</p>" +
@@ -2079,6 +2079,34 @@ function viewNiveisMestre() {
 }
 
 var xpMsg = "", xpValorSugerido = 0;
+var aprimMsgMestre = "";
+function aprimoramentosMestreHTML(lista) {
+  var linhas = [], fim = [];
+  lista.forEach(function (j) {
+    (j.aprimoramentos || []).forEach(function (a) {
+      var op = opcaoAprim(a.tipo), nome = esc(j.personagem || j.nome || "Jogador");
+      var desc = '<b>' + nome + '</b> · nível ' + a.nivel + ' · ' + esc(a.feitico) + ' (' + esc(a.grimorio) + ') · ' + esc(op ? op.texto : a.tipo);
+      if (a.status === "pendente") linhas.push('<li class="aprim-pedido">' + desc + ' <button type="button" class="primary" data-aprimdec="aprovado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Aprovar</button> <button type="button" data-aprimdec="recusado" data-aprimjog="' + esc(j.id) + '" data-aprimped="' + esc(a.id) + '">Recusar</button></li>');
+      else fim.push('<li>' + desc + ' <span class="tag ' + (a.status === "aprovado" ? "buff" : "role") + '">' + (a.status === "aprovado" ? "Aprovado" : "Recusado") + '</span></li>');
+    });
+  });
+  return '<section class="panel"><h2>Aprimoramentos de feitiço</h2><p>Jogadores nos níveis 2 e 4 escolhem um aprimoramento. Nada vale até você aprovar.</p>' +
+    '<p role="status" id="aprimMsgMestre" class="mdica">' + esc(aprimMsgMestre) + '</p>' +
+    (linhas.length ? '<ul>' + linhas.join("") + '</ul>' : '<p class="mdica">Nenhum pedido pendente.</p>') +
+    (fim.length ? '<details><summary>Histórico (' + fim.length + ')</summary><ul>' + fim.join("") + '</ul></details>' : '') + '</section>';
+}
+function acoesAprimoramento(b) {
+  if (!b.dataset.aprimdec) return false;
+  var jid = b.dataset.aprimjog, pid = b.dataset.aprimped, dec = b.dataset.aprimdec;
+  b.disabled = true;
+  gravar("aprimoramento_decidir", { jogador: jid, pedido: pid, decisao: dec }).then(function (r) {
+    if (!r || !r.aprimoramentos) { b.disabled = false; aprimMsgMestre = "Não foi possível registrar. Confira o aviso no topo."; var m = document.getElementById("aprimMsgMestre"); if (m) m.textContent = aprimMsgMestre; return; }
+    jogs.forEach(function (j) { if (j.id === jid) j.aprimoramentos = r.aprimoramentos; });
+    aprimMsgMestre = dec === "aprovado" ? "Aprimoramento aprovado." : "Pedido recusado.";
+    renderizar();
+  });
+  return true;
+}
 function viewXpMestre() {
   var lista = jogs || [];
   return '<h1>Experiência</h1><p class="lead">Escolha um ou mais jogadores. A quantidade informada será concedida a cada um. Só você pode adicionar XP; o nível sobe automaticamente ao atingir o marco.</p>' +
@@ -2087,6 +2115,7 @@ function viewXpMestre() {
     '<div class="item-grade"><label>XP para cada jogador<input class="sorteio-in" id="xpQuantidade" type="number" min="1" max="100000" step="1" value="' + (xpValorSugerido || "") + '"></label>' +
     '<label>Motivo (opcional)<input class="sorteio-in" id="xpMotivo" type="text" maxlength="300" placeholder="Ex.: derrotaram o Lobo de Mana"></label></div>' +
     '<p id="xpMsg" role="status" class="mdica">' + esc(xpMsg) + '</p><button type="button" class="primary" id="xpConceder">Conceder XP</button></section>' +
+    aprimoramentosMestreHTML(lista) +
     '<h2>Progresso do grupo</h2><div class="cols">' + lista.map(function (j) { return xpBarHTML(j, j.personagem || j.nome || "Jogador"); }).join("") + '</div>';
 }
 function acoesXp(b) {
@@ -4509,7 +4538,7 @@ MESTRE = {
   },
 
   click: function (b) {
-    if (acoesXp(b)) return true;
+    if (acoesXp(b) || acoesAprimoramento(b)) return true;
     if (acoesQuestionario(b)) return true;
     if (acoesDrops(b)) return true;
     if (acoesItens(b)) return true;
