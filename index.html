@@ -631,7 +631,7 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 .destCell { fill: rgba(255, 220, 110, .32); stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; pointer-events: none; }
 .dir-esc { position: fixed; z-index: 400; display: grid; grid-template-columns: repeat(3, 46px); grid-template-areas: "t t t" ". n ." "o ok l" ". s ."; gap: 4px; padding: 6px; border-radius: 14px; background: rgba(12, 18, 20, .92); border: 1px solid var(--accent); box-shadow: 0 6px 22px rgba(0, 0, 0, .55); touch-action: manipulation; }
 .dir-esc-t { grid-area: t; text-align: center; font-size: .78rem; color: var(--muted); line-height: 1.2; }
-.dir-esc button { width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; font-weight: 700; font-size: 1.05rem; }
+.dir-esc button { width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; font-weight: 700; font-size: 1.5rem; }
 .dir-esc .dir-n { grid-area: n; } .dir-esc .dir-s { grid-area: s; } .dir-esc .dir-l { grid-area: l; } .dir-esc .dir-o { grid-area: o; }
 .dir-esc .dir-ok { grid-area: ok; background: var(--accent); color: var(--accent-ink, #111); border-color: var(--accent); }
 .tok-vida { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 .6rem; }
@@ -701,7 +701,9 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 .tab-svg.esperando { cursor: crosshair; }
 .tab-svg.esperando .token { cursor: pointer; }
 .hoverCell { fill: rgba(255, 255, 255, .2); stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
-#tokInfo.aguardando { border-left: 5px solid var(--accent); background: var(--surface2); padding: 8px 12px; border-radius: 6px; color: var(--text); font-weight: 700; animation: aguardando 1.6s ease-in-out infinite; }
+#tokInfo { box-sizing: border-box; height: 5rem; max-width: none; padding: 8px 12px; overflow-y: auto; border-left: 5px solid var(--accent); border-radius: 6px; background: var(--surface2); color: var(--text); }
+#tokInfo.tok-aviso { color: var(--poder); }
+#tokInfo.aguardando { font-weight: 700; animation: aguardando 1.6s ease-in-out infinite; }
 @keyframes aguardando { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 4px rgba(208, 169, 79, .35); } }
 .tok-best { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
 .tok-best select { width: auto; max-width: 100%; }
