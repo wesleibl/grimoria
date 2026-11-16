@@ -3694,7 +3694,7 @@ function dropSeletorHTML() {
 function cabeNaCarga(jog, item) {
   var novo = invPeso(jog) + (Number(item.peso) || 0), cap = invCapacidade(jog);
   if (novo <= cap) return true;
-  return window.confirm((jog.personagem || jog.nome || "O jogador") + " não consegue carregar " + item.nome + ": ficaria com " + pesoTxt(novo) + " de " + pesoTxt(cap) + " de capacidade (sobrecarga de " + pesoTxt(novo - cap) + ").\n\nEntregar mesmo assim?");
+  return window.confirm((jog.personagem || jog.nome || "O jogador") + " não consegue carregar " + item.nome + " sem sobrecarga: ficaria com " + pesoTxt(novo) + " de " + pesoTxt(cap) + " e perderia " + Math.ceil((novo - cap) / 5) + " de deslocamento (−1 a cada 5 kg acima).\n\nEntregar mesmo assim?");
 }
 function acoesDrops(b) {
   var id = b.dataset.dropdar;
@@ -3705,7 +3705,7 @@ function acoesDrops(b) {
   b.disabled = true;
   var antes = invJogId;
   invJogId = jog.id;
-  invOp("add", { item: invDeTemplate(it, 1, true), forcar: true }).then(function (r) {
+  invOp("add", { item: invDeTemplate(it, 1, true) }).then(function (r) {
     invJogId = antes;
     b.disabled = false;
     if (r) { jog.inv = r.inv; jog.moedas = r.moedas; dropMsg = it.nome + " → " + (jog.personagem || jog.nome || "jogador") + "."; }
@@ -4048,7 +4048,7 @@ function acoesItens(b) {
     if (!cabeNaCarga(jog, item)) { itMsg = (jog.personagem || jog.nome || "O jogador") + " não aguenta o peso de " + item.nome + "."; var mi = document.getElementById("itMsg"); if (mi) mi.textContent = itMsg; return true; }
     b.disabled = true;
     invJogId = jog.id;
-    invOp("add", { item: invDeTemplate(item, 1, true), forcar: true }).then(function (r) {
+    invOp("add", { item: invDeTemplate(item, 1, true) }).then(function (r) {
       b.disabled = false;
       if (r) { jog.inv = r.inv; jog.moedas = r.moedas; itMsg = item.nome + " foi para o inventário de " + (jog.personagem || jog.nome || "jogador") + "."; }
       else itMsg = "Não foi possível entregar. Veja o aviso no topo.";

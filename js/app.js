@@ -2222,7 +2222,6 @@ var invFilas = {}, invVersao = 0, invEmAberto = 0;
 function invOp(op, dados) {
   var corpo = extras({ op: op }, dados || {});
   if (MESTRE) corpo.jogador = invJogId;
-  if (MESTRE && op === "set") corpo.forcar = true; /* o mestre ajusta a quantidade à vontade; a conferência de carga vale para entregas */
   invVersao++;
   invEmAberto++;
   var chave = corpo.jogador || (PUB.jogador && PUB.jogador.id) || "jogador";
@@ -2560,8 +2559,8 @@ function kitHTML(j) {
     h += "</div></fieldset>";
   });
   var kc = kitCarga(j), kcap = invCapacidade(j);
-  h += '<p class="kit-carga' + (kc > kcap ? " inv-sobre" : "") + '"><b>Carga do kit:</b> ' + pesoTxt(kc) + " de " + pesoTxt(kcap) + " de capacidade" + (kc > kcap ? ". Acima do limite: você não consegue carregar tudo isso. Tire algum item." : ".") + "</p>";
-  return h + '<p id="kitMsg" role="status" class="mdica">' + esc(kitMsg) + '</p><p><button type="button" class="primary" id="kitConfirmar"' + (kitPronto(j) && !kitSalvando && kc <= kcap ? "" : " disabled") + ">" + (kitSalvando ? "Salvando…" : "Confirmar kit") + "</button></p></section>";
+  h += '<p class="kit-carga' + (kc > kcap ? " inv-sobre" : "") + '"><b>Carga do kit:</b> ' + pesoTxt(kc) + " de " + pesoTxt(kcap) + " de capacidade" + (kc > kcap ? ". Acima do limite: você perde " + Math.ceil((kc - kcap) / 5) + " de deslocamento (−1 a cada 5 kg acima)." : ".") + "</p>";
+  return h + '<p id="kitMsg" role="status" class="mdica">' + esc(kitMsg) + '</p><p><button type="button" class="primary" id="kitConfirmar"' + (kitPronto(j) && !kitSalvando ? "" : " disabled") + ">" + (kitSalvando ? "Salvando…" : "Confirmar kit") + "</button></p></section>";
 }
 function kitAtualizar() { var e = document.getElementById("kitPainel"); if (e && PUB.jogador) e.outerHTML = kitHTML(PUB.jogador); }
 function kitChange(el) {
@@ -2576,8 +2575,9 @@ function kitClick(b) {
   var j = PUB.jogador;
   if (!j || !j.kit || kitSalvando || !kitPronto(j)) return true;
   var escolhas = Object.keys(kitSel).filter(function (id) { return kitSel[id]; });
-  if (kitCarga(j) > invCapacidade(j)) { kitMsg = "Esse kit passa da sua capacidade de carga. Tire algum item."; kitAtualizar(); return true; }
-  if (!window.confirm("Confirmar este kit? Você só escolhe uma vez.")) return true;
+  var kcx = kitCarga(j), kcapx = invCapacidade(j);
+  var avisoKit = kcx > kcapx ? "\n\nAtenção: esse kit passa da sua capacidade (" + pesoTxt(kcx) + " de " + pesoTxt(kcapx) + "). Você perde " + Math.ceil((kcx - kcapx) / 5) + " de deslocamento." : "";
+  if (!window.confirm("Confirmar este kit? Você só escolhe uma vez." + avisoKit)) return true;
   kitSalvando = true; kitAtualizar();
   gravar("perfil_kit", { escolhas: escolhas }).then(function (r) {
     kitSalvando = false;
@@ -2620,7 +2620,7 @@ function invAplicar(r) {
 function invAdicionar(item, nomeMsg) {
   /* Mestre dando item: a conferência de carga e o "entregar mesmo assim" ficam no arquivo do mestre; o servidor também confere. */
   if (MESTRE && typeof cabeNaCarga === "function" && !cabeNaCarga(invDono(), { nome: item.nome, peso: (Number(item.peso) || 0) * (parseInt(item.qtd, 10) || 1) })) { invMsgSet("Entrega cancelada: o jogador não aguenta o peso."); return; }
-  invOp("add", MESTRE ? { item: item, forcar: true } : { item: item }).then(function (r) {
+  invOp("add", { item: item }).then(function (r) {
     if (invAplicar(r)) { invMsg = nomeMsg + " adicionado."; renderizar(); } else invMsgSet("Não foi possível adicionar. Veja o aviso no topo.");
   });
 }
@@ -2709,12 +2709,10 @@ function invClick(b) {
     var desc = !!(document.getElementById("invDescontar") || {}).checked, n = invCarrinho.length;
     var itens = invCarrinho.map(function (c) { return invDeTemplate(itemBase(c.id), c.qtd, false); });
     var pesoLote = 0; itens.forEach(function (i) { pesoLote += (Number(i.peso) || 0) * (parseInt(i.qtd, 10) || 1); });
-    if (invPeso(invDono()) + pesoLote > invCapacidade(invDono())) {
-      var dono = invDono();
-      if (!MESTRE) { invMsgSet("Você não consegue carregar tudo isso: ficaria com " + pesoTxt(invPeso(dono) + pesoLote) + " de " + pesoTxt(invCapacidade(dono)) + ". Tire algum item da lista."); return true; }
-      if (typeof cabeNaCarga === "function" && !cabeNaCarga(dono, { nome: "esses itens", peso: pesoLote })) { invMsgSet("Entrega cancelada: o jogador não aguenta o peso."); return true; }
-    }
-    invOp("add_lote", MESTRE ? { itens: itens, motivo: motivo, descontar: desc, forcar: true } : { itens: itens, motivo: motivo, descontar: desc }).then(function (r) {
+    var dono = invDono();
+    if (MESTRE && typeof cabeNaCarga === "function" && !cabeNaCarga(dono, { nome: "esses itens", peso: pesoLote })) { invMsgSet("Entrega cancelada."); return true; }
+    if (!MESTRE && invPeso(dono) + pesoLote > invCapacidade(dono) && !window.confirm("Com esses itens você fica com " + pesoTxt(invPeso(dono) + pesoLote) + " de " + pesoTxt(invCapacidade(dono)) + " e perde " + Math.ceil((invPeso(dono) + pesoLote - invCapacidade(dono)) / 5) + " de deslocamento. Pegar mesmo assim?")) return true;
+    invOp("add_lote", { itens: itens, motivo: motivo, descontar: desc }).then(function (r) {
       if (invAplicar(r)) { invCarrinho = []; invMsg = n + (n > 1 ? " itens adicionados." : " item adicionado.") + (desc ? " Valor descontado das moedas." : ""); renderizar(); }
       else invMsgSet("Não foi possível adicionar. Veja o aviso no topo.");
     });
