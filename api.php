@@ -42,6 +42,7 @@ try {
         'POST sair' => acaoSair(),
         'POST estado' => acaoEstado(),
         'POST jogador_salvar' => acaoJogadorSalvar(),
+        'POST xp_conceder' => acaoXpConceder(),
         'POST jogador_excluir' => acaoJogadorExcluir(),
         'POST jogador_vincular' => acaoJogadorVincular(),
         'POST img_enviar' => acaoImgEnviar(),
@@ -162,7 +163,7 @@ function acaoInicio(): never
     $ligado = $jog !== null;
     responder([
         'usuario' => $u,
-        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
+        'jogador' => $jog ? array_intersect_key($jog, array_flip(['id', 'nome', 'personagem', 'vila', 'altura', 'descricao', 'sonho', 'medo', 'img', 'atr', 'bonus', 'pericias', 'nivel', 'xp', 'xpLog', 'atrTravado', 'kitFeito', 'caminho', 'caminhoTec'])) + ['questionarioFeito' => !empty($jog['questionario']), 'kit' => empty($jog['kitFeito']) ? kitInicial() : null, 'inv' => invVisivel((array)($jog['inv'] ?? []), false), 'moedas' => moedasLimpas($jog['moedas'] ?? [])] : null,
         'grimorio' => $grim ? grimParaJogador($grim, (string)$jog['grim']) : null,
         'locais' => $ligado ? locaisParaJogador(lerEstado('locais_pub') ?? []) : [],
         /* Só o bônus do vilarejo do próprio personagem, e só depois de a conta estar ligada a ele. */
@@ -242,7 +243,7 @@ function acaoJogadorSalvar(): never
     $j = corpo()['jogador'] ?? null;
     if (!is_array($j)) erro('Jogador inválido.');
     $id = idValido($j['id'] ?? '');
-    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito']); /* o inventário só muda por inv_op */
+    unset($j['id'], $j['usuario'], $j['inv'], $j['moedas'], $j['kitFeito'], $j['xp'], $j['xpLog']); /* inventário e XP têm operações próprias */
     /* Um grimório por jogador: dois jogadores nunca ficam com o mesmo. */
     $grim = trim((string)($j['grim'] ?? ''));
     if ($grim !== '') {
@@ -251,6 +252,13 @@ function acaoJogadorSalvar(): never
     }
     salvarCamposJogador($id, $j, true);
     responder(['ok' => true]);
+}
+
+function acaoXpConceder(): never
+{
+    exigirMestre();
+    $c = corpo();
+    responder(concederXp((array)($c['jogadores'] ?? []), (int)($c['quantidade'] ?? 0), (string)($c['motivo'] ?? '')));
 }
 
 function acaoJogadorExcluir(): never

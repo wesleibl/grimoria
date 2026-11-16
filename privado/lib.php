@@ -159,7 +159,7 @@ function exigirMestre(): array
 /* ============================ ESTADO ============================ */
 
 /* Chaves que o mestre pode gravar. As que terminam em _pub são cópias filtradas que os jogadores leem. */
-const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens', 'cenarios_info', 'locais_cen', 'itens', 'progresso'];
+const CHAVES_ESTADO = ['pend', 'zero', 'rev', 'sorteio', 'magias_lib', 'grim_pub', 'locais_pub', 'vilas_pub', 'acao', 'grids', 'cena_tokens', 'cenarios_info', 'locais_cen', 'itens', 'progresso', 'migracoes'];
 
 function lerEstado(string $chave): mixed
 {
@@ -222,6 +222,39 @@ function salvarCamposJogador(string $id, array $campos, bool $criar): bool
     return true;
 }
 
+/* XP é concedido só pelo mestre. A transação atualiza todos os jogadores escolhidos ou nenhum. */
+function concederXp(array $ids, int $quantidade, string $motivo): array
+{
+    $ids = array_values(array_unique(array_map('strval', $ids)));
+    sort($ids, SORT_STRING);
+    if (!$ids || count($ids) > 50) erro('Selecione de 1 a 50 jogadores.');
+    foreach ($ids as $id) if (!preg_match('/^[A-Za-z0-9_-]{4,40}$/', $id)) erro('Jogador inválido.');
+    if ($quantidade < 1 || $quantidade > 100000) erro('Informe de 1 a 100.000 XP por jogador.');
+    $motivo = mb_substr(trim($motivo), 0, 300);
+    $pdo = db();
+    $pdo->beginTransaction();
+    $out = [];
+    foreach ($ids as $id) {
+        $st = $pdo->prepare('SELECT dados FROM jogadores WHERE id = ? FOR UPDATE');
+        $st->execute([$id]);
+        $json = $st->fetchColumn();
+        if ($json === false) { $pdo->rollBack(); erro('Um dos jogadores não existe mais. Atualize a página.', 409); }
+        $dados = json_decode($json, true) ?: [];
+        $xp = max(0, (int)($dados['xp'] ?? 0));
+        if ($xp + $quantidade > 1000000000) { $pdo->rollBack(); erro('Limite de XP atingido.'); }
+        $dados['xp'] = $xp + $quantidade;
+        $log = array_values(array_filter((array)($dados['xpLog'] ?? []), 'is_array'));
+        $log[] = ['em' => date('c'), 'quantidade' => $quantidade, 'motivo' => $motivo];
+        $dados['xpLog'] = array_slice($log, -100);
+        $novo = json_encode((object)$dados, JSON_UNESCAPED_UNICODE);
+        if (strlen($novo) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
+        $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$novo, $id]);
+        $out[$id] = ['xp' => $dados['xp'], 'xpLog' => $dados['xpLog']];
+    }
+    $pdo->commit();
+    return ['jogadores' => $out];
+}
+
 /* ============================ FILTROS PARA O JOGADOR ============================ */
 
 /* As cópias "_pub" são montadas pelo navegador do mestre. Aqui o servidor confere de novo, campo a campo, antes de entregar:
@@ -246,6 +279,7 @@ function locaisParaJogador(array $lista): array
 function grimParaJogador(array $g, string $nome): array
 {
     $lib = (lerEstado('magias_lib') ?? [])[$nome] ?? [];
+    if ($nome === 'Grimório do Capitão' && in_array('Navio Fantasma', $lib, true)) $lib[] = 'Lágrima de Nemus';
     $campos = array_flip(['nome', 'custo', 'tipo', 'texto', 'aplica', 'dot', 'limite', 'marco']);
     $spells = [];
     foreach (($g['spells'] ?? []) as $s) {
@@ -421,6 +455,18 @@ const RARID_ITEM = ['comum', 'incomum', 'raro', 'lendário'];
 const MAX_ITENS = 300;
 const CAMPOS_ITEM_MESTRE = ['mestre', 'sinergia', 'fase'];
 
+function itemUsosMax(array $item): int
+{
+    $padrao = in_array($item['ref'] ?? '', ['dnd-kit-curandeiro', 'kit-kit-curandeiro'], true) ? 10 : 0;
+    return max(0, min(999, (int)($item['usosMax'] ?? $padrao)));
+}
+
+function itemUsos(array $item): int
+{
+    $capacidade = itemUsosMax($item) * max(0, (int)($item['qtd'] ?? 1));
+    return max(0, min($capacidade, (int)($item['usos'] ?? $capacidade)));
+}
+
 function itemAplicar(array $item, array $campos, bool $mestre): array
 {
     $txt = ['nome' => 80, 'efeito' => 200, 'desc' => 1500, 'nota' => 1000, 'ref' => 40, 'motivo' => 300];
@@ -433,6 +479,8 @@ function itemAplicar(array $item, array $campos, bool $mestre): array
             case 'peso': $item['peso'] = round(max(0.0, min(9999.0, (float)$v)), 2); break;
             case 'valor': $item['valor'] = max(0, min(100000000, (int)$v)); break;
             case 'equip': $item['equip'] = (bool)$v; break;
+            case 'usosMax': if ($mestre) $item['usosMax'] = max(0, min(999, (int)$v)); break;
+            case 'usos': if ($mestre) $item['usos'] = max(0, (int)$v); break;
             case 'def': case 'desl': case 'mana': $item[$k] = max(-10, min(10, (int)$v)); break; /* bônus (ou penalidade) enquanto equipado */
             case 'mestre': if ($mestre) $item['mestre'] = mb_substr(trim((string)$v), 0, 2000); break;
             case 'fase': if ($mestre) $item['fase'] = mb_substr(trim((string)$v), 0, 60); break;
@@ -486,6 +534,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         if (!$mestre && trim((string)($campos['ref'] ?? '')) === '') { $pdo->rollBack(); erro('Só o mestre pode criar itens manualmente.', 403); }
         $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
         if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
+        if (itemUsosMax($item)) { $item['usosMax'] = itemUsosMax($item); $item['usos'] = itemUsos($item); }
         $inv[] = $item;
     } elseif ($op === 'add_lote') {
         /* Vários itens de uma vez, com o motivo e, se o jogador quiser, o desconto do valor nas moedas (1 po = 10 pp = 100 pc). */
@@ -501,6 +550,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
             if ($item['nome'] === '') { $pdo->rollBack(); erro('Item sem nome.'); }
             if ((int)$item['qtd'] < 1) $item['qtd'] = 1;
+            if (itemUsosMax($item)) { $item['usosMax'] = itemUsosMax($item); $item['usos'] = itemUsos($item); }
             if ($motivo !== '') $item['motivo'] = $motivo;
             $custo += (int)$item['valor'] * (int)$item['qtd'];
             $novos[] = $item;
@@ -520,6 +570,17 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             $achou = true;
             if ($op === 'del') { unset($inv[$k]); break; }
             $novo = itemAplicar($i, (array)($c['campos'] ?? []), $mestre);
+            $maxAntes = itemUsosMax($i);
+            $maxNovo = itemUsosMax($novo);
+            if ($maxNovo) {
+                $qAntes = max(0, (int)($i['qtd'] ?? 1));
+                $qNovo = max(0, (int)($novo['qtd'] ?? 1));
+                $restantes = $maxAntes ? itemUsos($i) : $maxNovo * $qAntes;
+                if ($qNovo > $qAntes) $restantes += ($qNovo - $qAntes) * $maxNovo;
+                if ($mestre && array_key_exists('usos', (array)($c['campos'] ?? []))) $restantes = (int)$novo['usos'];
+                $novo['usosMax'] = $maxNovo;
+                $novo['usos'] = max(0, min($maxNovo * $qNovo, $restantes));
+            } else { unset($novo['usos'], $novo['usosMax']); }
             /* O jogador não aumenta a quantidade de um item (é o mesmo que ganhar item) sem dizer o motivo. */
             if (!$mestre && (int)($novo['qtd'] ?? 0) > (int)($i['qtd'] ?? 0)) {
                 $motivo = mb_substr(trim((string)($c['motivo'] ?? '')), 0, 300);
@@ -529,6 +590,27 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             if ($novo['nome'] === '') $novo['nome'] = $i['nome'] ?? 'Item';
             /* Quantidade 0 = o item acabou: sai do inventário em vez de ficar como "×0". */
             if ((int)($novo['qtd'] ?? 1) <= 0) unset($inv[$k]); else $inv[$k] = $novo;
+            break;
+        }
+        if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
+    } elseif ($op === 'usar') {
+        $id = (string)($c['id'] ?? '');
+        $comentario = trim((string)($c['comentario'] ?? ''));
+        if (mb_strlen($comentario) < 3 || mb_strlen($comentario) > 300) { $pdo->rollBack(); erro('Descreva brevemente onde usou o item (3 a 300 caracteres).'); }
+        $achou = false;
+        foreach ($inv as $k => $i) {
+            if (($i['id'] ?? '') !== $id) continue;
+            $achou = true;
+            $max = itemUsosMax($i);
+            if (!$max) { $pdo->rollBack(); erro('Este item não tem usos para controlar.'); }
+            $antes = itemUsos($i);
+            if ($antes < 1) { $pdo->rollBack(); erro('Este item está sem usos.'); }
+            $i['usosMax'] = $max;
+            $i['usos'] = $antes - 1;
+            $log = array_values(array_filter((array)($i['usosLog'] ?? []), 'is_array'));
+            $log[] = ['em' => date('c'), 'por' => $mestre ? 'mestre' : 'jogador', 'comentario' => $comentario, 'restantes' => $i['usos']];
+            $i['usosLog'] = array_slice($log, -50);
+            $inv[$k] = $i;
             break;
         }
         if (!$achou) { $pdo->rollBack(); erro('Esse item não existe mais. Atualize a página.', 409); }
@@ -558,7 +640,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
     if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
     $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$json, $jogId]);
     $pdo->commit();
-    $out = ['inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas, 'kitFeito' => !empty($dados['kitFeito'])];
+    $out = ['jogador' => $jogId, 'inv' => invVisivel($dados['inv'], $mestre), 'moedas' => $moedas, 'kitFeito' => !empty($dados['kitFeito'])];
     if ($mestre) $out['moedasLog'] = array_values((array)($dados['moedasLog'] ?? []));
     return $out;
 }

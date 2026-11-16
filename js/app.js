@@ -285,7 +285,7 @@ function meuCaminhoHTML(j) {
 function viewNiveis() {
   if (MESTRE) return MESTRE.niveis();
   var h = "<h1>Níveis e evolução</h1>" +
-    '<p class="lead">Sem pontos de experiência. Todos os personagens sobem de nível juntos, quando o mestre anunciar. Ninguém fica para trás.</p>';
+    '<p class="lead">O mestre concede XP. A barra mostra o caminho até o próximo nível, e o mestre confirma quando sua ficha sobe. Marcos: nível 2 com 300 XP, nível 3 com 900, nível 4 com 2.700 e nível 5 com 6.500.</p>';
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
@@ -606,7 +606,7 @@ function viewInicioJogador() {
   if (j.atrTravado) campos.push(["Atributos", ATRS.map(function (a) { return a[1] + " " + sinal(atrTotal(j, a[0])); }).join(", ")]);
   campos.forEach(function (c) { if (c[1]) h += '<p><b>' + c[0] + ":</b> " + esc(c[1]) + "</p>"; });
   if (PUB.vilaBonus) h += "<p><b>Bônus de origem:</b> " + esc(PUB.vilaBonus) + "</p>";
-  return h + "</div></div>" + atalhosJogador();
+  return h + "</div></div>" + xpBarHTML(j) + atalhosJogador();
 }
 
 function atalhosJogador() {
@@ -641,6 +641,17 @@ var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
 /* 1 de redução de dano para cada 2 pontos de Poder (arredonda para baixo). */
 function reducaoDano(j) { return Math.max(0, Math.floor(atrTotal(j, "poder") / 2)); }
 function nivelJog(j) { return Math.max(1, Math.min(5, parseInt(j.nivel, 10) || 1)); }
+var XP_MARCOS = [0, 300, 900, 2700, 6500];
+function xpBarHTML(j, titulo) {
+  var n = nivelJog(j), xp = Math.max(0, parseInt(j.xp, 10) || 0), base = XP_MARCOS[n - 1], alvo = XP_MARCOS[n];
+  var pct = n === 5 ? 100 : Math.max(0, Math.min(100, Math.round(100 * (xp - base) / (alvo - base))));
+  var texto = n === 5 ? "Nível máximo da campanha" : (xp >= alvo ? "XP para o nível " + (n + 1) + " atingido · aguarde o mestre" : "Faltam " + (alvo - xp) + " XP para o nível " + (n + 1));
+  var log = (j.xpLog || []).slice(-5).reverse();
+  return '<section class="panel xp-painel"><h2>' + esc(titulo || "Experiência") + '</h2><p><b>' + xp + ' XP</b> · nível ' + n + '</p>' +
+    '<div class="xp-barra" role="progressbar" aria-label="Progresso de experiência" aria-valuemin="' + base + '" aria-valuemax="' + (alvo || Math.max(base + 1, xp)) + '" aria-valuenow="' + Math.max(base, Math.min(alvo || Math.max(base + 1, xp), xp)) + '"><span style="width:' + pct + '%"></span></div>' +
+    '<p class="mdica">' + texto + '</p>' +
+    (log.length ? '<details><summary>Últimos ganhos de XP</summary><ul>' + log.map(function (e) { return '<li>+' + (parseInt(e.quantidade, 10) || 0) + ' XP · ' + esc(String(e.em || "").slice(0, 10)) + (e.motivo ? ' · ' + esc(e.motivo) : "") + '</li>'; }).join("") + '</ul></details>' : "") + '</section>';
+}
 function atrBase(j, k) { return parseInt(j.atr && j.atr[k], 10) || 0; }
 function atrBonus(j, k) { return parseInt(j.bonus && j.bonus[k], 10) || 0; }
 function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k); }
@@ -827,7 +838,7 @@ function viewPerfil() {
   rascunhos();
   var url = j.img ? imgUrl(j.img) : "";
   var h = "<h1>Perfil</h1>" + '<p class="lead">Conte quem é o seu personagem. O que você muda só vale depois de apertar o botão <b>Salvar</b> de cada parte (atributos e informações), e o mestre vê tudo.</p>' +
-    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + qHTML(j) + statusHTML(j) + periciasHTML(j) + "<h2>Personagem</h2>";
+    '<p id="perfilMsg" role="status" class="mdica">' + esc(perfilMsg) + "</p>" + qHTML(j) + xpBarHTML(j) + statusHTML(j) + periciasHTML(j) + "<h2>Personagem</h2>";
   h += '<div class="pj-form"><div class="pj-lado">' +
     (url ? '<img class="pj-avatar grande" src="' + url + '" alt="Retrato de ' + esc(j.personagem || "personagem") + '">' : '<span class="pj-avatar grande vazio" aria-hidden="true">' + ic("grupo") + "</span>") +
     '<p class="pj-botoes"><input type="file" accept="image/*" class="vh" id="perfilImg"><label class="btn" for="perfilImg">' + (url ? "Trocar retrato" : "Escolher retrato") + "</label>" +
@@ -1527,13 +1538,15 @@ function atualizarCardTok() {
   if (!c) return;
   var t = null;
   if (cardTok && acaoPub) (acaoPub.tokens || []).forEach(function (o) { if (o.id === cardTok && o.tipo !== "armadilha") t = o; });
-  if (!t) { cardTok = null; c.hidden = true; c.removeAttribute("data-j"); return; }
+  if (!t) { cardTok = null; c.hidden = true; c.classList.remove("alheio"); c.removeAttribute("data-j"); return; }
   var j = JSON.stringify([t, acaoPub.eu === t.id ? acaoPub.minhaVida : null]);
   if (c.getAttribute("data-j") !== j) { c.innerHTML = cardTokHTML(t); c.setAttribute("data-j", j); }
+  c.classList.toggle("alheio", acaoPub.eu !== t.id);
   c.hidden = false;
 }
-function abrirCardTok(id) { cardTok = id; atualizarCardTok(); }
+function abrirCardTok(id) { cardTok = id; atualizarCardTok(); var c = document.querySelector("#tokCard.alheio .tc-x"); if (c && window.matchMedia && window.matchMedia("(max-width: 900px)").matches) c.focus({ preventScroll: true }); }
 function fecharCardTok() { cardTok = null; atualizarCardTok(); }
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && cardTok) fecharCardTok(); });
 /* Imagem que não carregou (a CSP não permite onerror inline; o erro não borbulha, então escuta na captura). */
 document.addEventListener("error", function (e) {
   var im = e.target;
@@ -1827,7 +1840,7 @@ function adiar(chave, fn, ms) {
   timers[chave] = setTimeout(function () { delete timers[chave]; fn(); }, ms || 700);
 }
 window.addEventListener("beforeunload", function (e) {
-  if (pendentes || Object.keys(timers).length || perfilSujo()) { e.preventDefault(); e.returnValue = ""; }
+  if (pendentes || invEmAberto || (typeof jogEmAberto !== "undefined" && jogEmAberto) || Object.keys(timers).length || perfilSujo()) { e.preventDefault(); e.returnValue = ""; }
 });
 
 function viewConta() {
@@ -1907,6 +1920,24 @@ function carregar(aposLogin) {
 /* A mesma lista serve ao jogador (aba Inventário) e ao mestre (aba Itens). O jogador mexe só no próprio inventário; o mestre, no de
    qualquer um. Cada alteração vai ao servidor como uma operação pequena (inv_op): assim os dois podem editar ao mesmo tempo. */
 var CATS_ITEM = [["arma", "Arma"], ["armadura", "Armadura e escudo"], ["aventura", "Equipamento"], ["ferramenta", "Ferramenta"], ["consumivel", "Consumível"], ["magico", "Item mágico"], ["tesouro", "Tesouro"], ["outro", "Outro"]];
+var RECEITAS_INGREDIENTES = {
+  "bc-presa-lobo": "3 presas: amuleto de passo de lobo (+1 de deslocamento), com um artesão de Pedra Velha.",
+  "bc-pena-corvo": "Penas para fabricar flechas leves de mana com um flecheiro.",
+  "bc-pele-lobo": "Manto de viagem quente, costurado por um curtidor.",
+  "bc-palha-mana": "Cataplasma simples ou componente de poção com um curandeiro do Vale.",
+  "bc-couro-javali": "Armadura de couro reforçada com um artesão do Vale.",
+  "bc-presa-javali": "Punhal de presa ou ponta de lança de mana, feitos por um ferreiro do Vale.",
+  "bc-coracao-devorador": "Tônico raro do Vale, preparado por um curandeiro experiente.",
+  "bc-carapaca": "2 carapaças: escudo de caranguejo (Defesa +1), feito no porto.",
+  "bc-escama-serpente": "Amuleto das marés, trabalhado por um artesão do porto.",
+  "bc-seda-aranha": "Corda leve resistente ou armadilha de fios.",
+  "bc-pelo-sombrio": "4 tufos: Manto Cinzento, costurado por um alfaiate da Floresta.",
+  "bc-galhada": "Cajado ritual ou talismã dos caçadores da Floresta.",
+  "bc-cristal-fragmento": "3 fragmentos: Pedra de Mana, com o ferreiro de Pedra Velha.",
+  "bc-nucleo-guardiao": "Foco rúnico ou chave para estudar as Ruínas Antigas.",
+  "Minério bruto (vale 5 po)": "Lingote de metal ou reforço para armas, preparado por um ferreiro."
+};
+function receitaIngrediente(it) { return RECEITAS_INGREDIENTES[typeof it === "string" ? it : ((it && (it.ref || it.id)) || "")] || ""; }
 var RARID_ITEM = ["comum", "incomum", "raro", "lendário"];
 function catNome(c) { var r = "Outro"; CATS_ITEM.forEach(function (x) { if (x[0] === c) r = x[1]; }); return r; }
 
@@ -1979,7 +2010,7 @@ var ITENS_BASE = [
   ib("pergaminho", "aventura", "Pergaminho (folha)", "", 0, prata(1)),
   ib("tinta", "aventura", "Tinta e pena", "", 0, ouro(10)),
   ib("lupa", "aventura", "Lupa", "Vantagem para examinar detalhes", 0, ouro(100)),
-  ib("kit-curandeiro", "ferramenta", "Kit de curandeiro", "10 usos · estabiliza um aliado caído sem teste", lb(3), ouro(5)),
+  ib("kit-curandeiro", "ferramenta", "Kit de curandeiro", "Estabiliza um aliado caído sem teste", lb(3), ouro(5), "", { usosMax: 10 }),
   ib("ferramentas-ladrao", "ferramenta", "Ferramentas de ladrão", "Arrombar fechaduras e desarmar armadilhas", lb(1), ouro(25)),
   ib("kit-herbalismo", "ferramenta", "Kit de herbalismo", "Reconhecer plantas e preparar ervas", lb(3), ouro(5)),
   ib("ferramentas-ferreiro", "ferramenta", "Ferramentas de ferreiro", "Forjar e consertar metal", lb(8), ouro(20)),
@@ -2058,13 +2089,22 @@ function invLista(d) { return ((d && d.inv) || []).filter(function (i) { return 
 function invAchar(id) { var r = null; invLista(invDono()).forEach(function (i) { if (i.id === id) r = i; }); return r; }
 function invPeso(d) { var t = 0; invLista(d).forEach(function (i) { t += (Number(i.peso) || 0) * (parseInt(i.qtd, 10) || 0); }); return t; }
 function invCapacidade(d) { return 20 + 5 * Math.max(0, d ? atrTotal(d, "poder") : 0); }
+var invFilas = {}, invVersao = 0, invEmAberto = 0;
 function invOp(op, dados) {
   var corpo = extras({ op: op }, dados || {});
   if (MESTRE) corpo.jogador = invJogId;
-  return gravar("inv_op", corpo);
+  invVersao++;
+  invEmAberto++;
+  var chave = corpo.jogador || (PUB.jogador && PUB.jogador.id) || "jogador";
+  /* Mantém as respostas na ordem dos cliques, para uma resposta antiga não esconder um item recém-alterado. */
+  var proximo = (invFilas[chave] || Promise.resolve()).then(function () { return gravar("inv_op", corpo); });
+  invFilas[chave] = proximo.then(function () {}, function () {});
+  return proximo.then(function (r) { invEmAberto--; return r; }, function (e) { invEmAberto--; throw e; });
 }
 
 var invJogId = null, invCat = "todas", invQ = "", invAbertos = {}, invMsg = "";
+function invUsosMax(it) { return Math.max(0, it.usosMax == null ? (/^(dnd|kit)-kit-curandeiro$/.test(it.ref || "") ? 10 : 0) : parseInt(it.usosMax, 10) || 0); }
+function invUsos(it) { var cap = invUsosMax(it) * (parseInt(it.qtd, 10) || 0); return Math.max(0, Math.min(cap, it.usos == null ? cap : parseInt(it.usos, 10) || 0)); }
 
 function campoItem(rot, ifld, id, v, tipo, extra) {
   return "<label>" + rot + '<input class="sorteio-in" type="' + tipo + '" data-ifld="' + ifld + '" data-iid="' + id + '" value="' + esc(v) + '"' + (extra || "") + "></label>";
@@ -2169,6 +2209,7 @@ var ICONES_ITEM = {
   "bc-pingente-purificador": "inv_jewelry_necklace_07",
   "bc-pagina-grimorio": "inv_misc_book_09",
   "bc-presa-lobo": "inv_misc_monsterfang_01",
+  "bc-presa-javali": "inv_misc_monsterfang_01",
   "bc-pena-corvo": "inv_feather_08",
   "bc-pele-lobo": "inv_misc_pelt_wolf_01",
   "bc-palha-mana": "inv_misc_herb_10",
@@ -2192,14 +2233,18 @@ function iconeArq(it) { return ICONES_ITEM[it.ref] || ICONES_ITEM[it.id] || ICON
 
 function itemHTML(it, mestre, dono) {
   var id = it.id, aberto = !!invAbertos[id], q = parseInt(it.qtd, 10) || 0;
+  var usosMax = invUsosMax(it), usos = invUsos(it), capUsos = usosMax * q;
   var tags = '<span class="tag role">' + esc(catNome(it.cat)) + "</span>";
   if (it.raridade && it.raridade !== "comum") tags += '<span class="tag leg">' + esc(it.raridade) + "</span>";
   var h = '<article class="item' + (it.equip ? " equip" : "") + '" data-iid="' + id + '"><div class="item-topo">' +
     '<label class="item-eq" title="Marcar como equipado/em uso"><input type="checkbox" data-ieq="' + id + '"' + (it.equip ? " checked" : "") + '><span class="vh">Equipado</span><span aria-hidden="true">' + ic("escudo") + "</span></label>" +
     iconeItem(it) + '<button type="button" class="item-nome" data-itog="' + id + '" aria-expanded="' + aberto + '"><b>' + esc(it.nome) + "</b>" + (it.efeito ? "<small>" + esc(it.efeito) + "</small>" : "") + "</button>" +
     '<span class="item-qtd"><button type="button" data-iqtd="' + id + '" data-d="-1" aria-label="Diminuir quantidade">−</button><b id="q-' + id + '">' + q + '</b><button type="button" data-iqtd="' + id + '" data-d="1" aria-label="Aumentar quantidade">+</button></span></div>';
+  if (usosMax) h += '<div class="item-usos"><span><b>' + usos + ' de ' + capUsos + ' usos</b> restantes</span><span class="item-usos-barra" role="meter" aria-label="Usos restantes de ' + esc(it.nome) + '" aria-valuemin="0" aria-valuemax="' + capUsos + '" aria-valuenow="' + usos + '"><span style="width:' + (capUsos ? Math.round(100 * usos / capUsos) : 0) + '%"></span></span><button type="button" class="primary" data-iusoabrir="' + id + '"' + (usos ? "" : " disabled") + '>Usar 1</button></div>' +
+    '<div class="item-uso-form" id="iuso-' + id + '" hidden><label>Onde usou? <span class="mdica">Obrigatório</span><textarea class="sorteio-in" rows="2" maxlength="300" minlength="3" placeholder="Ex.: na clareira, para estabilizar a Ana"></textarea></label><div class="controls"><button type="button" class="primary" data-iusoconfirmar="' + id + '">Confirmar uso</button><button type="button" data-iusocancelar="' + id + '">Cancelar</button></div></div>';
   tags += '<span class="tag role">' + ic("mochila") + pesoItemTxt(it) + "</span>" + modsTags(it);
   h += '<div class="meta item-tags" id="it-tags-' + id + '">' + tags + "</div>";
+  if (receitaIngrediente(it)) h += '<p class="item-receita"><b>Ingrediente · pode criar:</b> ' + esc(receitaIngrediente(it)) + '</p>';
   if (it.motivo) h += '<p class="mdica item-motivo"><b>Motivo:</b> ' + esc(it.motivo) + "</p>";
   if (mestre && it.mestre) h += '<p class="item-segredo">' + ic("cadeado") + "<span><b>Só mestre:</b> " + esc(it.mestre) + "</span></p>";
   if (mestre) {
@@ -2215,6 +2260,7 @@ function itemHTML(it, mestre, dono) {
     campoItem("Defesa (equipado)", "def", id, it.def || 0, "number", ' min="-10" max="10"') +
     campoItem("Deslocamento (equipado)", "desl", id, it.desl || 0, "number", ' min="-10" max="10"') +
     campoItem("Mana máxima (equipado)", "mana", id, it.mana || 0, "number", ' min="-10" max="10"') +
+    (mestre ? campoItem("Usos por unidade (0 = sem controle)", "usosMax", id, usosMax, "number", ' min="0" max="999"') + (usosMax ? campoItem("Usos restantes", "usos", id, usos, "number", ' min="0" max="' + capUsos + '"') : "") : "") +
     "</div>" +
     campoItem("Efeito ou dano (resumo)", "efeito", id, it.efeito || "", "text", ' maxlength="200"') +
     '<label>Descrição<textarea class="sorteio-in" rows="3" maxlength="1500" data-ifld="desc" data-iid="' + id + '">' + esc(it.desc || "") + "</textarea></label>" +
@@ -2227,6 +2273,7 @@ function itemHTML(it, mestre, dono) {
   } else if (it.desc) {
     /* a descrição já aparece no campo acima */
   }
+  if (usosMax && (it.usosLog || []).length) h += '<details class="item-usos-log"><summary>Histórico de usos (' + it.usosLog.length + ')</summary><ul>' + it.usosLog.slice(-20).reverse().map(function (e) { return '<li><b>' + esc(String(e.em || "").slice(0, 10)) + '</b> · ' + esc(e.por || "") + ': ' + esc(e.comentario || "") + ' <small>(' + (parseInt(e.restantes, 10) || 0) + ' restantes)</small></li>'; }).join("") + '</ul></details>';
   return h + '<p><button type="button" data-idel="' + id + '">Remover do inventário</button></p></div></article>';
 }
 
@@ -2329,6 +2376,7 @@ function invAdicionarHTML(mestre) {
       '<div class="item-grade"><label>Nome<input class="sorteio-in" id="invNNome" type="text" maxlength="80"></label>' +
       '<label>Categoria<select class="sorteio-in" id="invNCat">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + "</option>"; }).join("") + "</select></label>" +
       '<label>Quantidade<input class="sorteio-in num" id="invNQtd" type="number" min="1" max="9999" value="1"></label>' +
+      '<label>Usos por unidade (0 = sem controle)<input class="sorteio-in num" id="invNUsos" type="number" min="0" max="999" value="0"></label>' +
       '<label>Peso (kg, cada)<input class="sorteio-in num" id="invNPeso" type="number" min="0" step="0.05" value="0"></label>' +
       '<label>Valor (ouro, cada)<input class="sorteio-in num" id="invNValor" type="number" min="0" step="0.01" value="0"></label></div>' +
       '<label>Efeito ou dano (resumo)<input class="sorteio-in" id="invNEfeito" type="text" maxlength="200"></label>' +
@@ -2425,7 +2473,7 @@ function invAtualizarResumo() {
 function invMsgSet(t) { invMsg = t; var m = document.getElementById("invMsg"); if (m) m.textContent = t; }
 
 function invAplicar(r) {
-  var d = invDono();
+  var d = MESTRE && r && r.jogador && typeof achaJog === "function" ? achaJog(r.jogador) : invDono();
   if (r && d) { d.inv = r.inv; d.moedas = r.moedas; if (r.moedasLog) d.moedasLog = r.moedasLog; }
   return !!r;
 }
@@ -2437,7 +2485,7 @@ function invAdicionar(item, nomeMsg) {
 }
 function invDeTemplate(t, qtd, mestre) {
   var item = { nome: t.nome, cat: t.cat, efeito: t.efeito || "", desc: t.desc || "", peso: t.peso || 0, valor: t.valor || 0, raridade: t.raridade || "comum", ref: String(t.id || "").slice(0, 40), qtd: qtd, def: t.def || 0, desl: t.desl || 0, mana: t.mana || 0 };
-  if (mestre) { item.mestre = t.mestre || ""; item.sinergia = t.sinergia || []; item.fase = t.fase || ""; }
+  if (mestre) { item.mestre = t.mestre || ""; item.sinergia = t.sinergia || []; item.fase = t.fase || ""; if (t.usosMax) item.usosMax = t.usosMax; }
   return item;
 }
 function num(id, dflt) { var e = document.getElementById(id); var v = e ? parseFloat(String(e.value).replace(",", ".")) : NaN; return isNaN(v) ? dflt : v; }
@@ -2446,6 +2494,23 @@ function num(id, dflt) { var e = document.getElementById(id); var v = e ? parseF
 function invClick(b) {
   if (kitClick(b)) return true;
   var d = b.dataset;
+  if (d.iusoabrir || d.iusocancelar) {
+    var painel = document.getElementById("iuso-" + (d.iusoabrir || d.iusocancelar));
+    if (painel) { painel.hidden = !!d.iusocancelar; if (!painel.hidden) { var campoUso = painel.querySelector("textarea"); if (campoUso) campoUso.focus(); } }
+    return true;
+  }
+  if (d.iusoconfirmar) {
+    var itemUso = invAchar(d.iusoconfirmar), formUso = document.getElementById("iuso-" + d.iusoconfirmar), campoUso = formUso && formUso.querySelector("textarea");
+    var comentarioUso = campoUso ? campoUso.value.trim() : "";
+    if (!itemUso || !campoUso) return true;
+    if (comentarioUso.length < 3) { campoUso.setCustomValidity("Descreva brevemente onde usou o item."); campoUso.reportValidity(); campoUso.setCustomValidity(""); return true; }
+    b.disabled = true;
+    invOp("usar", { id: itemUso.id, comentario: comentarioUso }).then(function (r) {
+      if (invAplicar(r)) { invMsgSet("Uso de " + itemUso.nome + " registrado."); invRedesenharLista(); }
+      else { b.disabled = false; invMsgSet("Não foi possível registrar o uso. Confira o aviso no topo."); }
+    });
+    return true;
+  }
   if (d.itog) {
     var corpo = document.getElementById("ic-" + d.itog), abrir = corpo ? corpo.hidden : false;
     if (corpo) corpo.hidden = !abrir;
@@ -2459,6 +2524,7 @@ function invClick(b) {
     var q = Math.max(0, Math.min(9999, (parseInt(it.qtd, 10) || 0) + parseInt(d.d, 10)));
     if (q === (parseInt(it.qtd, 10) || 0)) return true;
     if (q === 0) {
+      if (!window.confirm("Remover " + it.nome + " do inventário? Para gastar um uso, toque em ‘Usar 1’.")) return true;
       /* Acabou: o item sai do inventário (o servidor também remove quando a quantidade chega a 0). */
       invOp("set", { id: it.id, campos: { qtd: 0 } }).then(function (r) {
         if (invAplicar(r)) { invMsg = it.nome + ": acabou, saiu do inventário."; renderizar(); }
@@ -2516,7 +2582,7 @@ function invClick(b) {
   if (b.id === "invAddNovo" && MESTRE) {
     var nome = ((document.getElementById("invNNome") || {}).value || "").trim();
     if (!nome) { invMsgSet("Dê um nome ao item."); return true; }
-    invAdicionar({ nome: nome, cat: (document.getElementById("invNCat") || {}).value, qtd: Math.max(1, Math.round(num("invNQtd", 1))), peso: Math.max(0, num("invNPeso", 0)),
+    invAdicionar({ nome: nome, cat: (document.getElementById("invNCat") || {}).value, qtd: Math.max(1, Math.round(num("invNQtd", 1))), usosMax: Math.max(0, Math.round(num("invNUsos", 0))), peso: Math.max(0, num("invNPeso", 0)),
       valor: Math.max(0, Math.round(num("invNValor", 0) * 100)), efeito: (document.getElementById("invNEfeito") || {}).value || "", desc: (document.getElementById("invNDesc") || {}).value || "" }, nome);
     return true;
   }
@@ -2557,6 +2623,15 @@ function invChange(el) {
     var item = invAchar(d.iid);
     if (!item) return true;
     var campo = d.ifld, v = el.value, envio;
+    if (campo === "usosMax" || campo === "usos") {
+      if (!MESTRE) return true;
+      v = Math.max(0, parseInt(v, 10) || 0);
+      var ajuste = {}; ajuste[campo] = v;
+      invOp("set", { id: item.id, campos: ajuste }).then(function (r) {
+        if (invAplicar(r)) invRedesenharLista(); else invMsgSet("Não foi possível atualizar os usos.");
+      });
+      return true;
+    }
     if (campo === "peso") { v = Math.max(0, Number(v) || 0); }
     else if (campo === "valor") { v = Math.max(0, Math.round((Number(v) || 0) * 100)); }
     else if (campo === "def" || campo === "desl" || campo === "mana") { v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0)); el.value = v; }
