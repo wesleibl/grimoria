@@ -595,7 +595,7 @@ function invCapacidadeJog(array $dados, array $inv): float
     foreach ([$corpo, $escudo] as $i) if ($i) $poder += (int)($i['poder'] ?? 0);
     return 20 + 5 * max(0, $poder);
 }
-/* Entrega do mestre: recusa se o jogador não aguenta o peso, a não ser que o mestre confirme ("forcar"). */
+/* Recusa se o jogador não aguenta o peso (entrega do mestre, kit, loja, mais quantidade). Só o mestre pode passar por cima, com "forcar" depois de confirmar. */
 function invConferirCarga(PDO $pdo, array $dados, array $inv, array $novos, bool $forcar): void
 {
     if ($forcar) return;
@@ -689,7 +689,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
         if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
         if (itemUsosMax($item)) { $item['usosMax'] = itemUsosMax($item); $item['usos'] = itemUsos($item); }
-        if ($mestre) invConferirCarga($pdo, $dados, $inv, [$item], !empty($c['forcar']));
+        invConferirCarga($pdo, $dados, $inv, [$item], $mestre && !empty($c['forcar']));
         $inv[] = $item;
     } elseif ($op === 'add_lote') {
         /* Vários itens de uma vez, com o motivo e, se o jogador quiser, o desconto do valor nas moedas (1 po = 10 pp = 100 pc). */
@@ -716,7 +716,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             $resto = $total - $custo;
             $moedas = ['po' => intdiv($resto, 100), 'pp' => intdiv($resto % 100, 10), 'pc' => $resto % 10];
         }
-        if ($mestre) invConferirCarga($pdo, $dados, $inv, $novos, !empty($c['forcar']));
+        invConferirCarga($pdo, $dados, $inv, $novos, $mestre && !empty($c['forcar']));
         $inv = array_merge($inv, $novos);
     } elseif ($op === 'set' || $op === 'del') {
         $id = (string)($c['id'] ?? '');
@@ -742,6 +742,10 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
                 $motivo = mb_substr(trim((string)($c['motivo'] ?? '')), 0, 300);
                 if (mb_strlen($motivo) < 3) { $pdo->rollBack(); erro('Escreva o motivo de ganhar mais deste item.'); }
                 $novo['motivo'] = $motivo;
+            }
+            if ((int)($novo['qtd'] ?? 0) > (int)($i['qtd'] ?? 0)) {
+                $extraItem = $novo; $extraItem['qtd'] = (int)$novo['qtd'] - (int)($i['qtd'] ?? 0);
+                invConferirCarga($pdo, $dados, $inv, [$extraItem], $mestre && !empty($c['forcar']));
             }
             if ($novo['nome'] === '') $novo['nome'] = $i['nome'] ?? 'Item';
             /* Quantidade 0 = o item acabou: sai do inventário em vez de ficar como "×0". */
@@ -905,8 +909,11 @@ function kitEscolher(string $jogId, array $ids): array
     $inv = array_values(array_filter((array)($dados['inv'] ?? []), 'is_array'));
     /* Se o mestre liberar o kit de novo, os itens fixos e as moedas não se repetem: só entram as novas escolhas. */
     $refs = array_column($inv, 'ref');
-    foreach ($kit['fixos'] as $it) { if (!in_array('kit-' . $it['id'], $refs, true)) $inv[] = kitParaItem($it); }
-    foreach ($escolhidos as $it) $inv[] = kitParaItem($it);
+    $novosKit = [];
+    foreach ($kit['fixos'] as $it) { if (!in_array('kit-' . $it['id'], $refs, true)) $novosKit[] = kitParaItem($it); }
+    foreach ($escolhidos as $it) $novosKit[] = kitParaItem($it);
+    invConferirCarga($pdo, $dados, $inv, $novosKit, false);
+    $inv = array_merge($inv, $novosKit);
     $m = moedasLimpas($dados['moedas'] ?? []);
     if (empty($dados['kitMoedas'])) {
         foreach ($kit['moedas'] as $k => $v) $m[$k] = min(999999999, $m[$k] + $v);
