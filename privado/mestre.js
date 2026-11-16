@@ -2675,10 +2675,19 @@ function virarBotoesMestreHTML(t) {
   return virarBotoesHTML(t.dir).replace(/data-virar=/g, 'data-tvirar="' + t.id + '" data-dir=');
 }
 
+/* Seções recolhíveis do painel do token: o que o mestre deixou aberto continua aberto quando o painel redesenha. */
+var tokAbertos = {};
+
+/* Uma linha com o que o mestre mais consulta do inimigo do Bestiário (a ficha completa fica recolhida). */
+function resumoBestiario(t) {
+  var m = t.bestiario ? INIMIGOS.filter(function (x) { return x.nome === t.bestiario; })[0] : null;
+  return m ? "Def " + m.defesa + " · Atq d20 " + m.ataque + " · Dano " + m.dano : "";
+}
+
 /* Efeitos temporários do token: chips com "−1 turno" e ✕, e o formulário para adicionar. O servidor conta os turnos. */
 function efeitosEditorHTML(t) {
   var lista = (CAMPO.efeitos || {})[t.id] || [];
-  var h = '<fieldset class="ef-ed"><legend>Efeitos (buffs e debuffs)</legend><div class="ef-lista">' + (lista.length ? lista.map(function (e) {
+  var h = '<details class="tok-det ef-ed" data-tdet="ef"' + (tokAbertos.ef ? " open" : "") + '><summary>Efeitos (buffs e debuffs)' + (lista.length ? ' <span class="tok-badge">' + lista.length + "</span>" : "") + '</summary><div class="ef-lista">' + (lista.length ? lista.map(function (e) {
     return '<span class="ef ef-' + (e.tipo === "buff" ? "buff" : "debuff") + '" title="' + esc(e.nota || "") + '">' + esc(e.nome) + (e.turnos != null ? " · " + turnosTxt(e.turnos) : "") + (e.teste ? " ⚠" : "") +
       (e.turnos != null ? ' <button type="button" data-efmenos="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Tirar 1 turno de ' + esc(e.nome) + '">−1 turno</button>' : "") +
       ' <button type="button" data-efrm="' + esc(e.id) + '" data-eft="' + t.id + '" aria-label="Remover ' + esc(e.nome) + '">✕</button></span>';
@@ -2689,7 +2698,7 @@ function efeitosEditorHTML(t) {
     '<label class="tok-num">Turnos <input class="sorteio-in num" type="number" min="0" max="99" id="efTurnos" placeholder="∞"></label></div>' +
     '<label>Nota (só você vê)<input class="sorteio-in" type="text" maxlength="120" id="efNota"></label>' +
     '<label class="rev-label"><input type="checkbox" id="efTeste"> Exige resistência</label>' +
-    '<div class="controls"><button type="button" data-efadd="' + t.id + '">Adicionar efeito</button></div></fieldset>';
+    '<div class="controls"><button type="button" data-efadd="' + t.id + '">Adicionar efeito</button></div></details>';
   return h;
 }
 
@@ -2698,31 +2707,44 @@ function tokPainelHTML() {
   if (!t) return '<section class="panel"><h3>Token</h3><p class="mdica">Clique num token no mapa ou na lista para editar.</p></section>';
   var trap = t.tipo === "armadilha";
   var h = '<section class="panel tok-painel"><h3>' + (trap ? ic("alerta") : "") + esc(t.nome || "Token") + "</h3>" +
-    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>' + fichaBestiarioHTML(t);
+    '<div class="tok-cab"><input type="color" data-tcor="' + t.id + '" value="' + corToken(t) + '" aria-label="Cor"><input class="sorteio-in" type="text" maxlength="40" data-tnome="' + t.id + '" value="' + esc(t.nome) + '" aria-label="Nome do token"></div>';
   if (trap) {
     h += '<label>Efeito<input class="sorteio-in" type="text" maxlength="200" data-tefeito="' + t.id + '" value="' + esc(t.efeito || "") + '" placeholder="ex.: 2d6 de dano, Destreza contra 13"></label>' +
       '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto && !revelado(t) ? " checked" : "") + "> Escondida" + (acionada(t) ? " (já acionada)" : "") + "</label>";
   } else {
-    var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0;
-    var dirs = '<div class="tok-linha"><span class="tok-desl">Virado para</span> ' + virarBotoesMestreHTML(t) + "</div>";
-    h += '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
-      return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
-    }).join("") + "</select></label>" +
+    var jog = t.jog ? achaJog(t.jog) : null, gasto = parseInt(t.gasto, 10) || 0, resumo = resumoBestiario(t);
+    /* À vista: vida, estados e direção. O resto fica em seções recolhidas logo abaixo. */
+    h += '<div class="tok-vida"><label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? (t.vidaMax || "") : t.vida) + '"></label>' +
+      '<span class="tok-barra">/</span><label class="tok-num">Máx. <input class="sorteio-in num" type="number" min="0" max="999" data-tvidamax="' + t.id + '" value="' + (t.vidaMax || "") + '"></label>' +
+      (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
+      '<div class="tok-estados">' +
+      '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado</label>" +
+      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto</label>" +
+      (t.tipo !== "jogador" ? '<label class="rev-label"><input type="checkbox" data-timg="' + t.id + '"' + (t.imgOculta ? "" : " checked") + "> Imagem visível</label>" : "") + "</div>" +
+      '<div class="tok-linha"><span class="tok-desl">Virado para</span> ' + virarBotoesMestreHTML(t) + "</div>";
+    if (t.bestiario) {
+      h += '<details class="tok-det" data-tdet="ficha"' + (tokAbertos.ficha ? " open" : "") + "><summary>Ficha do inimigo" + (resumo ? ' <small class="mdica">' + esc(resumo) + "</small>" : "") + "</summary>" + fichaBestiarioHTML(t) + "</details>";
+    }
+    h += efeitosEditorHTML(t) +
+      '<details class="tok-det" data-tdet="mov"' + (tokAbertos.mov ? " open" : "") + "><summary>Tipo e deslocamento</summary>" +
+      '<label>Tipo<select class="sorteio-in" data-ttipo="' + t.id + '">' + TIPOS_TOKEN.map(function (o) {
+        return '<option value="' + o[0] + '"' + (t.tipo === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("") + "</select></label>" +
       '<div class="tok-grade">' +
       '<label class="tok-num">Destreza ' + (jog ? '<b title="Vem do perfil do jogador">' + tokDex(t) + "</b>" : '<input class="sorteio-in num" type="number" min="-5" max="30" data-tdex="' + t.id + '" value="' + (parseInt(t.dex, 10) || 0) + '">') + "</label>" +
       '<label class="tok-num" title="Ajuste manual do deslocamento, por exemplo -2 se estiver lento">Ajuste <input class="sorteio-in num" type="number" min="-10" max="10" data-taj="' + t.id + '" value="' + (parseInt(t.aj, 10) || 0) + '"></label>' +
       '<label class="tok-num" title="Casas já andadas neste turno">Gasto <input class="sorteio-in num" type="number" min="0" max="99" data-tgasto="' + t.id + '" value="' + gasto + '"></label></div>' +
-      '<p class="tok-desl" id="tokDesl"></p>' +
-      '<div class="tok-grade"><label class="tok-num">Vida <input class="sorteio-in num" type="number" min="0" max="999" data-tvida="' + t.id + '" value="' + (t.vida == null ? (t.vidaMax || "") : t.vida) + '"></label>' +
-      '<label class="tok-num">Máx. <input class="sorteio-in num" type="number" min="0" max="999" data-tvidamax="' + t.id + '" value="' + (t.vidaMax || "") + '"></label>' +
-      (t.defesa ? '<span class="tok-desl">Def <b>' + esc(t.defesa) + "</b></span>" : "") + "</div>" +
-      '<div class="tok-vida-btn">' + [-5, -1, 1, 5].map(function (d) { return '<button type="button" data-vdelta="' + d + '">' + (d > 0 ? "+" : "−") + Math.abs(d) + "</button>"; }).join("") + "</div>" +
-      '<label class="rev-label"><input type="checkbox" data-tmorto="' + t.id + '"' + (t.morto ? " checked" : "") + "> Derrotado (sai dos turnos)</label>" +
-      '<label class="rev-label"><input type="checkbox" data-toculto="' + t.id + '"' + (t.oculto ? " checked" : "") + "> Oculto dos jogadores</label>" +
-      (t.tipo !== "jogador" ? '<label class="rev-label"><input type="checkbox" data-timg="' + t.id + '"' + (t.imgOculta ? "" : " checked") + "> Imagem visível aos jogadores</label>" : "") +
-      dirs + efeitosEditorHTML(t);
+      '<p class="tok-desl" id="tokDesl"></p></details>';
   }
   return h + '<div class="controls"><button type="button" data-tdup="' + t.id + '">Duplicar</button><button type="button" data-tdel="' + t.id + '">Remover</button></div></section>';
+}
+
+/* O evento "toggle" não borbulha: ouve na captura e guarda quais seções do painel do token estão abertas. */
+if (document.addEventListener) {
+  document.addEventListener("toggle", function (e) {
+    var d = e.target;
+    if (d && d.dataset && d.dataset.tdet) tokAbertos[d.dataset.tdet] = !!d.open;
+  }, true);
 }
 
 function atualizarDesl(t) {
@@ -2816,6 +2838,8 @@ function renderAcaoUI() {
   atualizarHud();
   var c = document.getElementById("combatePainel");
   if (c && !emEdicao("combatePainel")) c.innerHTML = combatePainelHTML();
+  var lado = document.getElementById("acaoLado");
+  if (lado) lado.classList.toggle("tem-sel", !!(tokSel && acharTok(tokSel)));
   var p = document.getElementById("tokPainel");
   if (p && !emEdicao("tokPainel")) { p.innerHTML = tokPainelHTML(); var t = tokSel ? acharTok(tokSel) : null; if (t) atualizarDesl(t); }
   var l = document.getElementById("tokLista");
@@ -2935,7 +2959,7 @@ function viewAcaoMestre() {
       '<figure class="foto-cena"><img src="' + fotoUrl(env) + '" alt="' + esc(env.nome) + '"></figure>';
   }
   h += '<p class="mdica" id="tokInfo" role="status">' + esc(INFO_PADRAO) + "</p>";
-  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
+  h += '<div class="acao-mapa"><div>' + tabuleiroHTML(gridUrl(g), g.nome) + '</div><aside class="acao-lado" id="acaoLado"><div id="combatePainel"></div><div id="tokPainel"></div></aside></div>';
   var faltam = (jogs || []).filter(function (j) { return !a.tokens.some(function (t) { return t.jog === j.id; }); });
   h += '<div class="controls"><label class="tok-best">Jogador <select class="sorteio-in" id="tokJogSel"' + (faltam.length ? "" : " disabled") + ">" +
     (faltam.length ? faltam.map(function (j) { return '<option value="' + esc(j.id) + '">' + esc(j.personagem || j.nome || "Jogador") + "</option>"; }).join("") : "<option>Todos já estão no mapa</option>") +
@@ -3245,7 +3269,7 @@ function inputAcao(el) {
     adiar("pos-" + t.id, function () { enviarPos([t]); }, 400);
     return true;
   }
-  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); salvarAcao(); desenharAcaoMestre(); return true; }
+  if (d.tvida && (t = acharTok(d.tvida))) { t.vida = Math.max(0, parseInt(el.value, 10) || 0); if (el.value !== "" && t.vidaMax) t.morto = t.vida === 0; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.tvidamax && (t = acharTok(d.tvidamax))) { t.vidaMax = Math.max(0, parseInt(el.value, 10) || 0) || null; if (t.vidaMax && t.vida == null) t.vida = t.vidaMax; salvarAcao(); desenharAcaoMestre(); return true; }
   if (d.cenanome) {
     var ce = acharEnvio(parseInt(d.cenanome, 10));
@@ -3399,15 +3423,6 @@ function clickAcao(b) {
     a.tokens.push(cp);
     tokSel = cp.id;
     enviarPos([cp]); salvarAcao(); renderAcaoUI();
-    return true;
-  }
-  if (b.dataset.vdelta && tokSel && (t = acharTok(tokSel))) {
-    var max = t.vidaMax || 0, atual = t.vida == null ? max : t.vida;
-    if (!max) { infoTok("Defina a vida máxima do token para usar os botões de vida."); return true; }
-    t.vida = Math.max(0, Math.min(max, atual + parseInt(b.dataset.vdelta, 10)));
-    t.morto = t.vida === 0;
-    salvarAcao();
-    renderAcaoUI();
     return true;
   }
   if (b.id === "tokSemInimigos") {
