@@ -2878,6 +2878,7 @@ app.addEventListener("change", function (e) {
   if (qChange(e.target)) return;
   if (invChange(e.target)) return;
   if (MESTRE) { MESTRE.change(e.target); return; }
+  if (/^aprimFeitico\d+$/.test(e.target.id || "")) { atualizarTiposAprim(e.target.id.slice(12)); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
   else if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
   else if (e.target.dataset && e.target.dataset.per && PUB.jogador && PUB.jogador.atrTravado && !salvandoPer) {
@@ -2905,6 +2906,7 @@ app.addEventListener("click", function (e) {
   if (!b) return;
   if (qClick(b)) return;
   if (invClick(b)) return;
+  if (b.dataset.aprimpedir && !MESTRE && pedirAprimoramentoJogador(b)) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
   if (b.dataset.zoom) { zoomBotao(b.dataset.zoom); return; }
