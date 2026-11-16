@@ -2273,6 +2273,7 @@ function novoCenarioHTML() {
     '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
     (cenGenFaltando().length ? '<p><button type="button" class="btn" data-cengen="1">Criar ' + cenGenFaltando().length + " cenários genéricos (taverna, caverna, sala…)</button></p>" : "") +
     (cenFotosPendentes().length ? '<p><button type="button" class="btn" data-cenfotos="1">Aplicar fotos prontas em ' + cenFotosPendentes().length + ' cenários genéricos</button></p><p class="mdica">Substitui as fotos atuais desses cenários. Eles continuam ocultos até você liberá-los.</p>' : "") +
+    (cenGridsPendentes().length ? '<p><button type="button" class="btn" data-cengrids="1">Adicionar mapas de grid em ' + cenGridsPendentes().length + ' cenários genéricos</button></p><p class="mdica">Cada mapa é separado da foto, sem linhas desenhadas. Confira as colunas no cenário antes de usar em combate.</p>' : "") +
     '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
 }
 
@@ -2481,6 +2482,7 @@ function clickCenarios(b) {
   var d = b.dataset, a = acaoEst(), c, g;
   if (d.cengen) { migrarCenariosGenericos(true); return true; }
   if (d.cenfotos) { aplicarFotosGenericas(); return true; }
+  if (d.cengrids) { aplicarGridsGenericos(); return true; }
   if (d.cenabrir) { cenSel = parseInt(d.cenabrir, 10); confirmarDelCen = false; confirmarDelGrid = 0; gridMsg = ""; gridSel = gridsDe(acharEnvio(cenSel)).length ? gridsDe(acharEnvio(cenSel))[0].id : 0; renderizar(); window.scrollTo(0, document.getElementById("cenDetalhe") ? document.getElementById("cenDetalhe").offsetTop - 80 : 0); return true; }
   if (d.cenfoto) { mostrarFotoCenario(parseInt(d.cenfoto, 10)); return true; }
   if (d.vermapa) { localSel = d.vermapa; location.hash = "#mapa"; return true; }
@@ -3939,21 +3941,23 @@ var CENARIOS_GENERICOS = [
   ["Salão Nobre", "Um salão elegante com mesa longa, candelabros e tapeçarias nas paredes.", "Sala de banquete de um nobre ou prefeito. Negociação, intriga e recepção. Ideias: jantar com um envenenador, convidado que não deveria estar vivo, mapa escondido atrás da tapeçaria."]
 ];
 var FOTOS_GENERICAS = ["caverna-comum", "sala-de-pedra", "taverna", "pousada", "quarto-de-pousada", "estrada-de-terra", "praca-do-mercado", "ferraria", "cripta", "esgoto", "acampamento", "biblioteca", "cabana-na-floresta", "capela", "beco-da-cidade", "porao-de-armazem", "cela-de-prisao", "salao-nobre"];
-function fotoGenerica(nome) {
+function arquivoGenerico(nome, grid) {
   var i = CENARIOS_GENERICOS.findIndex(function (c) { return c[0] === nome; });
   if (i < 0) return Promise.reject(new Error("Cenário genérico desconhecido: " + nome));
-  return fetch("image/cenarios-genericos/" + FOTOS_GENERICAS[i] + ".jpg").then(function (r) {
-    if (!r.ok) throw new Error("Foto indisponível para “" + nome + "” (HTTP " + r.status + ").");
+  return fetch("image/cenarios-genericos/" + (grid ? "grid/" : "") + FOTOS_GENERICAS[i] + ".jpg").then(function (r) {
+    if (!r.ok) throw new Error((grid ? "Mapa" : "Foto") + " indisponível para “" + nome + "” (HTTP " + r.status + ").");
     return r.blob();
   }).then(function (blob) {
     return new Promise(function (resolve, reject) {
       var leitor = new FileReader();
       leitor.onload = function () { resolve(leitor.result); };
-      leitor.onerror = function () { reject(new Error("Não foi possível ler a foto de “" + nome + "”.")); };
+      leitor.onerror = function () { reject(new Error("Não foi possível ler a imagem de “" + nome + "”.")); };
       leitor.readAsDataURL(blob);
     });
   });
 }
+function fotoGenerica(nome) { return arquivoGenerico(nome, false); }
+function gridGenerico(nome) { return arquivoGenerico(nome, true); }
 function cenFotosPendentes() {
   var aplicadas = (EST.migracoes || {}).fotosGenericasAplicadas || {};
   return ENVIADAS.filter(function (c) {
@@ -3986,6 +3990,41 @@ function aplicarFotosGenericas() {
   })();
 }
 
+function cenGridsPendentes() {
+  var aplicados = (EST.migracoes || {}).gridsGenericosAplicados || {};
+  return ENVIADAS.filter(function (c) {
+    return !aplicados[c.id] && CENARIOS_GENERICOS.some(function (g) { return g[0] === c.nome; }) &&
+      !gridsDe(c).some(function (g) { return g.nome === "Mapa genérico"; });
+  });
+}
+function enviarGridGenerico(c) {
+  return gridGenerico(c.nome).then(function (dados) {
+    return gravar("grid_enviar", { cena: c.id, nome: "Mapa genérico", cols: 20, rows: null, dados: dados });
+  }).then(function (r) {
+    if (!r) throw new Error("Falha ao enviar o grid de “" + c.nome + "”.");
+    c.grids = gridsDe(c).concat([{ id: r.id, nome: "Mapa genérico", cols: 20, rows: null, v: Math.floor(Date.now() / 1000) }]);
+    EST.migracoes = EST.migracoes || {};
+    (EST.migracoes.gridsGenericosAplicados = EST.migracoes.gridsGenericosAplicados || {})[c.id] = true;
+    salvarEstado("migracoes");
+    return r;
+  });
+}
+var cenGridsRodando = false;
+function aplicarGridsGenericos() {
+  if (cenGridsRodando) return;
+  var fila = cenGridsPendentes(), total = fila.length, feitos = 0;
+  if (!total) return;
+  cenGridsRodando = true;
+  function aviso(msg) { upMsg = msg; if (rotaAtual() === "cenarios") renderizar(); }
+  (function proximo() {
+    var c = fila.shift();
+    if (!c) { cenGridsRodando = false; aviso(feitos + " mapas de grid adicionados."); return; }
+    aviso("Adicionando grids… " + feitos + " de " + total);
+    enviarGridGenerico(c).then(function () { feitos++; proximo(); })
+      .catch(function (e) { cenGridsRodando = false; aviso("Parou em “" + c.nome + "”: " + e.message + " Tente de novo."); });
+  })();
+}
+
 function cenGenFaltando() {
   var tem = {};
   ENVIADAS.forEach(function (e) { tem[e.nome] = true; });
@@ -4002,19 +4041,20 @@ function migrarCenariosGenericos(manual) {
   function fim(msg) { cenGenRodando = false; upMsg = msg; if (rotaAtual() === "cenarios") renderizar(); }
   (function proximo() {
     var c = fila.shift();
-    if (!c) { concluir(); fim(feitos + " cenários genéricos criados com fotos prontas."); return; }
+    if (!c) { concluir(); fim(feitos + " cenários genéricos criados com fotos e grids prontos."); return; }
     upMsg = "Criando cenários genéricos… " + feitos + " de " + total;
     if (rotaAtual() === "cenarios") renderizar();
     fotoGenerica(c[0]).then(function (img) { return gravar("cena_enviar", { nome: c[0], dados: img }); }).then(function (r) {
       if (!r) { fim("Parou em “" + c[0] + "” (" + feitos + " de " + total + " criados). Veja o aviso vermelho no canto e tente de novo."); return; }
       feitos++;
-      ENVIADAS.push({ id: r.id, nome: r.nome, v: Math.floor(Date.now() / 1000), grids: [] });
+      var novo = { id: r.id, nome: r.nome, v: Math.floor(Date.now() / 1000), grids: [] };
+      ENVIADAS.push(novo);
       EST.migracoes = EST.migracoes || {};
       (EST.migracoes.fotosGenericasAplicadas = EST.migracoes.fotosGenericasAplicadas || {})[r.id] = true;
       salvarEstado("migracoes");
       (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { resumo: c[1], historia: c[2] };
       salvarEstado("cenarios_info");
-      proximo();
+      enviarGridGenerico(novo).then(proximo).catch(function (e) { fim("Cenário “" + c[0] + "” criado, mas o grid falhou: " + e.message + " Use “Adicionar mapas de grid” para tentar de novo."); });
     }).catch(function (e) { fim("Parou em “" + c[0] + "”: " + e.message + " Tente de novo."); });
   })();
 }

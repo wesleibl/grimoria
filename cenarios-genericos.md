@@ -1,12 +1,12 @@
 # Cenários genéricos: prompts de imagem
 
-As 18 imagens finais estão em `image/cenarios-genericos/`, em JPEG 16:9. Os cenários continuam ocultos até o mestre liberá-los.
+As 18 fotos estão em `image/cenarios-genericos/` e os 18 mapas vistos de cima em `image/cenarios-genericos/grid/`, todos em JPEG 16:9. Os cenários continuam ocultos até o mestre liberá-los.
 
 Como usar:
 
 1. Em **Cenários**, clique em **Aplicar fotos prontas** para substituir as fotos dos cenários genéricos já criados. O envio mostra o progresso e pode ser retomado se parar.
-2. Cenários genéricos criados daqui em diante já recebem a foto pronta.
-3. Para combater neles, use **Adicionar imagem de grid** (ver `grids.md`). Para o grid, peça a mesma cena em vista de cima (veja "Versão para grid" no fim).
+2. Clique em **Adicionar mapas de grid** para associar os mapas aos cenários já criados. O envio pode ser retomado se parar. Os mapas nascem com 20 colunas e linhas automáticas; ajuste as colunas na prévia antes de usar em combate.
+3. Cenários genéricos criados daqui em diante já recebem a foto e o mapa de grid. Para criar outros mapas do mesmo lugar, use **Adicionar imagem de grid** (ver `grids.md`).
 
 ## Estilo base (já incluído em todos os prompts)
 
@@ -39,8 +39,8 @@ Dica: gere o primeiro e use-o como referência de estilo nos próximos (Midjourn
 
 ## Versão para grid (vista de cima)
 
-Para usar em combate, gere a mesma cena em vista de cima e troque o começo do prompt e o estilo por:
+Os 18 mapas foram gerados com a mesma cena vista de cima e este estilo:
 
 > top-down battle map of [cenário], orthographic bird's-eye view, no perspective, clear open floor space for movement, readable obstacles and cover, painterly fantasy battle map style, no characters, no text, no grid lines, no watermark
 
-Troque `[cenário]` pelo nome em inglês (por exemplo "a medieval tavern interior"). Depois configure colunas e linhas em **Adicionar imagem de grid**.
+Para criar um mapa adicional, troque `[cenário]` pelo nome em inglês (por exemplo "a medieval tavern interior") e configure colunas e linhas em **Adicionar imagem de grid**.
