@@ -285,7 +285,7 @@ function meuCaminhoHTML(j) {
 function viewNiveis() {
   if (MESTRE) return MESTRE.niveis();
   var h = "<h1>Níveis e evolução</h1>" +
-    '<p class="lead">O mestre concede XP. A barra mostra o caminho até o próximo nível, e o mestre confirma quando sua ficha sobe. Marcos: nível 2 com 300 XP, nível 3 com 900, nível 4 com 2.700 e nível 5 com 6.500.</p>';
+    '<p class="lead">O mestre concede XP. Ao atingir um marco, seu nível sobe automaticamente e você ganha 1 ponto para distribuir nos atributos da ficha. Marcos: nível 2 com 300 XP, nível 3 com 900, nível 4 com 2.700 e nível 5 com 6.500.</p>';
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
@@ -645,7 +645,7 @@ var XP_MARCOS = [0, 300, 900, 2700, 6500];
 function xpBarHTML(j, titulo) {
   var n = nivelJog(j), xp = Math.max(0, parseInt(j.xp, 10) || 0), base = XP_MARCOS[n - 1], alvo = XP_MARCOS[n];
   var pct = n === 5 ? 100 : Math.max(0, Math.min(100, Math.round(100 * (xp - base) / (alvo - base))));
-  var texto = n === 5 ? "Nível máximo da campanha" : (xp >= alvo ? "XP para o nível " + (n + 1) + " atingido · aguarde o mestre" : "Faltam " + (alvo - xp) + " XP para o nível " + (n + 1));
+  var texto = n === 5 ? "Nível máximo da campanha" : "Faltam " + Math.max(0, alvo - xp) + " XP para o nível " + (n + 1);
   var log = (j.xpLog || []).slice(-5).reverse();
   return '<section class="panel xp-painel"><h2>' + esc(titulo || "Experiência") + '</h2><p><b>' + xp + ' XP</b> · nível ' + n + '</p>' +
     '<div class="xp-barra" role="progressbar" aria-label="Progresso de experiência" aria-valuemin="' + base + '" aria-valuemax="' + (alvo || Math.max(base + 1, xp)) + '" aria-valuenow="' + Math.max(base, Math.min(alvo || Math.max(base + 1, xp), xp)) + '"><span style="width:' + pct + '%"></span></div>' +
@@ -654,7 +654,22 @@ function xpBarHTML(j, titulo) {
 }
 function atrBase(j, k) { return parseInt(j.atr && j.atr[k], 10) || 0; }
 function atrBonus(j, k) { return parseInt(j.bonus && j.bonus[k], 10) || 0; }
-function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k); }
+function itensEquipEfetivos(lista) {
+  var ativos = [], corpo = null, escudo = null;
+  (lista || []).forEach(function (i) {
+    if (!i.equip || (parseInt(i.qtd, 10) || 0) < 1) return;
+    if (i.cat !== "armadura") { ativos.push(i); return; }
+    var ehEscudo = /escudo|broquel/i.test(i.nome || ""), atual = ehEscudo ? escudo : corpo;
+    if (!atual || (parseInt(i.def, 10) || 0) > (parseInt(atual.def, 10) || 0)) {
+      if (ehEscudo) escudo = i; else corpo = i;
+    }
+  });
+  if (corpo) ativos.push(corpo);
+  if (escudo) ativos.push(escudo);
+  return ativos;
+}
+function bonusEquipAtr(j, k) { return itensEquipEfetivos((j && j.inv) || []).reduce(function (s, i) { return s + (parseInt(i[k], 10) || 0); }, 0); }
+function atrTotal(j, k) { return atrBase(j, k) + atrBonus(j, k) + bonusEquipAtr(j, k); }
 /* Mana: 10, mais 1 a cada 2 pontos de Inteligência. */
 function manaJog(j) { return 10 + Math.floor(atrTotal(j, "inteligencia") / 2); }
 function sinal(n) { return (n >= 0 ? "+" : "") + n; }
@@ -762,7 +777,9 @@ function statusHTML(j) {
   }
   var lim = LIM_NIVEL[n - 1], jr = extras({}, j), sujo = bonusSujo();
   jr.bonus = bonusRasc || j.bonus;
+  var pontosRestantes = Math.max(0, n - 1 - ATRS.reduce(function (s, a) { return s + atrBonus(jr, a[0]); }, 0));
   return '<h2>Status</h2><section class="panel ficha">' + statsHTML(jr) + (sujo ? '<p class="mdica">Os números acima mostram a <b>prévia</b> do bônus, que ainda não foi salvo.</p>' : "") + "<h3>Atributos</h3>" +
+    '<p class="mdica"><b>' + pontosRestantes + (pontosRestantes === 1 ? ' ponto disponível' : ' pontos disponíveis') + '</b> para distribuir pelos atributos neste nível.</p>' +
     '<div class="atr-cards">' + ATRS.map(function (a) {
       var tot = atrTotal(jr, a[0]), bonus = atrBonus(jr, a[0]);
       return '<section class="atr-card" style="--cor:var(--' + a[0] + ')">' + atrCabeca(a) +
@@ -771,10 +788,10 @@ function statusHTML(j) {
         '<div class="atr-bonus"><span class="mdica">Bônus</span><div class="atr-passo pequeno">' +
         '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="-1" aria-label="Tirar um ponto de bônus de ' + a[1] + '"' + (bonus <= -5 || salvandoBonus ? " disabled" : "") + ">−</button>" +
         '<b class="atr-valor" aria-live="polite">' + sinal(bonus) + "</b>" +
-        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 || salvandoBonus ? " disabled" : "") + ">+</button></div></div></div>" +
-        (tot > lim ? '<p class="atr-aviso">Acima do limite de +' + lim + " do seu nível. O mestre confere.</p>" : "") + "</section>";
+        '<button type="button" class="step-btn" data-bonus-step="' + a[0] + '" data-d="1" aria-label="Pôr um ponto de bônus em ' + a[1] + '"' + (bonus >= 10 || atrBase(j, a[0]) + bonus >= lim || pontosRestantes <= 0 || salvandoBonus ? " disabled" : "") + ">+</button></div></div></div>" +
+        (atrBase(j, a[0]) + bonus > lim ? '<p class="atr-aviso">Bônus acima do limite de +' + lim + " do seu nível. O mestre confere.</p>" : "") + "</section>";
     }).join("") + "</div>" +
-    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. No <b>bônus</b> você anota os pontos que ganha ao subir de nível (+1 por nível, no máximo +' + lim + " no total em cada atributo, no seu nível). O mestre confere. <b>Aperte Salvar atributos</b> para valer.</p>" +
+    '<p class="mdica">A <b>base</b> foi definida na criação e não muda. Você ganha 1 ponto de <b>bônus</b> a cada nível, até o limite de +' + lim + " em cada atributo. Os itens equipados também aparecem no total. <b>Aperte Salvar atributos</b> para valer.</p>" +
     '<div class="atr-barra"><span class="atr-estado' + (sujo ? " sujo" : "") + '" role="status">' + esc(salvandoBonus ? "Salvando…" : (sujo ? "Alterações não salvas" : (bonusMsg || "Tudo salvo"))) + "</span>" +
     '<button type="button" id="perfilDescartarBonus"' + (sujo && !salvandoBonus ? "" : " hidden") + ">Desfazer</button>" +
     '<button type="button" class="primary" id="perfilSalvarBonus"' + (sujo && !salvandoBonus ? "" : " disabled") + ">" + (salvandoBonus ? "Salvando…" : "Salvar atributos") + "</button></div></section>";
@@ -918,6 +935,12 @@ function salvarBonus() {
   var j = PUB.jogador;
   if (!j || !bonusRasc || salvandoBonus || !bonusSujo()) return;
   var copia = { poder: bonusRasc.poder, destreza: bonusRasc.destreza, inteligencia: bonusRasc.inteligencia };
+  var gasto = copia.poder + copia.destreza + copia.inteligencia, lim = LIM_NIVEL[nivelJog(j) - 1];
+  if (gasto > nivelJog(j) - 1 || ATRS.some(function (a) { return atrBase(j, a[0]) + copia[a[0]] > lim; })) {
+    bonusMsg = "Distribua apenas os pontos liberados e respeite o limite de cada atributo.";
+    renderizar();
+    return;
+  }
   salvandoBonus = true;
   bonusMsg = "";
   renderizar();
@@ -1531,7 +1554,7 @@ function cardTokHTML(t) {
     "<small>" + esc(NOME_TIPO[t.tipo] || "") + (eu ? " · você" : "") + " · " + coordNome(t.x | 0, t.y | 0) + (t.dir ? " · virado para " + NOME_DIR[t.dir] : "") + "</small>" +
     (vida ? '<span class="ini-vida est-' + slugEstado(eu && acaoPub.minhaVida ? "num" : estado) + '">' + esc(vida) + "</span>" : "") +
     ((t.efeitos || []).length ? '<span class="ini-ef">' + chipsEfeitosHTML(t.efeitos) + "</span>" : "") +
-    (eu ? virarBotoesHTML(t.dir) : "") + "</div>";
+    (eu ? virarBotoesHTML(t.dir) + equipadosCombateHTML() : "") + "</div>";
 }
 function atualizarCardTok() {
   var box = caixaTab(), c = box && box.querySelector ? box.querySelector("#tokCard") : null;
@@ -1539,7 +1562,7 @@ function atualizarCardTok() {
   var t = null;
   if (cardTok && acaoPub) (acaoPub.tokens || []).forEach(function (o) { if (o.id === cardTok && o.tipo !== "armadilha") t = o; });
   if (!t) { cardTok = null; c.hidden = true; c.classList.remove("alheio"); c.removeAttribute("data-j"); return; }
-  var j = JSON.stringify([t, acaoPub.eu === t.id ? acaoPub.minhaVida : null]);
+  var j = JSON.stringify([t, acaoPub.eu === t.id ? acaoPub.minhaVida : null, acaoPub.eu === t.id ? acaoPub.equipados : null]);
   if (c.getAttribute("data-j") !== j) { c.innerHTML = cardTokHTML(t); c.setAttribute("data-j", j); }
   c.classList.toggle("alheio", acaoPub.eu !== t.id);
   c.hidden = false;
@@ -1606,6 +1629,16 @@ function meuControlesHTML() {
   return t ? '<div class="controls meu-ctl"><span class="mdica">Virado para:</span> ' + virarBotoesHTML(t.dir) + '<button type="button" data-ficha="' + esc(t.id) + '">Ver ficha</button></div>' : "";
 }
 
+function equipadosCombateHTML() {
+  var lista = (acaoPub && acaoPub.equipados) || [], efetivos = itensEquipEfetivos(lista);
+  return '<div class="combate-equip"><h4>Itens equipados agora</h4>' +
+    (lista.length ? '<ul>' + lista.map(function (i) {
+      var conta = efetivos.indexOf(i) !== -1;
+      return '<li' + (conta ? '' : ' class="ignorado"') + '><b>' + esc(i.nome || "Item") + '</b>' + (conta ? '' : ' <small>Não soma: outra armadura ou escudo foi escolhido.</small>') + (i.efeito ? ' <small>' + esc(i.efeito) + '</small>' : "") +
+        '<span class="meta">' + modsTags(i) + '</span></li>';
+    }).join("") + '</ul>' : '<p class="mdica">Nenhum item equipado. Marque os itens no Inventário.</p>') + '</div>';
+}
+
 function acaoCombateHTML() {
   var a = acaoPub, cb = a.combate;
   if (!cb) return '<p class="mdica">' + (a.livre === false ? "O mestre travou o movimento por enquanto." : (a.eu ? "Clique no seu token e depois numa casa azul para se mover." : "Seu personagem ainda não está no mapa.")) + "</p>" + meuControlesHTML();
@@ -1618,7 +1651,7 @@ function acaoCombateHTML() {
     } else if (cb.euIni != null) {
       h += "<p>Sua iniciativa: <b>" + cb.euIni + "</b>.</p>";
     }
-    h += "<p class=\"mdica\">" + (cb.pendentes.length ? "Aguardando: " + cb.pendentes.map(esc).join(", ") + "." : "Todos os jogadores já rolaram. O mestre vai começar os turnos.") + "</p>" + meuControlesHTML() + "</section>";
+    h += "<p class=\"mdica\">" + (cb.pendentes.length ? "Aguardando: " + cb.pendentes.map(esc).join(", ") + "." : "Todos os jogadores já rolaram. O mestre vai começar os turnos.") + "</p>" + equipadosCombateHTML() + meuControlesHTML() + "</section>";
     return h;
   }
   h += "<p><b>Rodada " + cb.rodada + "</b></p>";
@@ -1633,7 +1666,7 @@ function acaoCombateHTML() {
   } else {
     h += '<p class="mdica">' + (cb.atual ? "Turno de " + esc((cb.ordem.filter(function (o) { return o.id === cb.atual; })[0] || {}).nome || "alguém") + "." : (cb.atualOculto ? "Algo se move nas sombras…" : "")) + "</p>";
   }
-  return h + meuControlesHTML() + "</section>";
+  return h + equipadosCombateHTML() + meuControlesHTML() + "</section>";
 }
 
 function acaoLogHTML() {
@@ -1915,6 +1948,18 @@ function carregar(aposLogin) {
   });
 }
 
+/* Atualiza XP e nível na ficha aberta quando o mestre concede experiência. */
+function atualizarXpJogador() {
+  if (!USUARIO || USUARIO.papel === "mestre" || !PUB.jogador || document.hidden) return;
+  api("xp_status").then(function (d) {
+    var j = PUB.jogador;
+    if (!j || d.id !== j.id || (parseInt(j.xp, 10) || 0) === d.xp && nivelJog(j) === d.nivel) return;
+    j.xp = d.xp; j.nivel = d.nivel; j.xpLog = d.xpLog;
+    if (!perfilSujo() && ["inicio", "perfil", "niveis"].indexOf(rotaAtual()) !== -1) renderizar();
+  }, function () { /* sem conexão: tenta no próximo ciclo */ });
+}
+setInterval(atualizarXpJogador, 15000);
+
 /* ============================ INVENTÁRIO ============================ */
 
 /* A mesma lista serve ao jogador (aba Inventário) e ao mestre (aba Itens). O jogador mexe só no próprio inventário; o mestre, no de
@@ -2038,11 +2083,11 @@ function valorTxt(c) {
   return c + " pc";
 }
 function pesoTxt(p) { p = Number(p) || 0; return (Math.round(p * 100) / 100).toString().replace(".", ",") + " kg"; }
-/* Efeitos de um item enquanto equipado: Defesa, Deslocamento e Mana (positivo é bônus, negativo atrapalha). */
-function modsItem(i) { return { def: parseInt(i.def, 10) || 0, desl: parseInt(i.desl, 10) || 0, mana: parseInt(i.mana, 10) || 0 }; }
+/* Efeitos de um item enquanto equipado. */
+function modsItem(i) { return { def: parseInt(i.def, 10) || 0, desl: parseInt(i.desl, 10) || 0, mana: parseInt(i.mana, 10) || 0, poder: parseInt(i.poder, 10) || 0, destreza: parseInt(i.destreza, 10) || 0, inteligencia: parseInt(i.inteligencia, 10) || 0 }; }
 function modsTags(i) {
   var m = modsItem(i), h = "";
-  [["def", "Defesa"], ["desl", "Deslocamento"], ["mana", "Mana"]].forEach(function (c) {
+  [["def", "Defesa"], ["desl", "Deslocamento"], ["mana", "Mana"], ["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]].forEach(function (c) {
     if (m[c[0]]) h += '<span class="tag ' + (m[c[0]] > 0 ? "buff" : "pena") + '">' + (m[c[0]] > 0 ? "▲ " : "▼ ") + c[1] + " " + sinal(m[c[0]]) + "</span>";
   });
   return h;
@@ -2068,13 +2113,13 @@ function invStats(d) {
       else ignorados.push(i.nome);
       return;
     }
-    if (m.def || m.desl || m.mana) { s.def += m.def; s.desl += m.desl; s.mana += m.mana; s.fontes.push(i.nome); }
+    if (m.def || m.desl || m.mana || m.poder || m.destreza || m.inteligencia) { s.def += m.def; s.desl += m.desl; s.mana += m.mana; s.fontes.push(i.nome); }
   });
   [corpo, escudo].forEach(function (i) {
     if (!i) return;
     var m = modsItem(i);
     s.def += m.def; s.desl += m.desl; s.mana += m.mana;
-    if (m.def || m.desl || m.mana) s.fontes.push(i.nome);
+    if (m.def || m.desl || m.mana || m.poder || m.destreza || m.inteligencia) s.fontes.push(i.nome);
   });
   s.ignorados = ignorados;
   if (s.peso > s.cap) s.pen = Math.ceil((s.peso - s.cap) / 5);
@@ -2260,6 +2305,9 @@ function itemHTML(it, mestre, dono) {
     campoItem("Defesa (equipado)", "def", id, it.def || 0, "number", ' min="-10" max="10"') +
     campoItem("Deslocamento (equipado)", "desl", id, it.desl || 0, "number", ' min="-10" max="10"') +
     campoItem("Mana máxima (equipado)", "mana", id, it.mana || 0, "number", ' min="-10" max="10"') +
+    (mestre ? campoItem("Poder (equipado)", "poder", id, it.poder || 0, "number", ' min="-10" max="10"') +
+    campoItem("Destreza (equipado)", "destreza", id, it.destreza || 0, "number", ' min="-10" max="10"') +
+    campoItem("Inteligência (equipado)", "inteligencia", id, it.inteligencia || 0, "number", ' min="-10" max="10"') : "") +
     (mestre ? campoItem("Usos por unidade (0 = sem controle)", "usosMax", id, usosMax, "number", ' min="0" max="999"') + (usosMax ? campoItem("Usos restantes", "usos", id, usos, "number", ' min="0" max="' + capUsos + '"') : "") : "") +
     "</div>" +
     campoItem("Efeito ou dano (resumo)", "efeito", id, it.efeito || "", "text", ' maxlength="200"') +
@@ -2379,6 +2427,10 @@ function invAdicionarHTML(mestre) {
       '<label>Usos por unidade (0 = sem controle)<input class="sorteio-in num" id="invNUsos" type="number" min="0" max="999" value="0"></label>' +
       '<label>Peso (kg, cada)<input class="sorteio-in num" id="invNPeso" type="number" min="0" step="0.05" value="0"></label>' +
       '<label>Valor (ouro, cada)<input class="sorteio-in num" id="invNValor" type="number" min="0" step="0.01" value="0"></label></div>' +
+      '<div class="item-grade"><label>Defesa (equipado)<input class="sorteio-in num" id="invNDef" type="number" min="-10" max="10" value="0"></label>' +
+      '<label>Poder (equipado)<input class="sorteio-in num" id="invNPoder" type="number" min="-10" max="10" value="0"></label>' +
+      '<label>Destreza (equipado)<input class="sorteio-in num" id="invNDestreza" type="number" min="-10" max="10" value="0"></label>' +
+      '<label>Inteligência (equipado)<input class="sorteio-in num" id="invNInteligencia" type="number" min="-10" max="10" value="0"></label></div>' +
       '<label>Efeito ou dano (resumo)<input class="sorteio-in" id="invNEfeito" type="text" maxlength="200"></label>' +
       '<label>Descrição<textarea class="sorteio-in" rows="3" id="invNDesc" maxlength="1500"></textarea></label>' +
       '<p><button type="button" class="primary" id="invAddNovo">Criar e adicionar</button></p></section>';
@@ -2484,7 +2536,7 @@ function invAdicionar(item, nomeMsg) {
   });
 }
 function invDeTemplate(t, qtd, mestre) {
-  var item = { nome: t.nome, cat: t.cat, efeito: t.efeito || "", desc: t.desc || "", peso: t.peso || 0, valor: t.valor || 0, raridade: t.raridade || "comum", ref: String(t.id || "").slice(0, 40), qtd: qtd, def: t.def || 0, desl: t.desl || 0, mana: t.mana || 0 };
+  var item = { nome: t.nome, cat: t.cat, efeito: t.efeito || "", desc: t.desc || "", peso: t.peso || 0, valor: t.valor || 0, raridade: t.raridade || "comum", ref: String(t.id || "").slice(0, 40), qtd: qtd, def: t.def || 0, desl: t.desl || 0, mana: t.mana || 0, poder: t.poder || 0, destreza: t.destreza || 0, inteligencia: t.inteligencia || 0 };
   if (mestre) { item.mestre = t.mestre || ""; item.sinergia = t.sinergia || []; item.fase = t.fase || ""; if (t.usosMax) item.usosMax = t.usosMax; }
   return item;
 }
@@ -2583,6 +2635,7 @@ function invClick(b) {
     var nome = ((document.getElementById("invNNome") || {}).value || "").trim();
     if (!nome) { invMsgSet("Dê um nome ao item."); return true; }
     invAdicionar({ nome: nome, cat: (document.getElementById("invNCat") || {}).value, qtd: Math.max(1, Math.round(num("invNQtd", 1))), usosMax: Math.max(0, Math.round(num("invNUsos", 0))), peso: Math.max(0, num("invNPeso", 0)),
+      def: num("invNDef", 0), poder: num("invNPoder", 0), destreza: num("invNDestreza", 0), inteligencia: num("invNInteligencia", 0),
       valor: Math.max(0, Math.round(num("invNValor", 0) * 100)), efeito: (document.getElementById("invNEfeito") || {}).value || "", desc: (document.getElementById("invNDesc") || {}).value || "" }, nome);
     return true;
   }
@@ -2634,14 +2687,14 @@ function invChange(el) {
     }
     if (campo === "peso") { v = Math.max(0, Number(v) || 0); }
     else if (campo === "valor") { v = Math.max(0, Math.round((Number(v) || 0) * 100)); }
-    else if (campo === "def" || campo === "desl" || campo === "mana") { v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0)); el.value = v; }
+    else if (["def", "desl", "mana", "poder", "destreza", "inteligencia"].indexOf(campo) !== -1) { v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0)); el.value = v; }
     else if (campo === "nome" && !String(v).trim()) { el.value = item.nome; return true; }
     else if (campo === "sinergia") { v = String(v).split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
     item[campo] = v;
     envio = v;
     invOp("set", { id: item.id, campos: (function () { var o = {}; o[campo] = envio; return o; })() });
     if (campo === "nome") { var nb = document.querySelector('.item[data-iid="' + item.id + '"] .item-nome b'); if (nb) nb.textContent = v; }
-    if (campo === "peso" || campo === "def" || campo === "desl" || campo === "mana" || campo === "cat") { invAtualizarResumo(); invAtualizarTags(item); }
+    if (["peso", "def", "desl", "mana", "poder", "destreza", "inteligencia", "cat"].indexOf(campo) !== -1) { invAtualizarResumo(); invAtualizarTags(item); }
     if (campo === "cat" || campo === "efeito" || campo === "mestre" || campo === "sinergia" || campo === "fase") { /* atualiza o cabeçalho na próxima vez que a lista for desenhada */ }
     return true;
   }

@@ -26,6 +26,7 @@ try {
         'GET arte' => acaoArte(),
         'GET img' => acaoImg(),
         'GET acao' => acaoAcao(),
+        'GET xp_status' => acaoXpStatus(),
         'GET cenas' => acaoCenas(),
         'GET campo' => acaoCampo(),
         'POST campo_op' => acaoCampoOp(),
@@ -261,6 +262,14 @@ function acaoXpConceder(): never
     responder(concederXp((array)($c['jogadores'] ?? []), (int)($c['quantidade'] ?? 0), (string)($c['motivo'] ?? '')));
 }
 
+function acaoXpStatus(): never
+{
+    $u = exigirLogin();
+    if ($u['papel'] === 'mestre') erro('Apenas jogadores consultam esta ficha.', 403);
+    $j = jogadorDoUsuario($u['id']);
+    responder($j ? ['id' => $j['id'], 'xp' => max(0, (int)($j['xp'] ?? 0)), 'nivel' => $j['nivel'], 'xpLog' => array_values((array)($j['xpLog'] ?? []))] : ['id' => null]);
+}
+
 function acaoJogadorExcluir(): never
 {
     exigirMestre();
@@ -411,7 +420,7 @@ function acaoPerfilBonus(): never
     $in = (array)(corpo()['bonus'] ?? []);
     $bonus = [];
     foreach (ATRIBUTOS as $k) $bonus[$k] = max(-5, min(10, (int)($in[$k] ?? 0)));
-    salvarCamposJogador($jog['id'], ['bonus' => $bonus], false);
+    salvarCamposJogador($jog['id'], ['bonus' => $bonus], false, true);
     responder(['ok' => true]);
 }
 
@@ -492,7 +501,7 @@ function acaoAcao(): never
     if ($u['papel'] === 'mestre') responder(['acao' => lerEstado('acao'), 'grids' => lerEstado('grids')]);
     $jog = jogadorDoUsuario($u['id']);
     if (!$jog) responder(['ativo' => false]); /* conta sem personagem ligado não vê a cena */
-    responder(acaoPublica($jog['id']));
+    responder(acaoPublica($jog));
 }
 
 function acaoCampo(): never

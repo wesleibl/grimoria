@@ -977,7 +977,7 @@ function acoesLib(b) {
   return false;
 }
 
-var filtroBest = "todos";
+var filtroBest = "todos", filtroBestNome = "";
 
 /* Imagens do Bestiário: ícones do WoW (os mesmos da Wowhead) guardados em image/bestiario/. O nome do arquivo é genérico de propósito,
    para não entregar os inimigos secretos pelo endereço da imagem. */
@@ -1074,17 +1074,16 @@ function monstroCard(m) {
 }
 
 function viewBestiario() {
-  var publicos = INIMIGOS.filter(function (m) { return !m.segredo; }).length;
   return "<h1>Bestiário</h1>" +
-    '<p class="lead">Os inimigos seguem a história da campanha, do primeiro encontro ao arco final. Cada um mostra o nível de jogador em que funciona melhor. Os agentes da organização ficam na aba Mestre, para não estragar a surpresa.</p>' +
+    '<p class="lead">Os inimigos seguem a história da campanha, do primeiro encontro ao arco final. Cada um mostra o nível de jogador em que funciona melhor. A fase Segredo reúne os agentes da organização.</p>' +
     panel(ic("grupo") + "Para 4 ou para 8 jogadores",
       "<p>Os números dos cards são para 4 jogadores. Com 8 jogadores, ajuste assim (o valor de Vida para 8 já aparece ao lado):</p>" +
       "<ul><li><b>Capangas:</b> use o dobro de unidades.</li><li><b>Normais e elites:</b> dobre a Vida.</li><li><b>Chefes:</b> dobre a Vida e dê uma ação extra por turno (uma ação menor, como um ataque simples).</li></ul>") +
-    '<div class="controls"><div class="fgroup"><span>Fase</span><div class="chips" id="fFase">' +
-    ["todos"].concat(FASES).map(function (f) {
+    '<div class="controls"><label>Pesquisar por nome<input class="sorteio-in" id="bestBusca" type="search" value="' + esc(filtroBestNome) + '" placeholder="Nome do monstro"></label><div class="fgroup"><span>Fase</span><div class="chips" id="fFase">' +
+    ["todos"].concat(FASES, ["Segredo"]).map(function (f) {
       return '<button type="button" class="chip" data-fase="' + f + '" aria-pressed="' + (filtroBest === f) + '">' + (f === "todos" ? "Todos" : f) + "</button>";
     }).join("") + "</div></div></div>" +
-    dropSeletorHTML() + '<p id="contaBest" role="status">' + publicos + " inimigos neste bestiário.</p>" +
+    dropSeletorHTML() + '<p id="contaBest" role="status"></p>' +
     '<div id="listaMonstros"></div>' +
     panel("Notas", "<ul><li>Como o jogador subtrai a redução de dano (1 para cada 2 de Poder) do dano, os inimigos precisam de dano um pouco mais alto do que parece. Se ninguém perde vida, suba o dado de dano um degrau.</li><li>Se o combate estiver fácil demais, aumente a Vida ou o Ataque. Se estiver difícil, reduza a Defesa.</li><li>Alguns inimigos têm redução de dano. Ela se aplica antes de tirar a Vida, e o dano mínimo continua sendo 1.</li><li>Para outros níveis, veja a tabela de referência na aba Níveis.</li></ul>");
 }
@@ -1092,14 +1091,17 @@ function viewBestiario() {
 function desenharBestiario() {
   var cont = document.getElementById("listaMonstros");
   if (!cont) return;
-  var fases = filtroBest === "todos" ? FASES : [filtroBest];
-  var h = "";
+  var fases = filtroBest === "todos" ? FASES.concat(["Segredo"]) : [filtroBest];
+  var h = "", quantidade = 0, busca = filtroBestNome.trim().toLocaleLowerCase("pt-BR");
   fases.forEach(function (f) {
-    var lista = INIMIGOS.filter(function (m) { return m.fase === f && !m.segredo; });
+    var lista = INIMIGOS.filter(function (m) { return m.fase === f && (!busca || m.nome.toLocaleLowerCase("pt-BR").indexOf(busca) !== -1); });
     if (!lista.length) return;
+    quantidade += lista.length;
     h += "<h2>" + f + "</h2>" + '<div class="cols">' + lista.map(monstroCard).join("") + "</div>";
   });
-  cont.innerHTML = h;
+  cont.innerHTML = h || '<div class="empty">Nenhum inimigo encontrado.</div>';
+  var conta = document.getElementById("contaBest");
+  if (conta) conta.textContent = quantidade + " de " + INIMIGOS.length + " inimigos.";
 }
 
 function viewSessaoZero() {
@@ -2025,7 +2027,7 @@ function excluirImg(id) {
 
 function viewNiveisMestre() {
   var h = "<h1>Níveis e evolução</h1>" +
-    '<p class="lead">Os jogadores acumulam XP conforme você concede na aba Experiência. Os marcos seguem o D&amp;D 5e; alcançar o valor não muda o nível automaticamente. Você decide quando atualizar cada ficha.</p>';
+    '<p class="lead">Os jogadores acumulam XP conforme você concede na aba Experiência. Ao atingir um marco do D&amp;D 5e, o nível sobe automaticamente e libera 1 ponto de atributo na ficha.</p>';
 
   h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Grimório"], [
     ["1", "0", "20", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
@@ -2079,7 +2081,7 @@ function viewNiveisMestre() {
 var xpMsg = "", xpValorSugerido = 0;
 function viewXpMestre() {
   var lista = jogs || [];
-  return '<h1>Experiência</h1><p class="lead">Escolha um ou mais jogadores. A quantidade informada será concedida a cada um. Só você pode adicionar XP; o nível continua sob seu controle na ficha do jogador.</p>' +
+  return '<h1>Experiência</h1><p class="lead">Escolha um ou mais jogadores. A quantidade informada será concedida a cada um. Só você pode adicionar XP; o nível sobe automaticamente ao atingir o marco.</p>' +
     '<section class="panel"><h2>Conceder XP</h2><p><button type="button" data-xptodos>Selecionar todos</button></p>' +
     '<div class="xp-jogadores">' + lista.map(function (j) { return '<label><input type="checkbox" data-xpjog="' + esc(j.id) + '"><span><b>' + esc(j.personagem || j.nome || "Jogador") + '</b><small>Nível ' + nivelJog(j) + ' · ' + (parseInt(j.xp, 10) || 0) + ' XP</small></span></label>'; }).join("") + '</div>' +
     '<div class="item-grade"><label>XP para cada jogador<input class="sorteio-in" id="xpQuantidade" type="number" min="1" max="100000" step="1" value="' + (xpValorSugerido || "") + '"></label>' +
@@ -2107,9 +2109,13 @@ function acoesXp(b) {
   gravar('xp_conceder', { jogadores: ids, quantidade: quantidade, motivo: motivo }).then(function (r) {
     b.disabled = false;
     if (!r || !r.jogadores) { xpMsg = 'Não foi possível conceder XP. Confira o aviso no topo.'; var falha = document.getElementById('xpMsg'); if (falha) falha.textContent = xpMsg; return; }
-    jogs.forEach(function (j) { if (r.jogadores[j.id]) { j.xp = r.jogadores[j.id].xp; j.xpLog = r.jogadores[j.id].xpLog; } });
+    var subiram = [];
+    jogs.forEach(function (j) { if (r.jogadores[j.id]) {
+      if (r.jogadores[j.id].nivel > nivelJog(j)) subiram.push(j.personagem || j.nome || "Jogador");
+      j.xp = r.jogadores[j.id].xp; j.nivel = r.jogadores[j.id].nivel; j.xpLog = r.jogadores[j.id].xpLog;
+    } });
     xpValorSugerido = 0;
-    xpMsg = quantidade + ' XP concedidos a ' + ids.length + (ids.length === 1 ? ' jogador.' : ' jogadores.');
+    xpMsg = quantidade + ' XP concedidos a ' + ids.length + (ids.length === 1 ? ' jogador.' : ' jogadores.') + (subiram.length ? ' Subiram de nível: ' + subiram.join(', ') + '.' : '');
     renderizar();
   });
   return true;
@@ -3880,7 +3886,8 @@ function itemCatalogoHTML(i) {
       '<label>Categoria<select class="sorteio-in" data-itf="cat" data-itid="' + i.id + '">' + CATS_ITEM.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === i.cat ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select></label>" +
       '<label>Raridade<select class="sorteio-in" data-itf="raridade" data-itid="' + i.id + '">' + RARID_ITEM.map(function (c) { return '<option value="' + c + '"' + (c === (i.raridade || "comum") ? " selected" : "") + ">" + c + "</option>"; }).join("") + "</select></label>" +
       itCampo("Peso (kg)", "peso", i.id, i.peso || 0, "number", ' min="0" step="0.05"') + itCampo("Valor (ouro)", "valor", i.id, (i.valor || 0) / 100, "number", ' min="0" step="0.01"') +
-      itCampo("Defesa (equipado)", "def", i.id, i.def || 0, "number", ' min="-10" max="10"') + itCampo("Deslocamento (equipado)", "desl", i.id, i.desl || 0, "number", ' min="-10" max="10"') + itCampo("Mana máxima (equipado)", "mana", i.id, i.mana || 0, "number", ' min="-10" max="10"') + "</div>" +
+      itCampo("Defesa (equipado)", "def", i.id, i.def || 0, "number", ' min="-10" max="10"') + itCampo("Deslocamento (equipado)", "desl", i.id, i.desl || 0, "number", ' min="-10" max="10"') + itCampo("Mana máxima (equipado)", "mana", i.id, i.mana || 0, "number", ' min="-10" max="10"') +
+      itCampo("Poder (equipado)", "poder", i.id, i.poder || 0, "number", ' min="-10" max="10"') + itCampo("Destreza (equipado)", "destreza", i.id, i.destreza || 0, "number", ' min="-10" max="10"') + itCampo("Inteligência (equipado)", "inteligencia", i.id, i.inteligencia || 0, "number", ' min="-10" max="10"') + "</div>" +
       itCampo("Efeito ou dano (resumo)", "efeito", i.id, i.efeito || "", "text", ' maxlength="200"') +
       '<label>Descrição (o jogador vê)<textarea class="sorteio-in" rows="3" data-itf="desc" data-itid="' + i.id + '">' + esc(i.desc || "") + "</textarea></label>" +
       '<fieldset class="pj-acesso item-mestre"><legend>' + ic("cadeado") + 'Só o mestre vê</legend><label>Descrição secreta (ex.: forte quando usado com tal magia)<textarea class="sorteio-in" rows="4" data-itf="mestre" data-itid="' + i.id + '">' + esc(i.mestre || "") + "</textarea></label>" +
@@ -4013,7 +4020,7 @@ function changeItens(el) {
     var v = el.value;
     if (d.itf === "peso") v = Math.max(0, Number(v) || 0);
     else if (d.itf === "valor") v = Math.max(0, Math.round((Number(v) || 0) * 100));
-    else if (d.itf === "def" || d.itf === "desl" || d.itf === "mana") v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0));
+    else if (["def", "desl", "mana", "poder", "destreza", "inteligencia"].indexOf(d.itf) !== -1) v = Math.max(-10, Math.min(10, parseInt(v, 10) || 0));
     else if (d.itf === "sinergia") v = v.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
     else if (d.itf === "nome" && !v.trim()) { el.value = i.nome; return true; }
     i[d.itf] = v;
@@ -4251,6 +4258,12 @@ var PERSONAGENS = [
     fala: "Bota na porta, lavaram? Lavaram nada. Entra. Tem sopa. E se eu ouvir espada depois da meia-noite, dormem no estábulo.",
     uso: "Base dos jogadores na Encruzilhada. Cama, comida, recados deixados por outros NPCs. Um lugar seguro que a organização pode invadir num arco posterior.",
     segredo: "" },
+  { nome: "Frederic", sexo: "m", idade: 44, papel: "Mercador viajante e condutor de caravana", origem: "Encruzilhada", grupo: "Encruzilhada",
+    aparencia: "Barba castanha salpicada de grisalho, pele queimada de sol e um casaco azul de viagem com bolsos sempre cheios de amostras. Usa um lenço vermelho no pescoço e conduz uma carroça de toldo remendado, que conhece pelo rangido de cada roda.",
+    humor: "Contador de histórias caloroso: muda a voz de cada personagem e faz pausas no melhor momento, só para ouvir alguém pedir que continue. Ri de si mesmo quando exagera um detalhe.",
+    fala: "A estrada até Alta Lumen é longa. Ainda bem: dá tempo de eu contar o que ouvi sobre Atlantus. Mas aviso que cada porto conta um fim diferente.",
+    uso: "Levou os jogadores da Encruzilhada até Alta Lumen e, durante a viagem, contou a eles histórias sobre Atlantus. Pode reconhecer o grupo depois na capital, negociar suprimentos e trazer notícias das estradas.",
+    segredo: "As histórias sobre Atlantus vieram de marinheiros e mercadores; Frederic não sabe quais partes são verdadeiras. Se os jogadores voltarem ao assunto, ele pode indicar quem lhe contou a versão que mais os intrigou." },
 
   /* ---- Alta Lumen e a Ordem ---- */
   { nome: "Otimus", sexo: "m", idade: 58, papel: "Líder dos Cavaleiros de Grimória", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
@@ -4265,6 +4278,12 @@ var PERSONAGENS = [
     fala: "Na minha primeira missão eu salvei a vila errada. Ficou todo mundo grato. A vila certa também sobreviveu, então... empate?",
     uso: "A aliada que defende a divisão em esquadrões. Plebeia entre os Cavaleiros, entende os jogadores. É quem propõe que eles liderem no final.",
     segredo: "Foi quem apresentou os jogadores a Lúcia. Vai se sentir culpada na revelação." },
+  { nome: "Simon", sexo: "m", idade: 22, papel: "Cavaleiro recém-recrutado", origem: "Bairro dos artesãos de Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
+    aparencia: "Alto e magro, pele morena, cabelo preto preso num rabo curto e uma pequena cicatriz sobre a sobrancelha esquerda. O tabardo dos Cavaleiros ainda é novo demais para combinar com as botas gastas que ele se recusa a trocar.",
+    humor: "Reservado no primeiro encontro; depois solta comentários secos e presta atenção a quem ajuda sem buscar aplausos. Ouve antes de prometer e cumpre o que promete.",
+    fala: "O distintivo me diz a quem devo responder. O que você faz pelos outros me diz se vale a pena segui-lo.",
+    uso: "Recrutado há poucas semanas, acompanha uma patrulha experiente e ainda conhece pouco da política da Ordem. É fiel a quem julga digno pela coragem e pelo cuidado com os outros, independentemente de posto. Pode se tornar um aliado firme dos jogadores se eles conquistarem sua confiança.",
+    segredo: "Se uma ordem colocar inocentes em risco, Simon hesita diante do superior e procura orientação em quem já provou ser digno de sua lealdade." },
   { nome: "Escrivão Pascoal Tinteiro", sexo: "m", idade: 40, papel: "Escrivão-chefe dos Cavaleiros", origem: "Alta Lumen", grupo: "Alta Lumen e Cavaleiros",
     aparencia: "Magro, nervoso, tinta nas mangas, nos dedos e numa bochecha, óculos escorregando, pilhas de papel que ele carrega como escudo. Treme a perna quando sentado.",
     humor: "Riso nervoso no fim de cada frase e piadas de papelada ('isso precisa de três vias, inclusive a piada').",
@@ -4476,6 +4495,7 @@ MESTRE = {
   },
 
   input: function (el) {
+    if (el.id === "bestBusca") { filtroBestNome = el.value; desenharBestiario(); return; }
     var d = el.dataset || {};
     if (inputItens(el)) return;
     if (inputCenarios(el)) return;

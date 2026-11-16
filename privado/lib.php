@@ -180,11 +180,25 @@ function todoEstado(): array
 
 /* ============================ JOGADORES ============================ */
 
+function nivelPorXp(int $xp): int
+{
+    if ($xp >= 6500) return 5;
+    if ($xp >= 2700) return 4;
+    if ($xp >= 900) return 3;
+    return $xp >= 300 ? 2 : 1;
+}
+
+function nivelAtualJogador(array $j): int
+{
+    return max(1, min(5, (int)($j['nivel'] ?? 1)), nivelPorXp(max(0, (int)($j['xp'] ?? 0))));
+}
+
 function listarJogadores(): array
 {
     $out = [];
     foreach (db()->query('SELECT id, dados, usuario_id FROM jogadores ORDER BY criado_em, id') as $r) {
         $j = json_decode($r['dados'], true) ?: [];
+        $j['nivel'] = nivelAtualJogador($j);
         $j['id'] = $r['id'];
         $j['usuario'] = $r['usuario_id'] === null ? null : (int)$r['usuario_id'];
         $out[] = $j;
@@ -199,13 +213,14 @@ function jogadorDoUsuario(int $uid): ?array
     $r = $st->fetch();
     if (!$r) return null;
     $j = json_decode($r['dados'], true) ?: [];
+    $j['nivel'] = nivelAtualJogador($j);
     $j['id'] = $r['id'];
     return $j;
 }
 
 /* Grava só os campos recebidos, mantendo o resto. Assim a edição do jogador no Perfil
    e a do mestre na aba Jogadores não se apagam uma à outra. */
-function salvarCamposJogador(string $id, array $campos, bool $criar): bool
+function salvarCamposJogador(string $id, array $campos, bool $criar, bool $validarBonus = false): bool
 {
     $pdo = db();
     $pdo->beginTransaction();
@@ -215,6 +230,19 @@ function salvarCamposJogador(string $id, array $campos, bool $criar): bool
     if ($atual === false && !$criar) { $pdo->rollBack(); return false; }
     $dados = $atual === false ? [] : (json_decode($atual, true) ?: []);
     foreach ($campos as $k => $v) $dados[$k] = $v;
+    $dados['nivel'] = nivelAtualJogador($dados);
+    if ($validarBonus) {
+        if (empty($dados['atrTravado'])) { $pdo->rollBack(); erro('Salve primeiro os atributos iniciais.'); }
+        $limites = [3, 3, 4, 4, 5];
+        $limite = $limites[$dados['nivel'] - 1];
+        $gasto = 0;
+        foreach (ATRIBUTOS as $k) {
+            $v = (int)($dados['bonus'][$k] ?? 0);
+            $gasto += $v;
+            if ((int)($dados['atr'][$k] ?? 0) + $v > $limite) { $pdo->rollBack(); erro('Um atributo ultrapassa o limite do nível ' . $dados['nivel'] . '.'); }
+        }
+        if ($gasto > $dados['nivel'] - 1) { $pdo->rollBack(); erro('Você ainda não ganhou pontos suficientes para esses bônus.'); }
+    }
     $json = json_encode((object)$dados, JSON_UNESCAPED_UNICODE);
     if (strlen($json) > 2_000_000) { $pdo->rollBack(); erro('Anotações grandes demais.'); }
     $pdo->prepare('INSERT INTO jogadores (id, dados) VALUES (?, ?) ON DUPLICATE KEY UPDATE dados = VALUES(dados)')->execute([$id, $json]);
@@ -243,13 +271,14 @@ function concederXp(array $ids, int $quantidade, string $motivo): array
         $xp = max(0, (int)($dados['xp'] ?? 0));
         if ($xp + $quantidade > 1000000000) { $pdo->rollBack(); erro('Limite de XP atingido.'); }
         $dados['xp'] = $xp + $quantidade;
+        $dados['nivel'] = nivelAtualJogador($dados);
         $log = array_values(array_filter((array)($dados['xpLog'] ?? []), 'is_array'));
         $log[] = ['em' => date('c'), 'quantidade' => $quantidade, 'motivo' => $motivo];
         $dados['xpLog'] = array_slice($log, -100);
         $novo = json_encode((object)$dados, JSON_UNESCAPED_UNICODE);
         if (strlen($novo) > 2_000_000) { $pdo->rollBack(); erro('Dados grandes demais.'); }
         $pdo->prepare('UPDATE jogadores SET dados = ? WHERE id = ?')->execute([$novo, $id]);
-        $out[$id] = ['xp' => $dados['xp'], 'xpLog' => $dados['xpLog']];
+        $out[$id] = ['xp' => $dados['xp'], 'nivel' => $dados['nivel'], 'xpLog' => $dados['xpLog']];
     }
     $pdo->commit();
     return ['jogadores' => $out];
@@ -482,6 +511,7 @@ function itemAplicar(array $item, array $campos, bool $mestre): array
             case 'usosMax': if ($mestre) $item['usosMax'] = max(0, min(999, (int)$v)); break;
             case 'usos': if ($mestre) $item['usos'] = max(0, (int)$v); break;
             case 'def': case 'desl': case 'mana': $item[$k] = max(-10, min(10, (int)$v)); break; /* bônus (ou penalidade) enquanto equipado */
+            case 'poder': case 'destreza': case 'inteligencia': if ($mestre) $item[$k] = max(-10, min(10, (int)$v)); break;
             case 'mestre': if ($mestre) $item['mestre'] = mb_substr(trim((string)$v), 0, 2000); break;
             case 'fase': if ($mestre) $item['fase'] = mb_substr(trim((string)$v), 0, 60); break;
             case 'sinergia':
@@ -1253,8 +1283,9 @@ function estadoVida(array $t): ?string
 }
 
 /* O que o jogador vê da aba Ação: sem nomes de pasta (podem ser spoiler), sem tokens ocultos e sem dados do mestre. */
-function acaoPublica(?string $jogId = null): array
+function acaoPublica(?array $jogador = null): array
 {
+    $jogId = $jogador['id'] ?? null;
     $a = lerEstado('acao') ?? [];
     if (empty($a['ativo']) || empty($a['envio'])) return ['ativo' => false];
     $c = cenaEnviada((int)$a['envio']);
@@ -1345,6 +1376,12 @@ function acaoPublica(?string $jogId = null): array
     $eventos = [];
     foreach ($campo['eventos'] as $e) if (!empty($e['pub'])) $eventos[] = $e['pub'];
 
+    $equipados = [];
+    foreach (invVisivel((array)($jogador['inv'] ?? []), false) as $item) {
+        if (empty($item['equip'])) continue;
+        $equipados[] = array_intersect_key($item, array_flip(['nome', 'cat', 'efeito', 'qtd', 'equip', 'def', 'desl', 'mana', 'poder', 'destreza', 'inteligencia']));
+    }
+
     return [
         'ativo' => true,
         'modo' => 'grid',
@@ -1356,6 +1393,7 @@ function acaoPublica(?string $jogId = null): array
         'livre' => (bool)($a['livre'] ?? true),
         'eu' => $euId,
         'minhaVida' => $minhaVida,
+        'equipados' => $equipados,
         'tokens' => $tokens,
         'combate' => $combate,
         'eventos' => array_slice($eventos, -8),
