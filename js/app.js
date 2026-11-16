@@ -3008,14 +3008,136 @@ function invInput(el) {
   return false;
 }
 
+/* ============================ MEUS DADOS (JOGADOR) ============================ */
+
+/* Aparência dos seus dados: cor do dado, cor dos números e uma foto opcional. Vale para todos que veem você rolar. */
+var DADO_CORES = ["#2a6fc9", "#b3261e", "#2e8b57", "#7a3fa0", "#e8d23a", "#e07b1f", "#222222", "#f2f2f2"];
+var DADO_NUMS = ["#ffffff", "#1a1a1a", "#f2c14e", "#ffd9d0", "#c8f0d8"];
+var dadoRasc = null, dadoMsgView = "", dadoTesteTimer = null;
+
+function dadoSalvo() {
+  var d = (PUB.jogador && PUB.jogador.dado) || {};
+  return { cor: corHexOu(d.cor, "#2a6fc9"), num: corHexOu(d.num, "#ffffff"), img: d.img || null };
+}
+function dadoRascunho() { if (!dadoRasc) dadoRasc = dadoSalvo(); return dadoRasc; }
+function dadoAvisoHTML(r) {
+  var c = contrasteHex(r.cor, r.num);
+  return c < 3 ? "Contraste baixo (" + c.toFixed(1).replace(".", ",") + ":1, o ideal é 3:1 ou mais): o número pode ficar difícil de ler. Troque uma das cores." : "";
+}
+function dadoPreviaHTML(r) {
+  return DADOS.map(function (d) {
+    return '<figure class="dado-prev"><div class="dado-fig">' + dadoSVG(d, r, String(d), "m" + d) + "</div><figcaption>d" + d + "</figcaption></figure>";
+  }).join("");
+}
+function viewMeusDados() {
+  var j = PUB.jogador;
+  if (!j) return "<h1>Meus dados</h1>" + '<p class="mdica">Crie o seu personagem na aba Perfil para personalizar os dados.</p>';
+  var r = dadoRascunho(), salvo = dadoSalvo();
+  function amostras(lista, atual, attr, rot) {
+    return lista.map(function (c) {
+      return '<button type="button" class="amostra' + (atual === c ? " sel" : "") + '" ' + attr + '="' + c + '" style="background:' + c + '" aria-label="' + rot + " " + c + '" aria-pressed="' + (atual === c) + '"></button>';
+    }).join("");
+  }
+  return "<h1>Meus dados</h1>" + '<p class="lead">Escolha a aparência dos dados que você rola na aba Ação. Todos que veem você rolar enxergam esta aparência.</p>' +
+    '<p id="dadoMsg" role="status" class="mdica">' + esc(dadoMsgView) + "</p>" +
+    '<div class="dado-prevs" id="dadoPrevs">' + dadoPreviaHTML(r) + "</div>" +
+    '<p class="pj-botoes"><button type="button" id="dadoTeste">Rolar de teste</button><span class="mdica">O teste roda só no seu navegador: ninguém vê e não vai para o registro.</span></p>' +
+    '<div class="dado-cfg"><div><h2>Cor do dado</h2><div class="amostras" id="dadoCores">' + amostras(DADO_CORES, r.cor, "data-dcor", "Cor do dado") + '</div><label class="dado-livre">Outra cor <input type="color" id="dadoCor" value="' + r.cor + '"></label></div>' +
+    '<div><h2>Cor dos números</h2><div class="amostras" id="dadoNums">' + amostras(DADO_NUMS, r.num, "data-dnum", "Cor dos números") + '</div><label class="dado-livre">Outra cor <input type="color" id="dadoNum" value="' + r.num + '"></label></div></div>' +
+    '<p id="dadoAviso" class="tok-aviso" role="status">' + esc(dadoAvisoHTML(r)) + "</p>" +
+    '<h2>Foto (opcional)</h2><p class="mdica">A foto vira a textura do dado (JPG, PNG, WebP ou GIF, reduzida para no máximo 512 px e ~150 KB). O número fica por cima, com contorno.</p>' +
+    '<p class="pj-botoes"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="vh" id="dadoImg"><label class="btn" for="dadoImg">' + (r.img ? "Trocar foto" : "Escolher foto") + "</label>" +
+    (r.img ? '<button type="button" id="dadoImgDel">Remover foto</button>' : "") + "</p>" +
+    '<p class="pj-botoes"><button type="button" class="primary" id="dadoSalvar">Salvar aparência</button><button type="button" id="dadoPadrao">Voltar ao padrão</button></p>';
+}
+
+/* Prévia ao vivo: refaz só os dados e o aviso (sem redesenhar a tela, para o seletor de cor não perder o foco). */
+function dadoAtualizarPrevia() {
+  var r = dadoRascunho(), p = document.getElementById("dadoPrevs"), a = document.getElementById("dadoAviso");
+  if (p) p.innerHTML = dadoPreviaHTML(r);
+  if (a) a.textContent = dadoAvisoHTML(r);
+  ["dadoCores", "dadoNums"].forEach(function (id) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) {
+      var on = (b.getAttribute("data-dcor") || b.getAttribute("data-dnum")) === (id === "dadoCores" ? r.cor : r.num);
+      b.classList.toggle("sel", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  });
+  var c1 = document.getElementById("dadoCor"), c2 = document.getElementById("dadoNum");
+  if (c1 && c1.value !== r.cor) c1.value = r.cor;
+  if (c2 && c2.value !== r.num) c2.value = r.num;
+}
+
+/* "Rolar de teste": gira e troca os números só aqui no navegador (não chama o servidor e não gera evento). */
+function dadoRolarTeste() {
+  var figs = document.querySelectorAll("#dadoPrevs .dado-prev"), t0 = Date.now(), reduz = semMovimento();
+  if (dadoTesteTimer) clearInterval(dadoTesteTimer);
+  var alvo = [];
+  Array.prototype.forEach.call(figs, function (f, i) { alvo.push(1 + Math.floor(Math.random() * DADOS[i])); if (!reduz) f.classList.add("rolando"); });
+  dadoTesteTimer = setInterval(function () {
+    var dec = Date.now() - t0, fim = dec >= DADO_ROL_MS;
+    Array.prototype.forEach.call(figs, function (f, i) {
+      var n = f.querySelector(".dado-num");
+      if (n) n.textContent = String(fim ? alvo[i] : 1 + Math.floor(Math.random() * DADOS[i]));
+      if (fim) f.classList.remove("rolando");
+    });
+    if (fim) { clearInterval(dadoTesteTimer); dadoTesteTimer = null; }
+  }, 90);
+}
+
+function enviarFotoDado(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  dadoMsgView = "Enviando a foto…";
+  renderizar();
+  reduzirImagem(f, 512, 150000, function (erro, url) {
+    if (erro) { dadoMsgView = erro; renderizar(); return; }
+    gravar("perfil_dado_img", { dados: url }).then(function (r) {
+      if (r) {
+        var d = dadoSalvo();
+        PUB.jogador.dado = { cor: d.cor, num: d.num, img: r.id };
+        dadoRascunho().img = r.id;
+      }
+      dadoMsgView = r ? "Foto salva." : "Não foi possível salvar a foto. Tente de novo.";
+      renderizar();
+    });
+  });
+}
+
+function cliqueMeusDados(b) {
+  if (b.dataset.dcor) { dadoRascunho().cor = corHexOu(b.dataset.dcor, "#2a6fc9"); dadoAtualizarPrevia(); return true; }
+  if (b.dataset.dnum) { dadoRascunho().num = corHexOu(b.dataset.dnum, "#ffffff"); dadoAtualizarPrevia(); return true; }
+  if (b.id === "dadoTeste") { dadoRolarTeste(); return true; }
+  if (b.id === "dadoPadrao") { var r = dadoRascunho(); r.cor = "#2a6fc9"; r.num = "#ffffff"; dadoAtualizarPrevia(); return true; }
+  if (b.id === "dadoSalvar" && PUB.jogador) {
+    var d = dadoRascunho();
+    gravar("perfil_dado", { cor: d.cor, num: d.num }).then(function (r) {
+      if (r) PUB.jogador.dado = { cor: d.cor, num: d.num, img: d.img || null };
+      dadoMsgView = r ? "Aparência salva." : "Não foi possível salvar. Tente de novo.";
+      var m = document.getElementById("dadoMsg");
+      if (m) m.textContent = dadoMsgView;
+    });
+    return true;
+  }
+  if (b.id === "dadoImgDel" && PUB.jogador) {
+    gravar("perfil_dado_img_remover", {}).then(function (r) {
+      if (r) { var d = dadoSalvo(); PUB.jogador.dado = { cor: d.cor, num: d.num, img: null }; dadoRascunho().img = null; dadoMsgView = "Foto removida."; renderizar(); }
+    });
+    return true;
+  }
+  return false;
+}
+
 /* ============================ ROTEAMENTO ============================ */
 
 var VIEWS = [
-  ["inicio", "Início", "casa"], ["perfil", "Perfil", "grupo"], ["meu-grimorio", "Meu grimório", "livro"], ["inventario", "Inventário", "mochila"], ["acao", "Ação", "espada"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"],
+  ["inicio", "Início", "casa"], ["perfil", "Perfil", "grupo"], ["meu-grimorio", "Meu grimório", "livro"], ["inventario", "Inventário", "mochila"], ["meus-dados", "Meus dados", "dado"], ["acao", "Ação", "espada"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"],
   ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"]
 ];
 var VIEWFN = {
-  "inicio": viewInicioJogador, "perfil": viewPerfil, "meu-grimorio": viewMeuGrimorio, "inventario": viewInventario, "acao": viewAcaoJogador, "regras": viewRegras, "niveis": viewNiveis, "vilarejos": viewVilarejos, "mapa": viewMapa
+  "inicio": viewInicioJogador, "perfil": viewPerfil, "meu-grimorio": viewMeuGrimorio, "inventario": viewInventario, "meus-dados": viewMeusDados, "acao": viewAcaoJogador, "regras": viewRegras, "niveis": viewNiveis, "vilarejos": viewVilarejos, "mapa": viewMapa
 };
 function listaViews() { return MESTRE ? MESTRE.views : VIEWS; }
 
@@ -3025,7 +3147,7 @@ function rotaAtual() {
 }
 
 /* Menu em grupos. Cada item é o id de uma aba, ou um grupo ({ g: nome, i: ids }) que abre uma lista. */
-var NAV_JOGADOR = ["inicio", "perfil", "meu-grimorio", "inventario", "acao", { g: "Guia", i: ["regras", "niveis", "vilarejos", "mapa"] }];
+var NAV_JOGADOR = ["inicio", "perfil", "meu-grimorio", "inventario", "meus-dados", "acao", { g: "Guia", i: ["regras", "niveis", "vilarejos", "mapa"] }];
 function navAtual() { return MESTRE ? MESTRE.nav : NAV_JOGADOR; }
 function viewInfo(id) { var r = null; listaViews().forEach(function (v) { if (v[0] === id) r = v; }); return r; }
 function linkNav(id, atual) {
@@ -3099,6 +3221,7 @@ app.addEventListener("change", function (e) {
   if (MESTRE) { MESTRE.change(e.target); return; }
   if (/^aprimFeitico\d+$/.test(e.target.id || "")) { atualizarTiposAprim(e.target.id.slice(12)); return; }
   if (e.target.id === "perfilImg") enviarRetrato(e.target);
+  else if (e.target.id === "dadoImg") enviarFotoDado(e.target);
   else if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
   else if (e.target.dataset && e.target.dataset.per && PUB.jogador && PUB.jogador.atrTravado && !salvandoPer) {
     if (!perRasc) perRasc = perCopia(PUB.jogador);
@@ -3111,6 +3234,12 @@ app.addEventListener("change", function (e) {
 app.addEventListener("input", function (e) {
   if (invInput(e.target)) return;
   if (MESTRE) { MESTRE.input(e.target); return; }
+  if (e.target.id === "dadoCor" || e.target.id === "dadoNum") {
+    /* Só passa se for #rrggbb (o seletor de cor do navegador já garante, mas confere). */
+    var rd = dadoRascunho(), v = corHexOu(e.target.value, null);
+    if (v) { if (e.target.id === "dadoCor") rd.cor = v; else rd.num = v; dadoAtualizarPrevia(); }
+    return;
+  }
   if (e.target.dataset && e.target.dataset.pf) editarPerfil(e.target);
 });
 
@@ -3128,6 +3257,7 @@ app.addEventListener("click", function (e) {
   if (b.dataset.aprimpedir && !MESTRE && pedirAprimoramentoJogador(b)) return;
   if (b.id === "irEntrar" || b.id === "irRegistrar") { modoConta = b.id === "irRegistrar" ? "registrar" : "entrar"; contaMsg = ""; renderizar(); return; }
   if (b.id === "tentarDeNovo") { carregar(); return; }
+  if (!MESTRE && cliqueMeusDados(b)) return;
   if (b.dataset.zoom) { zoomBotao(b.dataset.zoom); return; }
   if (b.dataset.dado) { escolherDado(parseInt(b.dataset.dado, 10)); return; }
   if (b.hasAttribute("data-dados-rolar")) { rolarDado(); return; }
