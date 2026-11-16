@@ -2616,7 +2616,9 @@ function invAplicar(r) {
 }
 
 function invAdicionar(item, nomeMsg) {
-  invOp("add", { item: item }).then(function (r) {
+  /* Mestre dando item: a conferência de carga e o "entregar mesmo assim" ficam no arquivo do mestre; o servidor também confere. */
+  if (MESTRE && typeof cabeNaCarga === "function" && !cabeNaCarga(invDono(), { nome: item.nome, peso: (Number(item.peso) || 0) * (parseInt(item.qtd, 10) || 1) })) { invMsgSet("Entrega cancelada: o jogador não aguenta o peso."); return; }
+  invOp("add", MESTRE ? { item: item, forcar: true } : { item: item }).then(function (r) {
     if (invAplicar(r)) { invMsg = nomeMsg + " adicionado."; renderizar(); } else invMsgSet("Não foi possível adicionar. Veja o aviso no topo.");
   });
 }

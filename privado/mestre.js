@@ -3705,7 +3705,7 @@ function acoesDrops(b) {
   b.disabled = true;
   var antes = invJogId;
   invJogId = jog.id;
-  invOp("add", { item: invDeTemplate(it, 1, true) }).then(function (r) {
+  invOp("add", { item: invDeTemplate(it, 1, true), forcar: true }).then(function (r) {
     invJogId = antes;
     b.disabled = false;
     if (r) { jog.inv = r.inv; jog.moedas = r.moedas; dropMsg = it.nome + " → " + (jog.personagem || jog.nome || "jogador") + "."; }
@@ -4048,7 +4048,7 @@ function acoesItens(b) {
     if (!cabeNaCarga(jog, item)) { itMsg = (jog.personagem || jog.nome || "O jogador") + " não aguenta o peso de " + item.nome + "."; var mi = document.getElementById("itMsg"); if (mi) mi.textContent = itMsg; return true; }
     b.disabled = true;
     invJogId = jog.id;
-    invOp("add", { item: invDeTemplate(item, 1, true) }).then(function (r) {
+    invOp("add", { item: invDeTemplate(item, 1, true), forcar: true }).then(function (r) {
       b.disabled = false;
       if (r) { jog.inv = r.inv; jog.moedas = r.moedas; itMsg = item.nome + " foi para o inventário de " + (jog.personagem || jog.nome || "jogador") + "."; }
       else itMsg = "Não foi possível entregar. Veja o aviso no topo.";

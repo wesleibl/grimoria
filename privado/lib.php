@@ -574,6 +574,40 @@ const RARID_ITEM = ['comum', 'incomum', 'raro', 'lendário'];
 const MAX_ITENS = 300;
 const CAMPOS_ITEM_MESTRE = ['mestre', 'sinergia', 'fase'];
 
+/* Carga: mesmas contas da ficha do jogador. Capacidade = 20 kg + 5 kg por ponto de Poder (base + bônus + itens equipados; só vale uma armadura e um escudo). */
+function invPesoTotal(array $inv): float
+{
+    $t = 0.0;
+    foreach ($inv as $i) $t += (float)($i['peso'] ?? 0) * max(0, (int)($i['qtd'] ?? 0));
+    return $t;
+}
+function invCapacidadeJog(array $dados, array $inv): float
+{
+    $poder = (int)($dados['atr']['poder'] ?? 0) + (int)($dados['bonus']['poder'] ?? 0);
+    $corpo = $escudo = null;
+    foreach ($inv as $i) {
+        if (empty($i['equip']) || (int)($i['qtd'] ?? 0) < 1) continue;
+        if (($i['cat'] ?? '') !== 'armadura') { $poder += (int)($i['poder'] ?? 0); continue; }
+        $ehEscudo = (bool)preg_match('/escudo|broquel/iu', (string)($i['nome'] ?? ''));
+        $atual = $ehEscudo ? $escudo : $corpo;
+        if ($atual === null || (int)($i['def'] ?? 0) > (int)($atual['def'] ?? 0)) { if ($ehEscudo) $escudo = $i; else $corpo = $i; }
+    }
+    foreach ([$corpo, $escudo] as $i) if ($i) $poder += (int)($i['poder'] ?? 0);
+    return 20 + 5 * max(0, $poder);
+}
+/* Entrega do mestre: recusa se o jogador não aguenta o peso, a não ser que o mestre confirme ("forcar"). */
+function invConferirCarga(PDO $pdo, array $dados, array $inv, array $novos, bool $forcar): void
+{
+    if ($forcar) return;
+    $peso = invPesoTotal($inv);
+    $cap = invCapacidadeJog($dados, $inv);
+    $extra = invPesoTotal($novos);
+    if ($extra > 0 && $peso + $extra > $cap + 0.0001) {
+        $pdo->rollBack();
+        erro('O jogador não consegue carregar: ficaria com ' . round($peso + $extra, 2) . ' kg de ' . round($cap, 2) . ' kg de capacidade.', 409);
+    }
+}
+
 function itemUsosMax(array $item): int
 {
     $padrao = in_array($item['ref'] ?? '', ['dnd-kit-curandeiro', 'kit-kit-curandeiro'], true) ? 10 : 0;
@@ -655,6 +689,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
         $item = itemAplicar(['id' => bin2hex(random_bytes(6)), 'nome' => '', 'cat' => 'outro', 'qtd' => 1, 'peso' => 0, 'valor' => 0, 'equip' => false], $campos, $mestre);
         if ($item['nome'] === '') { $pdo->rollBack(); erro('Dê um nome ao item.'); }
         if (itemUsosMax($item)) { $item['usosMax'] = itemUsosMax($item); $item['usos'] = itemUsos($item); }
+        if ($mestre) invConferirCarga($pdo, $dados, $inv, [$item], !empty($c['forcar']));
         $inv[] = $item;
     } elseif ($op === 'add_lote') {
         /* Vários itens de uma vez, com o motivo e, se o jogador quiser, o desconto do valor nas moedas (1 po = 10 pp = 100 pc). */
@@ -681,6 +716,7 @@ function inventarioOp(string $jogId, string $op, array $c, bool $mestre): array
             $resto = $total - $custo;
             $moedas = ['po' => intdiv($resto, 100), 'pp' => intdiv($resto % 100, 10), 'pc' => $resto % 10];
         }
+        if ($mestre) invConferirCarga($pdo, $dados, $inv, $novos, !empty($c['forcar']));
         $inv = array_merge($inv, $novos);
     } elseif ($op === 'set' || $op === 'del') {
         $id = (string)($c['id'] ?? '');
