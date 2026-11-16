@@ -298,7 +298,7 @@ function viewNiveis() {
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
     panel(ic("brilho") + "Aprimorar um feitiço",
       "<p>Você escolhe um feitiço do seu grimório e um aprimoramento:</p>" +
-      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
+      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +3 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
       "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. O mestre aprova cada escolha.</p>") +
     panel(ic("espada") + "Nova habilidade",
       "<p>Em algum momento, o grimório ganha uma habilidade nova, já pronta. O mestre avisa quando isso acontecer.</p>") +
@@ -626,7 +626,7 @@ function atalhosJogador() {
 
 var OPCOES_APRIMORAMENTO = [
   { id: "dano-dado", categoria: "dano", texto: "Mais dano: +1 dado de dano" },
-  { id: "dano-fixo", categoria: "dano", texto: "Mais dano: +2 de dano fixo" },
+  { id: "dano-fixo", categoria: "dano", texto: "Mais dano: +3 de dano fixo" },
   { id: "barato", categoria: "barato", texto: "Mais barato: -1 de mana" },
   { id: "alcance-alvo", categoria: "alcance", texto: "Mais alcance: +1 alvo" },
   { id: "alcance-area", categoria: "alcance", texto: "Mais alcance: área maior" },

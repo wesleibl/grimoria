@@ -309,7 +309,7 @@ function locaisParaJogador(array $lista): array
 
 const TIPOS_APRIMORAMENTO = [
     'dano-dado' => ['categoria' => 'dano', 'texto' => 'Mais dano: +1 dado de dano'],
-    'dano-fixo' => ['categoria' => 'dano', 'texto' => 'Mais dano: +2 de dano fixo'],
+    'dano-fixo' => ['categoria' => 'dano', 'texto' => 'Mais dano: +3 de dano fixo'],
     'barato' => ['categoria' => 'barato', 'texto' => 'Mais barato: -1 de mana'],
     'alcance-alvo' => ['categoria' => 'alcance', 'texto' => 'Mais alcance: +1 alvo'],
     'alcance-area' => ['categoria' => 'alcance', 'texto' => 'Mais alcance: área maior'],

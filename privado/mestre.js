@@ -2044,7 +2044,7 @@ function viewNiveisMestre() {
     panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b>, e mais +1 a cada 2 níveis (+2 no nível 5, +3 no 7, até +9 no 19). O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço (níveis 2 e 4)",
       "<p>O jogador escolhe um feitiço do grimório e um aprimoramento:</p>" +
-      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
+      "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +3 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
       "<p>Cada feitiço recebe no máximo 2 aprimoramentos, e nunca o mesmo duas vezes. Um feitiço de 4 mana não pode custar menos de 3. Você aprova cada escolha.</p>") +
     panel(ic("espada") + "Nova habilidade (nível 3)",
       "<p>No nível 3, todo grimório ganha uma habilidade nova, já pronta. Ela aparece no card, marcada como Nível 3, com o custo indicado.</p>" +
