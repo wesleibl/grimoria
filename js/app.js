@@ -283,10 +283,16 @@ function meuCaminhoHTML(j) {
   return "<h2>Meu caminho de mana</h2>" + '<div class="cer-card">' + caminhoCardHTML(c, q, false) + "</div>";
 }
 
+function tabelaXpHTML() {
+  return "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Limite por atributo"], XP_MARCOS.map(function (xp, i) {
+    return [String(i + 1), xp.toLocaleString("pt-BR"), String(VIDA_NIVEL[i]), "+" + LIM_NIVEL[i]];
+  }));
+}
+
 function viewNiveis() {
   if (MESTRE) return MESTRE.niveis();
   var h = "<h1>Níveis e evolução</h1>" +
-    '<p class="lead">O mestre concede XP. Ao atingir um marco, seu nível sobe automaticamente e você ganha 1 ponto para distribuir nos atributos da ficha. Marcos: nível 2 com 300 XP, nível 3 com 900, nível 4 com 2.700 e nível 5 com 6.500.</p>';
+    '<p class="lead">O mestre concede XP. Ao atingir um marco, seu nível sobe automaticamente e você ganha 1 ponto para distribuir nos atributos da ficha. Os marcos seguem a tabela de XP do D&amp;D 5e, do nível 1 ao 20 (veja a tabela abaixo).</p>' + tabelaXpHTML();
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite do seu nível.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
@@ -703,16 +709,20 @@ function viewMeuGrimorio() {
    Enquanto isso, o que ele digita ou toca fica num RASCUNHO (perfilRasc, bonusRasc), que sobrevive a trocar de aba. */
 var perfilMsg = "", perfilRasc = null, bonusRasc = null, salvandoInfo = false, salvandoBonus = false, infoMsg = "", bonusMsg = "";
 var ATRS = [["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]];
-var VIDA_NIVEL = [20, 24, 28, 32, 36], LIM_NIVEL = [3, 3, 4, 4, 5];
+var NIVEL_MAX = 20;
+/* Vida: 20 no nível 1, +4 por nível. Limite por atributo: 3, 3, 4, 4, 5 e depois +1 a cada 2 níveis. */
+var VIDA_NIVEL = [], LIM_NIVEL = [];
+for (var ni = 1; ni <= NIVEL_MAX; ni++) { VIDA_NIVEL.push(16 + 4 * ni); LIM_NIVEL.push(3 + Math.floor((ni - 1) / 2)); }
 var atrRasc = { poder: 0, destreza: 0, inteligencia: 0 };
 /* 1 de redução de dano para cada 2 pontos de Poder (arredonda para baixo). */
 function reducaoDano(j) { return Math.max(0, Math.floor(atrTotal(j, "poder") / 2)); }
-function nivelJog(j) { return Math.max(1, Math.min(5, parseInt(j.nivel, 10) || 1)); }
-var XP_MARCOS = [0, 300, 900, 2700, 6500];
+function nivelJog(j) { return Math.max(1, Math.min(NIVEL_MAX, parseInt(j.nivel, 10) || 1)); }
+/* Mesma tabela de XP do D&D 5e. */
+var XP_MARCOS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
 function xpBarHTML(j, titulo) {
   var n = nivelJog(j), xp = Math.max(0, parseInt(j.xp, 10) || 0), base = XP_MARCOS[n - 1], alvo = XP_MARCOS[n];
-  var pct = n === 5 ? 100 : Math.max(0, Math.min(100, Math.round(100 * (xp - base) / (alvo - base))));
-  var texto = n === 5 ? "Nível máximo da campanha" : "Faltam " + Math.max(0, alvo - xp) + " XP para o nível " + (n + 1);
+  var pct = n === NIVEL_MAX ? 100 : Math.max(0, Math.min(100, Math.round(100 * (xp - base) / (alvo - base))));
+  var texto = n === NIVEL_MAX ? "Nível máximo" : "Faltam " + Math.max(0, alvo - xp) + " XP para o nível " + (n + 1);
   var log = (j.xpLog || []).slice(-5).reverse();
   return '<section class="panel xp-painel"><h2>' + esc(titulo || "Experiência") + '</h2><p><b>' + xp + ' XP</b> · nível ' + n + '</p>' +
     '<div class="xp-barra" role="progressbar" aria-label="Progresso de experiência" aria-valuemin="' + base + '" aria-valuemax="' + (alvo || Math.max(base + 1, xp)) + '" aria-valuenow="' + Math.max(base, Math.min(alvo || Math.max(base + 1, xp), xp)) + '"><span style="width:' + pct + '%"></span></div>' +
@@ -754,7 +764,7 @@ var PERICIAS = [
 var PER_ABR = { poder: "POD", destreza: "DES", inteligencia: "INT" };
 /* Proficiência, como no D&D: o personagem é proficiente em algumas perícias e soma o bônus de proficiência nelas.
    Bônus: +2 nos níveis 1 e 2, +3 do nível 3 em diante. Perícias proficientes: 4 no nível 1, mais 1 por nível. */
-function profBonus(j) { return nivelJog(j) <= 2 ? 2 : 3; }
+function profBonus(j) { var n = nivelJog(j); return n <= 2 ? 2 : n <= 8 ? 3 : n <= 12 ? 4 : n <= 16 ? 5 : 6; }
 function perOrcamento(j) { return 4 + nivelJog(j) - 1; }
 function perProf(j, id) { return (parseInt(j.pericias && j.pericias[id], 10) || 0) > 0; }
 function perBonus(j, id) { return perProf(j, id) ? profBonus(j) : 0; }

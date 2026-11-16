@@ -182,15 +182,16 @@ function todoEstado(): array
 
 function nivelPorXp(int $xp): int
 {
-    if ($xp >= 6500) return 5;
-    if ($xp >= 2700) return 4;
-    if ($xp >= 900) return 3;
-    return $xp >= 300 ? 2 : 1;
+    /* Tabela de XP do D&D 5e (nível 2 em diante). */
+    $marcos = [300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+    $nivel = 1;
+    foreach ($marcos as $m) { if ($xp >= $m) $nivel++; }
+    return $nivel;
 }
 
 function nivelAtualJogador(array $j): int
 {
-    return max(1, min(5, (int)($j['nivel'] ?? 1)), nivelPorXp(max(0, (int)($j['xp'] ?? 0))));
+    return max(1, min(20, (int)($j['nivel'] ?? 1)), nivelPorXp(max(0, (int)($j['xp'] ?? 0))));
 }
 
 function listarJogadores(): array
@@ -234,8 +235,7 @@ function salvarCamposJogador(string $id, array $campos, bool $criar, bool $valid
     $dados['nivel'] = nivelAtualJogador($dados);
     if ($validarBonus) {
         if (empty($dados['atrTravado'])) { $pdo->rollBack(); erro('Salve primeiro os atributos iniciais.'); }
-        $limites = [3, 3, 4, 4, 5];
-        $limite = $limites[$dados['nivel'] - 1];
+        $limite = 3 + intdiv($dados['nivel'] - 1, 2);
         $gasto = 0;
         foreach (ATRIBUTOS as $k) {
             $v = (int)($dados['bonus'][$k] ?? 0);

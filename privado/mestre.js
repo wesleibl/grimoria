@@ -731,7 +731,7 @@ var LISTAS = {
 
 /* ============================ ESTADO ============================ */
 
-var filtro = { attr: "todos", papel: "todos", elem: "todos", q: "" };
+var filtro = { attr: "todos", papel: "todos", elem: "todos", q: "", donos: false };
 
 var estadoSalvando = {}, estadoPendente = {};
 function enviarEstado(k) {
@@ -885,6 +885,9 @@ function viewGrimorios() {
     '<div class="note"><p><b>Liberação.</b> Cada jogador vê só o próprio grimório, depois que você marcar “Revelar o grimório” no perfil dele (aba Jogadores). Dentro do grimório, ele vê só os feitiços marcados como <b>Liberada</b>.</p></div>' +
     '<p class="lead">Cada grimório tem um papel (Dano, Tank ou Suporte, que inclui cura, controle e utilidade) e feitiços com custos de mana variados. Cada grimório ganha uma nova habilidade no nível 3, e os tanks ganham uma a cada nível (veja a aba Níveis). Passe o mouse (ou toque) sobre a descrição de um feitiço para ver os valores mínimo e máximo dos dados.</p>' +
     legenda() + '<div class="controls"><input type="search" id="busca" placeholder="Buscar por nome ou feitiço" aria-label="Buscar grimório" value="' + filtro.q.replace(/"/g, "&quot;") + '"></div>' +
+    '<div class="controls"><div class="fgroup"><span>Grimórios</span><div class="chips">' +
+    '<button type="button" class="chip" data-donos="0" aria-pressed="' + (!filtro.donos) + '">Todos</button>' +
+    '<button type="button" class="chip" data-donos="1" aria-pressed="' + filtro.donos + '">Grimórios dos players</button></div></div></div>' +
     '<div class="controls">' +
     '<div class="fgroup"><span>Atributo</span><div class="chips" id="fAttr">' +
     [["todos", "Todos"], ["poder", "Poder"], ["destreza", "Destreza"], ["inteligencia", "Inteligência"]].map(function (a) {
@@ -909,6 +912,7 @@ function viewGrimorios() {
 function desenharGrimorios() {
   var q = filtro.q.trim().toLowerCase();
   var lista = GRIMORIOS.filter(function (g) {
+    if (filtro.donos && !(jogs || []).some(function (j) { return j.grim === g.nome; })) return false;
     if (filtro.attr !== "todos" && g.attr !== filtro.attr) return false;
     if (filtro.papel !== "todos" && g.papel !== filtro.papel) return false;
     if (filtro.elem !== "todos" && g.fam !== filtro.elem) return false;
@@ -1751,7 +1755,7 @@ function viewJogador(j) {
 function fichaJog(j) {
   var n = nivelJog(j);
   return '<fieldset class="pj-acesso"><legend>Ficha (atributos)</legend>' +
-    '<label>Nível<select class="sorteio-in" data-jf="nivel">' + [1, 2, 3, 4, 5].map(function (v) { return '<option value="' + v + '"' + (v === n ? " selected" : "") + ">Nível " + v + "</option>"; }).join("") + "</select></label>" +
+    '<label>Nível<select class="sorteio-in" data-jf="nivel">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(function (v) { return '<option value="' + v + '"' + (v === n ? " selected" : "") + ">Nível " + v + "</option>"; }).join("") + "</select></label>" +
     '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Base</th><th>Bônus</th><th>Total</th></tr></thead><tbody>' + ATRS.map(function (a) {
       return "<tr><td>" + a[1] + '</td><td><input class="sorteio-in num" type="number" min="0" max="10" data-jatr="' + a[0] + '" value="' + atrBase(j, a[0]) + '"></td>' +
         '<td><input class="sorteio-in num" type="number" min="-5" max="10" data-jbonus="' + a[0] + '" value="' + atrBonus(j, a[0]) + '"></td><td><b>' + sinal(atrTotal(j, a[0])) + "</b></td></tr>";
@@ -2029,17 +2033,15 @@ function viewNiveisMestre() {
   var h = "<h1>Níveis e evolução</h1>" +
     '<p class="lead">Os jogadores acumulam XP conforme você concede na aba Experiência. Ao atingir um marco do D&amp;D 5e, o nível sobe automaticamente e libera 1 ponto de atributo na ficha.</p>';
 
-  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Bônus de dano", "Grimório"], [
-    ["1", "0", "20", "+5 pontos para distribuir", "+3", "—", "Feitiços iniciais"],
-    ["2", "300", "24", "+1 ponto", "+3", "—", "Aprimorar 1 feitiço"],
-    ["3", "900", "28", "+1 ponto", "+4", "+1", "Nova habilidade"],
-    ["4", "2.700", "32", "+1 ponto", "+4", "+1", "Aprimorar 1 feitiço"],
-    ["5", "6.500", "36", "+1 ponto", "+5", "+2", "Despertar do grimório"]
-  ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder ÷ 2) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
+  var gr = { 1: "Feitiços iniciais", 2: "Aprimorar 1 feitiço", 3: "Nova habilidade", 4: "Aprimorar 1 feitiço", 5: "Despertar do grimório" };
+  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Bônus de dano", "Grimório"], XP_MARCOS.map(function (xp, i) {
+    var n = i + 1;
+    return [String(n), xp.toLocaleString("pt-BR"), String(VIDA_NIVEL[i]), n === 1 ? "+5 pontos para distribuir" : "+1 ponto", "+" + LIM_NIVEL[i], n >= 3 ? "+" + Math.floor((n - 1) / 2) : "—", gr[n] || "Definido por você"];
+  })) + "<p>A tabela de XP é a do D&amp;D 5e, até o nível 20. No nível 5, cada personagem terá recebido 9 pontos de atributo; no nível 20, 24. Vida: +4 por nível. O limite por atributo sobe 1 a cada 2 níveis. A Defesa (10 + Destreza), a redução de dano (Poder ÷ 2) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos. Do nível 6 em diante o grimório não ganha evolução automática: você decide as recompensas.</p>";
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
     panel(ic("cima") + "Todo nível", "<ul><li>A Vida e a Mana voltam ao máximo, já com o novo máximo.</li><li>O personagem ganha +1 ponto de atributo, respeitando o limite da tabela.</li><li>O grimório evolui (veja abaixo).</li></ul>") +
-    panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b> e <b>+2 a partir do nível 5</b>. O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
+    panel(ic("espada") + "Bônus de dano", "<p>Seus feitiços de dano e ataques com arma ganham dano fixo conforme o nível: <b>+1 a partir do nível 3</b>, e mais +1 a cada 2 níveis (+2 no nível 5, +3 no 7, até +9 no 19). O bônus vale em cada acerto (inclusive em cada alvo atingido) e não conta para dano contínuo (sangramento, queimadura, veneno).</p>") +
     panel(ic("brilho") + "Aprimorar um feitiço (níveis 2 e 4)",
       "<p>O jogador escolhe um feitiço do grimório e um aprimoramento:</p>" +
       "<ul><li><b>Mais dano:</b> +1 dado de dano, ou +2 de dano fixo.</li><li><b>Mais barato:</b> -1 de mana (mínimo 1).</li><li><b>Mais alcance:</b> +1 alvo (apenas se a magia já acerta 2 ou mais alvos), ou uma área maior.</li><li><b>Mais duradouro:</b> +1 turno de duração.</li><li><b>Mais difícil de resistir:</b> +2 na dificuldade do teste que o feitiço impõe, ou +2 na rolagem de ataque dele.</li></ul>" +
@@ -4553,6 +4555,12 @@ MESTRE = {
     if (b.id === "fecharMestre") { mestreAberto = false; renderizar(); window.scrollTo(0, 0); return true; }
     if (b.id === "btnMesa") { modoMesa = !modoMesa; renderizar(); return true; }
     if (b.id === "btnMestre") { mestreAberto = !mestreAberto; renderizar(); return true; }
+    if (b.dataset.donos !== undefined) {
+      filtro.donos = b.dataset.donos === "1";
+      document.querySelectorAll("[data-donos]").forEach(function (c) { c.setAttribute("aria-pressed", String((c.dataset.donos === "1") === filtro.donos)); });
+      desenharGrimorios();
+      return true;
+    }
     if (b.dataset.attr) {
       filtro.attr = b.dataset.attr;
       document.querySelectorAll("#fAttr .chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.attr === filtro.attr)); });
