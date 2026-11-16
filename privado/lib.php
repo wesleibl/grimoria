@@ -1417,6 +1417,7 @@ function acaoPublica(?array $jogador = null): array
             if ($e = estadoVida($t)) $o['estado'] = $e;
             /* Imagem do inimigo/aliado: só o nome do arquivo público do bestiário (e só se o mestre não a escondeu). */
             if (empty($t['imgOculta']) && is_string($t['icone'] ?? null) && preg_match('/^[a-z0-9_-]{1,60}$/', $t['icone'])) $o['icone'] = $t['icone'];
+            if (empty($t['imgOculta']) && is_string($t['arte'] ?? null) && preg_match('/^m\d{2}$/', $t['arte'])) $o['arte'] = $t['arte'];
             /* Efeitos (sem a nota do mestre). aviso = é a vez dele e o efeito pede resistência. */
             if (empty($t['morto'])) {
                 foreach (($campo['efeitos'][$id] ?? []) as $ef) {

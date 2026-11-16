@@ -1626,6 +1626,7 @@ function atualizarIni() {
 function cardTokHTML(t) {
   var eu = acaoPub && t.id === acaoPub.eu, img;
   if (t.foto) img = '<img class="tc-img" src="' + API + "?a=img&amp;id=" + encodeURIComponent(t.foto) + '" alt="' + esc(t.nome || "") + '">';
+  else if (t.arte) img = '<img class="tc-img" src="' + API + "?a=arte&amp;id=" + encodeURIComponent(t.arte) + '" onerror="' + (t.icone ? "this.onerror=null;this.src='image/bestiario/" + esc(t.icone) + ".jpg'" : "this.remove()") + '" alt="' + esc(t.nome || "") + '">';
   else if (t.icone) img = '<img class="tc-img" src="image/bestiario/' + esc(t.icone) + '.jpg" alt="' + esc(t.nome || "") + '">';
   else img = '<div class="tc-ini" style="background:' + esc(corToken(t)) + '">' + esc(iniciais(t.nome)) + "</div>";
   var estado = t.morto ? "Caído" : (t.estado || ""), vida = "";

@@ -2615,6 +2615,8 @@ function salvarAcao() {
     if (movel(t)) t.desl = deslTok(t);
     /* Inimigo do bestiário: grava o nome do ícone público (image/bestiario/*.jpg). A arte grande de privado/arte nunca vai. */
     if (t.bestiario && t.icone == null && IMAGEM_INIMIGO[t.bestiario]) t.icone = IMAGEM_INIMIGO[t.bestiario];
+    /* Id da arte (m01...): vai ao jogador junto com o ícone, salvo se o mestre escondeu a imagem. */
+    if (t.bestiario && ARTE_INIMIGO[t.bestiario]) t.arte = ARTE_INIMIGO[t.bestiario];
   });
   a.livre = true; /* a opção de travar o movimento fora de combate foi substituída pelo botão de imersão */
   if (tabGeo) { a.cols = tabGeo.cols; a.rows = tabGeo.rows; }
@@ -2692,7 +2694,7 @@ function casaLivre(tipo) {
 }
 function novoTok(nome, tipo, extra) {
   var c = casaLivre(tipo);
-  if (extra && extra.bestiario && IMAGEM_INIMIGO[extra.bestiario]) extra = extras({ icone: IMAGEM_INIMIGO[extra.bestiario] }, extra);
+  if (extra && extra.bestiario && IMAGEM_INIMIGO[extra.bestiario]) extra = extras({ icone: IMAGEM_INIMIGO[extra.bestiario], arte: ARTE_INIMIGO[extra.bestiario] }, extra);
   var t = extras({ id: "t" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nome: nome, tipo: tipo, cor: COR_TOKEN[tipo], x: c.x, y: c.y, oculto: false, gasto: 0 }, extra);
   acaoEst().tokens.push(t);
   return t;
@@ -3096,7 +3098,7 @@ function desenharAcaoMestre() {
       var c = extras({}, t), j = t.jog ? achaJog(t.jog) : null;
       if (j && j.img) c.foto = j.img;
       if (!c.icone && t.bestiario && IMAGEM_INIMIGO[t.bestiario]) c.icone = IMAGEM_INIMIGO[t.bestiario];
-      if (t.bestiario && ARTE_INIMIGO[t.bestiario]) c.arte = ARTE_INIMIGO[t.bestiario];
+    if (t.bestiario && ARTE_INIMIGO[t.bestiario]) c.arte = ARTE_INIMIGO[t.bestiario];
       return c;
     });
     desenharTabuleiro({ cols: g.cols, rows: g.rows, tokens: vis, atual: atualId(), mestre: false, depois: ligarArraste });
@@ -3107,7 +3109,7 @@ function desenharAcaoMestre() {
     c.oculto = !!t.oculto && !revelado(t);
     if (j && j.img) c.foto = j.img; /* foto do personagem no lugar das iniciais */
     if (!c.icone && t.bestiario && IMAGEM_INIMIGO[t.bestiario]) c.icone = IMAGEM_INIMIGO[t.bestiario];
-      if (t.bestiario && ARTE_INIMIGO[t.bestiario]) c.arte = ARTE_INIMIGO[t.bestiario];
+    if (t.bestiario && ARTE_INIMIGO[t.bestiario]) c.arte = ARTE_INIMIGO[t.bestiario];
     return c;
   });
   /* Nos turnos, o token selecionado mostra em azul até onde ainda pode ir. */

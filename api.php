@@ -191,10 +191,10 @@ function acaoMestreJs(): never
     exit;
 }
 
-/* Arte do Bestiário: fica em privado/arte/ (pasta bloqueada) e só sai daqui para o mestre. */
+/* Arte do Bestiário: fica em privado/arte/ (pasta bloqueada) e só sai daqui para quem está logado. */
 function acaoArte(): never
 {
-    exigirMestre();
+    exigirLogin();
     $id = (string)($_GET['id'] ?? '');
     $arq = PRIVADO . '/arte/' . $id . '.jpg';
     if (!preg_match('/^m\d{2}$/', $id) || !is_file($arq)) erro('Imagem não encontrada.', 404);
