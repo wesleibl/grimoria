@@ -943,6 +943,9 @@ function campoOpMestre(string $op, array $c): array
                     $dir = $ant && ((int)$ant['x'] !== $novo['x'] || (int)$ant['y'] !== $novo['y'])
                         ? dirDoMovimento((int)$ant['x'], (int)$ant['y'], $novo['x'], $novo['y'])
                         : dirValida($ant['dir'] ?? null);
+                    /* Se o mestre escolheu o lado ao escolher a casa de destino, vale a escolha. */
+                    $esc = dirValida($p['dir'] ?? null);
+                    if ($esc) $dir = $esc;
                     if ($dir) $novo['dir'] = $dir;
                     $campo['pos'][$id] = $novo;
                 }
@@ -1116,6 +1119,9 @@ function campoOpJogador(array $u, string $op, array $c): never
                         ' (o caminho livre até lá tem ' . $casas . ').', 409);
                 }
                 $dir = dirDoMovimento((int)$pos['x'], (int)$pos['y'], $x, $y, $rota);
+                /* O jogador pode escolher para que lado fica virado ao chegar; sem escolha, vale o lado do caminho. */
+                $esc = dirValida($c['dir'] ?? null);
+                if ($esc) $dir = $esc;
                 $campo['pos'][$meu]['x'] = $x;
                 $campo['pos'][$meu]['y'] = $y;
                 if ($dir) $campo['pos'][$meu]['dir'] = $dir;

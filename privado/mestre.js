@@ -2540,9 +2540,9 @@ function campoOp(op, dados) {
   });
 }
 
-function enviarPos(lista, extra) {
+function enviarPos(lista, extra, dir) {
   var pos = {};
-  lista.forEach(function (t) { pos[t.id] = { x: t.x | 0, y: t.y | 0, gasto: parseInt(t.gasto, 10) || 0 }; });
+  lista.forEach(function (t) { pos[t.id] = { x: t.x | 0, y: t.y | 0, gasto: parseInt(t.gasto, 10) || 0 }; if (dir) pos[t.id].dir = dir; });
   return campoOp("pos", extras({ pos: pos }, extra || {}));
 }
 
@@ -3044,6 +3044,7 @@ function avisarSelecao(t) {
 }
 
 function limparSelecao() {
+  fecharSeletorDir();
   tokSel = null;
   renderAcaoUI();
   infoTok(INFO_PADRAO);
@@ -3087,14 +3088,26 @@ function armadilhasEm(c, exceto) {
   return acaoEst().tokens.filter(function (t) { return t.tipo === "armadilha" && t.id !== exceto.id && (t.x | 0) === c.x && (t.y | 0) === c.y; });
 }
 
-function moverTok(t, c, ox, oy, desdeArrasto) {
+/* Toque na casa de destino: o token que tem lado (não a armadilha) pergunta para onde fica virado antes de ir. */
+function pedirDirEMover(t, c) {
+  if (t.tipo === "armadilha") { moverTok(t, c, t.x, t.y); return; }
+  var id = t.id;
+  abrirSeletorDir(c.x, c.y, function (d) {
+    var t2 = acharTok(id);
+    if (t2 && tokSel === id) moverTok(t2, c, t2.x, t2.y, false, d);
+  });
+  infoTok("Escolha para que lado " + (t.nome || "o token") + " fica virado em " + coordNome(c.x, c.y) + ", ou ✓ para ir direto. Esc cancela.", false, true);
+}
+
+function moverTok(t, c, ox, oy, desdeArrasto, dir) {
   var r = textoDistancia(t, ox, oy, c), txt = r[0], aviso = r[1];
   /* Ao arrastar, o token já está na casa onde foi solto: o redesenho não deve levá-lo de volta à origem para deslizar. */
   if (desdeArrasto && tabGeo) posTokAnt[t.id] = { px: (c.x + 0.5) * tabGeo.cw, py: (c.y + 0.5) * tabGeo.ch };
   if (movel(t) && emTurnos()) t.gasto = (parseInt(t.gasto, 10) || 0) + r[2];
   t.x = c.x;
   t.y = c.y;
-  enviarPos([t]);
+  if (dir) t.dir = dir;
+  enviarPos([t], null, dir);
   renderAcaoUI();
   if (movel(t)) {
     armadilhasEm(c, t).forEach(function (a) {
@@ -3135,6 +3148,7 @@ function ligarArraste() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
   botaoVisao();
+  if (visaoJog || !tokSel) fecharSeletorDir(); else desenharSeletorDir();
   if (visaoJog) {
     svg.classList.remove("editavel", "esperando");
     svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = svg.onpointerleave = svg.oncontextmenu = null;
@@ -3150,6 +3164,7 @@ function ligarArraste() {
   };
   svg.onpointerdown = function (ev) {
     var g = ev.target.closest ? ev.target.closest(".token") : null;
+    if (g) fecharSeletorDir();
     if (!g) {
       /* Toque numa casa vazia: só vira movimento ao soltar, sem arrasto (assim dá para arrastar o mapa ampliado). */
       toque = tokSel ? { x: ev.clientX, y: ev.clientY } : null;
@@ -3192,7 +3207,7 @@ function ligarArraste() {
       toque = null;
       if (tq && ev && ev.type === "pointerup" && !zoomGesto && Math.abs(ev.clientX - tq.x) < 8 && Math.abs(ev.clientY - tq.y) < 8) {
         var sel = tokSel ? acharTok(tokSel) : null, c = celulaTab(svg, ev);
-        if (sel && c && (c.x !== sel.x || c.y !== sel.y)) { esconderHover(svg); moverTok(sel, c, sel.x, sel.y); }
+        if (sel && c && (c.x !== sel.x || c.y !== sel.y)) { esconderHover(svg); pedirDirEMover(sel, c); }
       }
       return;
     }

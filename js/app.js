@@ -1132,6 +1132,95 @@ function celulaTab(svg, ev) {
   return { x: Math.max(0, Math.min(tabGeo.cols - 1, Math.floor(x / tabGeo.cw))), y: Math.max(0, Math.min(tabGeo.rows - 1, Math.floor(y / tabGeo.ch))) };
 }
 
+/* ============================ DIREÇÃO NO DESTINO ============================ */
+
+/* Ao escolher a casa de destino, abre um seletor ali perto: N, S, L ou O para deixar o token virado para esse lado, ou ✓ para
+   ir direto (fica virado para o lado do caminho). O seletor é HTML (botões grandes para o dedo) e é reposicionado a cada redesenho. */
+var destEsc = null;
+
+function fecharSeletorDir() {
+  destEsc = null;
+  var el = document.getElementById("dirEsc");
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+  var svg = document.getElementById("tabSvg"), r = svg && svg.querySelector ? svg.querySelector(".destCell") : null;
+  if (r && r.parentNode) r.parentNode.removeChild(r);
+}
+
+function abrirSeletorDir(x, y, ok) {
+  var velho = document.getElementById("dirEsc");
+  if (velho && velho.parentNode) velho.parentNode.removeChild(velho);
+  destEsc = { x: x, y: y, ok: ok };
+  desenharSeletorDir();
+}
+
+/* d: "n" | "s" | "l" | "o", ou null para manter o lado do caminho. */
+function escolherDir(d) {
+  var f = destEsc && destEsc.ok;
+  fecharSeletorDir();
+  if (f) f(d || null);
+}
+
+function desenharSeletorDir() {
+  var svg = document.getElementById("tabSvg"), el = document.getElementById("dirEsc");
+  if (!destEsc || !svg || !tabGeo || !svg.getBoundingClientRect) { if (el) fecharSeletorDir(); return; }
+  var r = svg.querySelector(".destCell");
+  if (!r && document.createElementNS) {
+    r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    r.setAttribute("class", "destCell");
+    svg.appendChild(r);
+  }
+  if (r) {
+    r.setAttribute("x", destEsc.x * tabGeo.cw); r.setAttribute("y", destEsc.y * tabGeo.ch);
+    r.setAttribute("width", tabGeo.cw); r.setAttribute("height", tabGeo.ch);
+  }
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "dirEsc";
+    el.className = "dir-esc";
+    el.setAttribute("role", "group");
+    el.setAttribute("aria-label", "Para que lado o token fica virado em " + coordNome(destEsc.x, destEsc.y));
+    el.innerHTML = '<span class="dir-esc-t">Virado para</span>' +
+      ["n", "o", "ok", "l", "s"].map(function (d) {
+        return d === "ok"
+          ? '<button type="button" class="dir-ok" data-dirsel="" aria-label="Ir para ' + coordNome(destEsc.x, destEsc.y) + ' virado para o lado do caminho" title="Ir (fica virado para o lado do caminho)">✓</button>'
+          : '<button type="button" class="dir-' + d + '" data-dirsel="' + d + '" aria-label="Ir virado para ' + NOME_DIR[d] + '" title="' + NOME_DIR[d] + '">' + d.toUpperCase() + "</button>";
+      }).join("");
+    el.onclick = function (ev) {
+      var b = ev.target.closest ? ev.target.closest("[data-dirsel]") : null;
+      if (b) { ev.stopPropagation(); escolherDir(b.getAttribute("data-dirsel")); }
+    };
+    document.body.appendChild(el);
+    var ok = el.querySelector(".dir-ok");
+    if (ok && ok.focus) { try { ok.focus({ preventScroll: true }); } catch (e) { /* sem foco: ignora */ } }
+  }
+  posicionarSeletorDir();
+}
+
+/* Centraliza o seletor na casa de destino, sem sair da janela. */
+function posicionarSeletorDir() {
+  var svg = document.getElementById("tabSvg"), el = document.getElementById("dirEsc");
+  if (!destEsc || !svg || !el || !tabGeo) return;
+  var rc = svg.getBoundingClientRect();
+  if (!rc || !rc.width) return;
+  var cx = rc.left + (destEsc.x + 0.5) * tabGeo.cw / tabGeo.W * rc.width, cy = rc.top + (destEsc.y + 0.5) * tabGeo.ch / tabGeo.H * rc.height;
+  var w = el.offsetWidth || 150, h = el.offsetHeight || 170, m = 6;
+  /* O centro do seletor (✓) fica sobre a casa; o título ocupa a primeira linha, então a grade começa 22px abaixo do topo. */
+  var left = Math.max(m, Math.min(window.innerWidth - w - m, cx - w / 2));
+  var top = Math.max(m, Math.min(window.innerHeight - h - m, cy - h / 2 - 11));
+  el.style.left = left + "px";
+  el.style.top = top + "px";
+}
+
+document.addEventListener("keydown", function (e) {
+  if (!destEsc) return;
+  var mapa = { ArrowUp: "n", ArrowDown: "s", ArrowRight: "l", ArrowLeft: "o" };
+  if (e.key === "Escape") { e.stopPropagation(); fecharSeletorDir(); return; }
+  if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); escolherDir(null); return; }
+  if (mapa[e.key]) { e.preventDefault(); e.stopPropagation(); escolherDir(mapa[e.key]); }
+}, true);
+window.addEventListener("resize", function () { posicionarSeletorDir(); });
+document.addEventListener("scroll", function () { posicionarSeletorDir(); }, true);
+
 /* ============================ ZOOM E TELA CHEIA ============================ */
 
 /* Pinça com dois dedos para aproximar, e um dedo para mover o mapa ampliado. No computador: Ctrl + roda do mouse, arrastar
@@ -1581,10 +1670,17 @@ function ligarCliqueJog() {
   var svg = document.getElementById("tabSvg");
   if (!svg || !tabGeo) return;
   if (!meuTok() || !podeMover()) selJog = false;
+  if (!selJog) fecharSeletorDir(); else desenharSeletorDir();
   svg.onclick = function (ev) {
     if (movendoJog) return;
     var alvo = ev.target.closest ? ev.target.closest(".alc") : null;
-    if (alvo) { moverJogadorPara(parseInt(alvo.getAttribute("data-ax"), 10), parseInt(alvo.getAttribute("data-ay"), 10), parseInt(alvo.getAttribute("data-ad"), 10)); return; }
+    if (alvo) {
+      var ax = parseInt(alvo.getAttribute("data-ax"), 10), ay = parseInt(alvo.getAttribute("data-ay"), 10), ad = parseInt(alvo.getAttribute("data-ad"), 10);
+      abrirSeletorDir(ax, ay, function (d) { moverJogadorPara(ax, ay, ad, d); });
+      mostrarAcaoMsg("Escolha para que lado o token fica virado em " + coordNome(ax, ay) + ", ou ✓ para ir direto.", false);
+      return;
+    }
+    fecharSeletorDir();
     var g = ev.target.closest ? ev.target.closest(".token") : null;
     var t = meuTok(), id = g ? g.dataset.tok : null;
     /* Token de outro: abre (ou fecha, se já estava aberto) o card com a imagem dele. Não mexe na seleção para mover. */
@@ -1607,21 +1703,24 @@ function ligarCliqueJog() {
 }
 
 /* O token já desliza na hora (otimista). Se o servidor recusar, ele volta e o motivo aparece. */
-function moverJogadorPara(x, y, custo) {
+function moverJogadorPara(x, y, custo, dir) {
   var t = meuTok();
   if (!t) return;
   /* O custo vem da casa azul clicada (caminho livre mais curto, contornando tokens); sem ele, usa a distância reta. */
   var casas = custo > 0 ? custo : distMov(x, y, t.x, t.y), cb = acaoPub.combate, turnos = !!(cb && cb.fase === "turnos");
-  var antes = { x: t.x, y: t.y, gasto: t.gasto };
+  var antes = { x: t.x, y: t.y, gasto: t.gasto, dir: t.dir };
   t.x = x; t.y = y;
+  if (dir) t.dir = dir;
   if (turnos) t.gasto = (t.gasto || 0) + casas;
   selJog = false; movendoJog = true;
   mostrarAcaoMsg("Movendo para " + coordNome(x, y) + "…", false);
   desenharAcaoJogador();
-  api("campo_op", { op: "mover", x: x, y: y }).then(function () {
+  var corpo = { op: "mover", x: x, y: y };
+  if (dir) corpo.dir = dir;
+  api("campo_op", corpo).then(function () {
     mostrarAcaoMsg(coordNome(antes.x, antes.y) + " → " + coordNome(x, y) + ", " + casas + (casas === 1 ? " casa." : " casas.") + (turnos ? " Restam " + Math.max(0, (t.desl || 6) - (t.gasto || 0)) + "." : ""), false);
   }, function (e) {
-    t.x = antes.x; t.y = antes.y; t.gasto = antes.gasto;
+    t.x = antes.x; t.y = antes.y; t.gasto = antes.gasto; t.dir = antes.dir;
     mostrarAcaoMsg(e.message, true);
     desenharAcaoJogador();
   }).then(function () { movendoJog = false; return buscarAcaoAgora(true); });
