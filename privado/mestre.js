@@ -2271,6 +2271,7 @@ function novoCenarioHTML() {
     '<label class="pj-obs-l">Resumo (os jogadores leem)<textarea class="sorteio-in" rows="2" maxlength="400" id="cenaResumo" placeholder="Uma descrição curta do lugar, do que dá para ver e sentir."></textarea></label>' +
     '<label class="pj-obs-l">Descrição completa (só você vê)<textarea class="sorteio-in" rows="3" id="cenaHist" placeholder="O que há aqui, segredos, o que acontece, como os jogadores chegam…"></textarea></label>' +
     '<p><input type="file" accept="image/*" class="vh" id="cenaUp"><label class="btn primary-btn" for="cenaUp">Escolher a foto e criar</label></p>' +
+    (cenGenFaltando().length ? '<p><button type="button" class="btn" data-cengen="1">Criar ' + cenGenFaltando().length + " cenários genéricos (taverna, caverna, sala…)</button></p>" : "") +
     '<p role="status" class="mdica">' + esc(upMsg) + "</p></section>";
 }
 
@@ -2477,6 +2478,7 @@ function mostrarFotoCenario(id) {
 
 function clickCenarios(b) {
   var d = b.dataset, a = acaoEst(), c, g;
+  if (d.cengen) { migrarCenariosGenericos(true); return true; }
   if (d.cenabrir) { cenSel = parseInt(d.cenabrir, 10); confirmarDelCen = false; confirmarDelGrid = 0; gridMsg = ""; gridSel = gridsDe(acharEnvio(cenSel)).length ? gridsDe(acharEnvio(cenSel))[0].id : 0; renderizar(); window.scrollTo(0, document.getElementById("cenDetalhe") ? document.getElementById("cenDetalhe").offsetTop - 80 : 0); return true; }
   if (d.cenfoto) { mostrarFotoCenario(parseInt(d.cenfoto, 10)); return true; }
   if (d.vermapa) { localSel = d.vermapa; location.hash = "#mapa"; return true; }
@@ -3948,18 +3950,30 @@ function imagemProvisoria(nome) {
   return c.toDataURL("image/jpeg", 0.8);
 }
 
-function migrarCenariosGenericos() {
-  if ((EST.migracoes || {}).cenariosGenericos) return;
+function cenGenFaltando() {
   var tem = {};
   ENVIADAS.forEach(function (e) { tem[e.nome] = true; });
-  var fila = CENARIOS_GENERICOS.filter(function (c) { return !tem[c[0]]; });
+  return CENARIOS_GENERICOS.filter(function (c) { return !tem[c[0]]; });
+}
+var cenGenRodando = false;
+function migrarCenariosGenericos(manual) {
+  if (cenGenRodando) return;
+  if (!manual && (EST.migracoes || {}).cenariosGenericos) return;
+  var fila = cenGenFaltando(), total = fila.length, feitos = 0;
   function concluir() { EST.migracoes = EST.migracoes || {}; EST.migracoes.cenariosGenericos = true; salvarEstado("migracoes"); }
-  if (!fila.length) { concluir(); return; }
+  if (!fila.length) { concluir(); if (manual) { upMsg = "Os cenários genéricos já existem."; renderizar(); } return; }
+  cenGenRodando = true;
+  function fim(msg) { cenGenRodando = false; upMsg = msg; if (rotaAtual() === "cenarios") renderizar(); }
   (function proximo() {
     var c = fila.shift();
-    if (!c) { concluir(); if (typeof renderizar === "function") renderizar(); return; }
-    gravar("cena_enviar", { nome: c[0], dados: imagemProvisoria(c[0]) }).then(function (r) {
-      if (!r) return; /* falhou: tenta de novo na próxima vez que o mestre entrar */
+    if (!c) { concluir(); fim(feitos + " cenários genéricos criados, com imagem provisória."); return; }
+    upMsg = "Criando cenários genéricos… " + feitos + " de " + total;
+    if (rotaAtual() === "cenarios") renderizar();
+    var img;
+    try { img = imagemProvisoria(c[0]); } catch (e) { fim("Erro ao preparar a imagem provisória: " + e.message); return; }
+    gravar("cena_enviar", { nome: c[0], dados: img }).then(function (r) {
+      if (!r) { fim("Parou em “" + c[0] + "” (" + feitos + " de " + total + " criados). Veja o aviso vermelho no canto e tente de novo."); return; }
+      feitos++;
       ENVIADAS.push({ id: r.id, nome: r.nome, v: Math.floor(Date.now() / 1000), grids: [] });
       (EST.cenarios_info = EST.cenarios_info || {})[r.id] = { resumo: c[1], historia: c[2] };
       salvarEstado("cenarios_info");
