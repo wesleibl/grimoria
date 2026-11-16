@@ -516,7 +516,7 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - **Estocada do Marujo (1 mana, ataque simples):** Um marujo espectral surge, desfere a estocada e some (não fica em campo). d20 + Poder, dano 1d6. Se acertar, você ganha 1 Osso (máx. 3).
 - **Abordagem! (2 mana, provocar):** Gritos de piratas mortos ecoam. Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano.
 - **Escudo de Ossos (1 mana, reação):** Quando um inimigo acerta um aliado perto de você, gaste 1 Osso: ossos de piratas formam um escudo, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2 (o Osso gasto já conta nesse +2). Sem Osso, não dá para usar. Uma vez por rodada.
-- **Navio Fantasma (4 mana, ultimate):** Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma. (limite: 1 uso por combate)
+- **Lágrima de Nemus (4 mana, ultimate):** Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma. (limite: 1 uso por combate)
 - Marco 1, **Âncora (2 mana, médio):** Lança uma âncora em um inimigo: ele faz teste de Poder contra 13 ou fica com deslocamento 0 até o fim do próximo turno dele.
 - Marco 2, **Rum do Capitão (2 mana, médio):** Você ou um aliado próximo remove um estado negativo e recupera 1d4 de vida.
 - Marco 3, **Salva Fantasma (3 mana, médio):** d20 + Poder contra os inimigos em uma linha de 4 casas. Quem for atingido sofre 1d6 e é empurrado 1 casa.

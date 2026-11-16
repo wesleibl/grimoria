@@ -287,7 +287,7 @@ var GRIMORIOS = [
       sp("Estocada do Marujo", 1, "ataque simples", "Um marujo espectral surge, desfere a estocada e some (não fica em campo). d20 + Poder, dano 1d6. Se acertar, você ganha 1 Osso (máx. 3)."),
       sp("Abordagem!", 2, "provocar", "Gritos de piratas mortos ecoam. Até o início do seu próximo turno, os inimigos próximos precisam atacar você. Nesse período, você ganha +1 de redução de dano."),
       sp("Escudo de Ossos", 1, "reação", "Quando um inimigo acerta um aliado perto de você, gaste 1 Osso: ossos de piratas formam um escudo, você recebe o golpe no lugar dele e reduz o dano pela sua redução de dano +2 (o Osso gasto já conta nesse +2). Sem Osso, não dá para usar. Uma vez por rodada."),
-      sp("Navio Fantasma", 4, "ultimate", "Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma.", { limite: "1 uso por combate" })
+      sp("Lágrima de Nemus", 4, "ultimate", "Por 3 turnos, um navio fantasma cerca o grupo: você ganha +3 de redução de dano e os aliados próximos +1. No fim de cada turno seu, um inimigo próximo à sua escolha sofre 1d4 do canhão fantasma.", { limite: "1 uso por combate" })
     ],
     futuras: [
       fu(1, "Âncora", 2, "médio", "Lança uma âncora em um inimigo: ele faz teste de Poder contra 13 ou fica com deslocamento 0 até o fim do próximo turno dele."),
@@ -469,8 +469,11 @@ var FAMILIA = {
 GRIMORIOS.forEach(function (g) { g.fam = FAMILIA[g.nome] || "Outros"; });
 
 var FASES = ["Sessão 1", "Arco 1: Vale das Colheitas", "Arco 1: Porto Salgado", "Arco 1: Floresta dos Cedros", "Arco 1: Pedra Velha", "Arco 2", "Arco final"];
+/* XP sugerido por criatura derrotada, antes de o mestre decidir como dividir a recompensa. */
+var XP_INIMIGO = { capanga: [25, 50, 100, 200, 450], normal: [50, 100, 200, 450, 700], elite: [100, 200, 450, 700, 1100], chefe: [200, 450, 700, 1100, 1800] };
 function mo(nome, fase, tipo, nivel, vida, def, atq, dano, mana, habs, comp, dica, e) {
-  return extras({ nome: nome, fase: fase, tipo: tipo, nivel: nivel, vida: vida, defesa: def, ataque: atq, dano: dano, mana: mana, habs: habs || [], comp: comp || "", dica: dica || "" }, e);
+  var faixa = XP_INIMIGO[tipo] || XP_INIMIGO.normal, n = Math.max(1, Math.min(5, parseInt(nivel, 10) || 1));
+  return extras({ nome: nome, fase: fase, tipo: tipo, nivel: nivel, xp: faixa[n - 1], vida: vida, defesa: def, ataque: atq, dano: dano, mana: mana, habs: habs || [], comp: comp || "", dica: dica || "" }, e);
 }
 var INIMIGOS = [
   /* Sessão 1 */
@@ -730,7 +733,18 @@ var LISTAS = {
 
 var filtro = { attr: "todos", papel: "todos", elem: "todos", q: "" };
 
-function salvarEstado(k) { adiar("est-" + k, function () { gravar("estado", { chave: k, valor: EST[k] }); }, 400); }
+var estadoSalvando = {}, estadoPendente = {};
+function enviarEstado(k) {
+  if (estadoSalvando[k] || !estadoPendente[k]) return estadoSalvando[k] || Promise.resolve(null);
+  estadoPendente[k] = false;
+  estadoSalvando[k] = gravar("estado", { chave: k, valor: EST[k] }).then(function (r) {
+    delete estadoSalvando[k];
+    if (estadoPendente[k]) enviarEstado(k);
+    return r;
+  });
+  return estadoSalvando[k];
+}
+function salvarEstado(k) { estadoPendente[k] = true; adiar("est-" + k, function () { enviarEstado(k); }, 400); }
 
 function getChecks(key) {
   var saved = EST[key];
@@ -762,9 +776,9 @@ function setRev(id, v) {
 /* Os jogadores nunca recebem este arquivo. O que eles podem ver é copiado para o servidor
    em versões filtradas: grim_pub (só as magias liberadas) e locais_pub (só os locais revelados, sem segredos). */
 function grimPub() {
-  var out = {}, lib = EST.magias_lib || {};
+  var out = {};
   GRIMORIOS.forEach(function (g) {
-    var nomes = lib[g.nome] || [];
+    var nomes = magiasLib(g);
     out[g.nome] = { nome: g.nome, attr: g.attr, papel: g.papel, elem: g.elem, sub: g.sub, tier: g.tier,
       spells: g.spells.concat(g.futuras || []).filter(function (s) { return nomes.indexOf(s.nome) !== -1; }) };
   });
@@ -910,7 +924,14 @@ function desenharGrimorios() {
   grid.innerHTML = lista.length ? lista.map(cardComLib).join("") : '<div class="empty" style="grid-column:1/-1">Nenhum grimório com esses filtros. Limpe a busca ou escolha “Todos”.</div>';
 }
 
-function magiasLib(g) { return (EST.magias_lib || {})[g.nome] || []; }
+function magiasLib(g) {
+  var nomes = (EST.magias_lib || {})[g.nome] || [];
+  /* Uma habilidade já liberada não some quando seu nome muda na história. */
+  if (g.nome === "Grimório do Capitão" && nomes.indexOf("Navio Fantasma") !== -1) {
+    return nomes.map(function (n) { return n === "Navio Fantasma" ? "Lágrima de Nemus" : n; });
+  }
+  return nomes;
+}
 function cardComLib(g) {
   var lib = magiasLib(g), todas = g.spells.concat(g.futuras || []);
   var donos = (jogs || []).filter(function (j) { return j.grim === g.nome; });
@@ -1038,7 +1059,7 @@ document.addEventListener("click", function (e) {
 });
 function monstroCard(m) {
   var v8 = m.tipo === "capanga" ? "use o dobro de unidades" : "8 jogadores: " + (m.vida * 2);
-  var h = '<article class="panel monstro"><h3 class="mon-tit"><button type="button" class="mon-nome" data-bimg="' + esc(m.nome) + '" aria-label="Ver a imagem de ' + esc(m.nome) + '">' + imagemInimigo(m) + "<span>" + m.nome + '</span></button></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + "</span></div>" +
+  var h = '<article class="panel monstro"><h3 class="mon-tit"><button type="button" class="mon-nome" data-bimg="' + esc(m.nome) + '" aria-label="Ver a imagem de ' + esc(m.nome) + '">' + imagemInimigo(m) + "<span>" + m.nome + '</span></button></h3><div class="meta"><span class="tag role">' + m.tipo + '</span><span class="tag role">Nível ' + m.nivel + '</span><span class="tag role">' + m.xp + ' XP ao derrotar</span></div>' +
     '<div class="stat-line">' +
     "<span>" + ic("coracao") + "<b>Vida</b> " + m.vida + " <small>(" + v8 + ")</small></span>" +
     "<span>" + ic("escudo") + "<b>Defesa</b> " + m.defesa + "</span>" +
@@ -1049,7 +1070,7 @@ function monstroCard(m) {
   if (m.habs.length) h += '<ul class="spells">' + m.habs.map(function (x) { return spellItem(x); }).join("") + "</ul>";
   if (m.comp) h += "<p><b>Comportamento:</b> " + m.comp + "</p>";
   if (m.dica) h += '<p class="bnote">' + m.dica + "</p>";
-  return h + dropsHTML(m) + "</article>";
+  return h + dropsHTML(m) + '<p><button type="button" data-xpmonstro="' + esc(m.nome) + '">Conceder XP deste monstro</button></p></article>';
 }
 
 function viewBestiario() {
@@ -1585,7 +1606,7 @@ function novoJog(extra) {
 /* Texto digitado é gravado alguns instantes depois da última tecla; o resto, na hora.
    Só vão os campos alterados (chaves), para não apagar o que o jogador editou no Perfil dele.
    Sem chaves, vai o perfil inteiro (jogador novo). */
-var jogSujos = {};
+var jogSujos = {}, jogFilas = {}, jogEmAberto = 0;
 function salvarJog(j, agora, chaves) {
   var sujo = jogSujos[j.id] || (jogSujos[j.id] = {});
   (chaves || Object.keys(j)).forEach(function (k) { if (k !== "id" && k !== "usuario") sujo[k] = true; });
@@ -1593,7 +1614,11 @@ function salvarJog(j, agora, chaves) {
     var campos = { id: j.id };
     Object.keys(jogSujos[j.id] || {}).forEach(function (k) { campos[k] = j[k] === undefined ? null : j[k]; });
     delete jogSujos[j.id];
-    return gravar("jogador_salvar", { jogador: campos });
+    var anterior = jogFilas[j.id] || Promise.resolve();
+    jogEmAberto++;
+    var proximo = anterior.then(function () { return gravar("jogador_salvar", { jogador: campos }); });
+    jogFilas[j.id] = proximo.then(function () {}, function () {});
+    return proximo.then(function (r) { jogEmAberto--; return r; }, function (e) { jogEmAberto--; throw e; });
   };
   if (!agora) { adiar("jog-" + j.id, f); return null; }
   clearTimeout(timers["jog-" + j.id]);
@@ -2000,14 +2025,14 @@ function excluirImg(id) {
 
 function viewNiveisMestre() {
   var h = "<h1>Níveis e evolução</h1>" +
-    '<p class="lead">Sem pontos de experiência. Todos os personagens sobem de nível juntos, em marcos da história. Assim ninguém fica para trás, e com 8 jogadores você não precisa controlar nada.</p>';
+    '<p class="lead">Os jogadores acumulam XP conforme você concede na aba Experiência. Os marcos seguem o D&amp;D 5e; alcançar o valor não muda o nível automaticamente. Você decide quando atualizar cada ficha.</p>';
 
-  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "Quando sobem", "Vida máx.", "Atributos", "Limite por atributo", "Grimório"], [
-    ["1", "Início (Sessão Zero e Sessão 1)", "20", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
-    ["2", "Fim da Sessão 1", "24", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
-    ["3", "Meio do Arco 1", "28", "+1 ponto", "+4", "Nova habilidade"],
-    ["4", "Fim do Arco 1", "32", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
-    ["5", "Fim do Arco 2", "36", "+1 ponto", "+5", "Despertar do grimório"]
+  h += "<h2>Tabela de níveis</h2>" + table(["Nível", "XP acumulado", "Vida máx.", "Atributos", "Limite por atributo", "Grimório"], [
+    ["1", "0", "20", "+5 pontos para distribuir", "+3", "Feitiços iniciais"],
+    ["2", "300", "24", "+1 ponto", "+3", "Aprimorar 1 feitiço"],
+    ["3", "900", "28", "+1 ponto", "+4", "Nova habilidade"],
+    ["4", "2.700", "32", "+1 ponto", "+4", "Aprimorar 1 feitiço"],
+    ["5", "6.500", "36", "+1 ponto", "+5", "Despertar do grimório"]
   ]) + "<p>No nível 5, cada personagem terá recebido 9 pontos de atributo no total. A Defesa (10 + Destreza), a redução de dano (Poder ÷ 2) e a mana (10 + 1 a cada 2 de Inteligência) sobem junto com os atributos.</p>";
 
   h += "<h2>O que acontece ao subir de nível</h2>" +
@@ -2046,9 +2071,48 @@ function viewNiveisMestre() {
     ]);
 
   h += "<h2>Dicas</h2>" + panel("Para a mesa",
-    "<ul><li>Suba todos juntos, mesmo se alguém faltar a uma sessão.</li><li>Anuncie o marco no fim da sessão, para os jogadores escolherem o aprimoramento em casa.</li><li>Se o grupo estiver forte demais, não suba o nível: aumente a dificuldade dos desafios.</li><li>Os números desta tabela são um ponto de partida. Ajuste depois da Sessão 1.</li></ul>");
+    "<ul><li>O XP de cada monstro é uma sugestão de recompensa total; distribua o valor entre os jogadores escolhidos como preferir.</li><li>Ao atingir o marco, altere o nível na ficha do jogador quando fizer sentido na história.</li><li>Se o grupo estiver forte demais, ajuste a dificuldade dos desafios.</li><li>Os números desta tabela são um ponto de partida. Ajuste depois da Sessão 1.</li></ul>");
   h += caminhosHTML(true);
   return h;
+}
+
+var xpMsg = "", xpValorSugerido = 0;
+function viewXpMestre() {
+  var lista = jogs || [];
+  return '<h1>Experiência</h1><p class="lead">Escolha um ou mais jogadores. A quantidade informada será concedida a cada um. Só você pode adicionar XP; o nível continua sob seu controle na ficha do jogador.</p>' +
+    '<section class="panel"><h2>Conceder XP</h2><p><button type="button" data-xptodos>Selecionar todos</button></p>' +
+    '<div class="xp-jogadores">' + lista.map(function (j) { return '<label><input type="checkbox" data-xpjog="' + esc(j.id) + '"><span><b>' + esc(j.personagem || j.nome || "Jogador") + '</b><small>Nível ' + nivelJog(j) + ' · ' + (parseInt(j.xp, 10) || 0) + ' XP</small></span></label>'; }).join("") + '</div>' +
+    '<div class="item-grade"><label>XP para cada jogador<input class="sorteio-in" id="xpQuantidade" type="number" min="1" max="100000" step="1" value="' + (xpValorSugerido || "") + '"></label>' +
+    '<label>Motivo (opcional)<input class="sorteio-in" id="xpMotivo" type="text" maxlength="300" placeholder="Ex.: derrotaram o Lobo de Mana"></label></div>' +
+    '<p id="xpMsg" role="status" class="mdica">' + esc(xpMsg) + '</p><button type="button" class="primary" id="xpConceder">Conceder XP</button></section>' +
+    '<h2>Progresso do grupo</h2><div class="cols">' + lista.map(function (j) { return xpBarHTML(j, j.personagem || j.nome || "Jogador"); }).join("") + '</div>';
+}
+function acoesXp(b) {
+  if (b.dataset.xpmonstro) {
+    var m = INIMIGOS.filter(function (i) { return i.nome === b.dataset.xpmonstro; })[0];
+    if (m) { xpValorSugerido = m.xp; xpMsg = m.nome + ': ' + m.xp + ' XP no total. Escolha quem recebe e ajuste a quantidade por jogador.'; location.hash = '#experiencia'; renderizar(); }
+    return true;
+  }
+  if (b.dataset.xptodos !== undefined) { document.querySelectorAll('[data-xpjog]').forEach(function (e) { e.checked = true; }); return true; }
+  if (b.id !== 'xpConceder') return false;
+  var ids = Array.from(document.querySelectorAll('[data-xpjog]:checked')).map(function (e) { return e.dataset.xpjog; });
+  var campo = document.getElementById('xpQuantidade'), quantidade = campo ? Number(campo.value) : 0;
+  var motivo = (document.getElementById('xpMotivo') || {}).value || '';
+  if (!ids.length || !Number.isInteger(quantidade) || quantidade < 1 || quantidade > 100000) {
+    xpMsg = 'Selecione jogadores e informe de 1 a 100.000 XP por pessoa.';
+    var msg = document.getElementById('xpMsg'); if (msg) msg.textContent = xpMsg;
+    return true;
+  }
+  b.disabled = true;
+  gravar('xp_conceder', { jogadores: ids, quantidade: quantidade, motivo: motivo }).then(function (r) {
+    b.disabled = false;
+    if (!r || !r.jogadores) { xpMsg = 'Não foi possível conceder XP. Confira o aviso no topo.'; var falha = document.getElementById('xpMsg'); if (falha) falha.textContent = xpMsg; return; }
+    jogs.forEach(function (j) { if (r.jogadores[j.id]) { j.xp = r.jogadores[j.id].xp; j.xpLog = r.jogadores[j.id].xpLog; } });
+    xpValorSugerido = 0;
+    xpMsg = quantidade + ' XP concedidos a ' + ids.length + (ids.length === 1 ? ' jogador.' : ' jogadores.');
+    renderizar();
+  });
+  return true;
 }
 
 
@@ -3489,12 +3553,13 @@ function clickAcao(b) {
 
 var ultimaRota = "";
 function atualizarJogadores() {
-  if (jogSel || Object.keys(jogSujos).length) return;
+  if (jogSel || Object.keys(jogSujos).length || jogEmAberto || invEmAberto || pendentes) return;
+  var versaoInv = invVersao;
   api("inicio").then(function (d) {
-    if (jogSel || Object.keys(jogSujos).length || !d.jogadores) return;
+    if (jogSel || Object.keys(jogSujos).length || jogEmAberto || invEmAberto || pendentes || versaoInv !== invVersao || !d.jogadores) return;
     jogs = d.jogadores;
     CONTAS = d.usuarios || CONTAS;
-    if ((rotaAtual() === "jogadores" && !jogSel) || rotaAtual() === "itens") renderizar();
+    if ((rotaAtual() === "jogadores" && !jogSel) || rotaAtual() === "itens" || rotaAtual() === "experiencia") renderizar();
     /* O deslocamento dos jogadores depende dos itens equipados: ao abrir a Ação, recalcula com os inventários atuais. */
     if (rotaAtual() === "acao" && EST.acao) { salvarAcao(); renderAcaoUI(); }
   }, function () { /* sem conexão: fica com a lista que já tem */ });
@@ -3512,7 +3577,7 @@ var DROPS = {
   "Corvo de Mana": [dr("bc-pena-corvo", 50)],
   "Lobo de Mana": [dr("bc-presa-lobo", 75), dr("bc-pele-lobo", 40)],
   "Espantalho de Mana": [dr("bc-palha-mana", 50), dr("bc-pedra-mana", 15)],
-  "Javali de Mana": [dr("bc-couro-javali", 60), dr("dnd-racao", 80)],
+  "Javali de Mana": [dr("bc-couro-javali", 60), dr("bc-presa-javali", 60), dr("dnd-racao", 80)],
   "Devorador de Colheitas": [dr("bc-coracao-devorador", 100), dr("bc-pedra-mana", 100), dr("bc-erva-curativa", 75), dr("bc-tonico-forca", 50)],
   "Marujo Afogado": [dt("1d6 cobres salgados", 100), dr("dnd-corda", 30), dr("bc-frasco-nevoa", 15)],
   "Caranguejo Blindado": [dr("bc-carapaca", 60)],
@@ -3556,6 +3621,7 @@ function dropsHTML(m) {
     var nome = it ? it.nome : d.txt;
     h += "<li><span><b>" + esc(nome) + "</b>" + (it && it.raridade !== "comum" ? ' <span class="tag leg">' + esc(it.raridade) + "</span>" : "") +
       (it && it.fase && !itemNaFase(it) ? ' <span class="tag role" title="Pensado para uma fase mais adiantada">adiantado</span>' : "") +
+      ((it && (receitaIngrediente(it) || (/ingrediente|material/i.test(it.efeito || "") && it.desc)) || (!it && receitaIngrediente(d.txt))) ? '<small class="drop-receita">Ingrediente · ' + esc(it ? (receitaIngrediente(it) || it.desc) : receitaIngrediente(d.txt)) + '</small>' : "") +
       '</span> <small>' + d.pct + "% · " + d20De(d.pct) + "</small>" +
       (it && podeDar ? ' <button type="button" class="mini" data-dropdar="' + esc(d.id) + '">Dar</button>' : "") + "</li>";
   });
@@ -3728,6 +3794,8 @@ var ITENS_BC = [
     "Componente de poções simples. Um curandeiro do Vale paga por ela.", [], 0.2, ouro(5)),
   ibc("couro-javali", "tesouro", "Couro de Javali de Mana", "comum", "Arco 1: Vale das Colheitas", "Material de criatura", "Couro duro, difícil de furar.",
     "Dá para trocar por uma armadura de couro reforçada com um artesão do Vale.", [], 3, ouro(15)),
+  ibc("presa-javali", "tesouro", "Presa de Javali de Mana", "comum", "Arco 1: Vale das Colheitas", "Ingrediente de criatura", "Presa curva e robusta, com veios azulados de mana.",
+    "Um ferreiro do Vale pode transformá-la em punhal ou ponta de lança de mana.", [], 0.2, ouro(40)),
   ibc("coracao-devorador", "tesouro", "Coração do Devorador de Colheitas", "raro", "Arco 1: Vale das Colheitas", "Material raro", "Coração enorme, que pulsa devagar mesmo depois da derrota.",
     "Troféu do primeiro chefe. Gancho: o Vale oferece uma recompensa pública e a gratidão do vilarejo.", [], 2, ouro(60)),
   ibc("carapaca", "tesouro", "Carapaça de Caranguejo Blindado", "incomum", "Arco 1: Porto Salgado", "Material de criatura", "Placa dura, azul-acinzentada, quase impossível de quebrar à mão.",
@@ -3749,6 +3817,16 @@ var ITENS_BC = [
 ];
 function catalogoPadrao() {
   return ITENS_BASE.concat(ITENS_BC).map(function (i) { return JSON.parse(JSON.stringify(i)); });
+}
+function migrarPresaJavali() {
+  if (!Array.isArray(EST.itens) || (EST.migracoes || {}).presaJavali) return;
+  function concluir() { EST.migracoes = EST.migracoes || {}; EST.migracoes.presaJavali = true; salvarEstado("migracoes"); }
+  if (EST.itens.some(function (i) { return i.id === "bc-presa-javali"; })) { concluir(); return; }
+  var novo = ITENS_BC.filter(function (i) { return i.id === "bc-presa-javali"; })[0];
+  if (!novo) return;
+  EST.itens.push(JSON.parse(JSON.stringify(novo)));
+  estadoPendente.itens = true;
+  enviarEstado("itens").then(function (r) { if (r) concluir(); });
 }
 
 var itensAba = "catalogo", itFiltro = { q: "", cat: "todas", origem: "todas", soFase: false }, itEdit = null, itMsg = "", itDel = "";
@@ -3794,6 +3872,7 @@ function itemCatalogoHTML(i) {
   if (!itemNaFase(i)) h += '<p class="item-alerta aviso">' + ic("alerta") + "<span>Adiantado: a campanha está em " + esc(EST.progresso) + ".</span></p>";
   if (i.efeito) h += "<p><b>" + esc(i.efeito) + "</b></p>";
   if (i.desc) h += "<p>" + esc(i.desc) + "</p>";
+  if (receitaIngrediente(i)) h += '<p class="item-receita"><b>Ingrediente · pode criar:</b> ' + esc(receitaIngrediente(i)) + '</p>';
   if (i.mestre) h += '<p class="item-segredo">' + ic("cadeado") + "<span><b>Só mestre:</b> " + esc(i.mestre) + "</span></p>";
   if ((i.sinergia || []).length) h += '<p class="mdica">Sinergia: ' + esc(i.sinergia.join(", ")) + "</p>";
   if (edit) {
@@ -4285,11 +4364,12 @@ VIEWFN["sessao-zero"] = viewSessaoZero;
 VIEWFN.mestre = viewMestre;
 VIEWFN.acao = viewAcaoMestre;
 VIEWFN.itens = viewItens;
+VIEWFN.experiencia = viewXpMestre;
 VIEWFN.cenarios = viewCenarios;
 
 MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
-  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "sorteio", "sessao-zero", "mestre"] }],
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "experiencia", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
@@ -4299,7 +4379,7 @@ MESTRE = {
   vilaRodape: vilaRodapeMestre,
   views: [
     ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"], ["personagens", "Personagens", "grupo"],
-    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
+    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["experiencia", "Experiência", "cima"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
   iniciar: function (d) {
@@ -4311,11 +4391,12 @@ MESTRE = {
     ENVIADAS = d.enviadas || [];
     aplicarCampo();
     sincronizarPub();
+    migrarPresaJavali();
   },
 
   antes: function (r) {
     if (r !== "sorteio") cer.ativa = false;
-    if ((r === "jogadores" || r === "itens" || r === "acao") && ultimaRota !== r) atualizarJogadores();
+    if ((r === "jogadores" || r === "itens" || r === "acao" || r === "experiencia") && ultimaRota !== r) atualizarJogadores();
     if (r !== "acao" && campoRodando) pararCampoPoll();
     ultimaRota = r;
   },
@@ -4408,6 +4489,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (acoesXp(b)) return true;
     if (acoesQuestionario(b)) return true;
     if (acoesDrops(b)) return true;
     if (acoesItens(b)) return true;
