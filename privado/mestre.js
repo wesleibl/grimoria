@@ -100,9 +100,9 @@ var GRIMORIOS = [
 
   { nome: "Grimório de Água", attr: "inteligencia", papel: "Suporte", sub: "controle e suporte", tier: "",
     spells: [
-      sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d6 e empurra o alvo 1 casa."),
-      sp("Maré Protetora", 2, "médio", "Um aliado ganha 1d6 de vida temporária e remove um estado negativo. Se o aliado já estiver Molhado, ganha +1d4 de vida temporária. Depois, ele fica Molhado.", { aplica: ["Molhado"] }),
-      sp("Dilúvio", 4, "ultimate", "Todos os inimigos próximos fazem teste de Poder contra 13. Quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada).")
+      sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d6. O alvo fica Molhado."),
+      sp("Maré Protetora", 2, "médio", "Um aliado ganha 1d6 de vida temporária. Se ele já estiver Molhado, também remove um estado negativo e ganha +1d4 de vida temporária. Depois, ele fica Molhado.", { aplica: ["Molhado"] }),
+      sp("Dilúvio", 4, "ultimate", "Todos os inimigos e aliados próximos ficam Molhados, mas só os inimigos sofrem o efeito: eles fazem teste de Poder contra 13, e quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada).")
     ], futuras: [], nota: "Prepara o Molhado para os outros: Raios (o choque se espalha), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. Atenção: a Bolha é controle sem teste de acerto (só o teste de respiração depois), então use com moderação em chefes." },
 
   { nome: "Grimório de Raios", attr: "destreza", papel: "Dano", sub: "dano e velocidade", tier: "",
