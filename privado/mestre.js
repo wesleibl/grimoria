@@ -2938,24 +2938,24 @@ function modeloDadosMestre() {
 /* Histórico para o painel do mapa: tudo o que foi rolado, mais novo primeiro (inclusive as rolagens só do mestre). */
 function historicoDadosMestre() {
   var agora = CAMPO.agora || Math.floor(Date.now() / 1000);
-  return (CAMPO.hist || []).slice().reverse().map(function (x) { return { nome: x.nome, tipo: x.tipo, dados: x.dados, vs: x.vs, v: x.v, ha: Math.max(0, agora - (x.t || 0)) }; });
+  return (CAMPO.hist || []).slice().reverse().map(function (x) { return { nome: x.nome, tipo: x.tipo, priv: !!x.priv, dados: x.dados, vs: x.vs, v: x.v, ha: Math.max(0, agora - (x.t || 0)) }; });
 }
 
 /* Painel "Dados" ao lado do mapa: escolhe quem pode rolar fora de combate. */
 function dadosMestreHTML() {
   var a = acaoEst(), cb = CAMPO.combate;
   var h = '<section class="panel cmb"><h3>' + ic("dado") + "Dados</h3>";
-  if (!a.ativo) return h + '<p class="mdica">Para os jogadores rolarem, ative a imersão. Você já pode rolar por você mesmo: só você vê.</p></section>';
+  if (!a.ativo) return h + '<p class="mdica">Para os jogadores rolarem e verem os seus dados, ative a imersão. Sem ela você rola só para você.</p></section>';
   if (cb) {
     if (cb.fase === "ini") return h + '<p class="mdica">Na fase de iniciativa ninguém rola dados soltos.</p></section>';
     var t = acharTok(atualId());
-    return h + '<p class="mdica">Em combate rola quem está na vez' + (t ? ": <b>" + esc(t.nome) + "</b>. " + (t.tipo === "jogador" ? "O jogador rola na tela dele. Os seus dados são só seus." : "Use o botão de dados no mapa (aparece só para você).") : ".") + "</p></section>";
+    return h + '<p class="mdica">Em combate rola quem está na vez' + (t ? ": <b>" + esc(t.nome) + "</b>. " + (t.tipo === "jogador" ? "O jogador rola na tela dele. Os dados do mestre aparecem como “Mestre”." : "Use o botão de dados no mapa (aparece só para você).") : ".") + "</p></section>";
   }
   var lista = combatentes();
   return h + '<label>Quem pode rolar<select class="sorteio-in" data-rolador><option value="">Ninguém (só você rola)</option>' + lista.map(function (x) {
     return '<option value="' + esc(x.id) + '"' + (CAMPO.rolador === x.id ? " selected" : "") + ">" + esc(x.nome) + " (" + esc(tipoRotulo(x)) + ")</option>";
   }).join("") + "</select></label>" +
-    '<p class="mdica">Vale até você trocar. Jogador rola na tela dele; aliado e inimigo, pelo botão de dados no mapa. Sem ninguém escolhido, você rola por você mesmo, e só você vê. Rolagem de token oculto também só você vê.</p></section>';
+    '<p class="mdica">Vale até você trocar. Jogador rola na tela dele; aliado e inimigo, pelo botão de dados no mapa. Sem ninguém escolhido, você rola por você mesmo: com a imersão ativa os jogadores veem; sem ela, só você. Rolagem de token oculto só você vê.</p></section>';
 }
 
 function combatePainelHTML() { return dadosMestreHTML() + combatePainelHTML0(); }

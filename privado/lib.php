@@ -1099,10 +1099,10 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
     $id = rolaAgora($campo, lerEstado('acao') ?? [], $tokens);
     $privado = false;
     if ($mestre && ($id === null || ($tokens[$id]['tipo'] ?? '') === 'jogador')) {
-        /* Sem aliado ou inimigo na vez, o mestre rola por ele mesmo: só ele vê (nada vai para os jogadores nem para o registro público). */
+        /* Sem aliado ou inimigo na vez, o mestre rola por ele mesmo. Com a imersão ativa os jogadores veem; sem ela, só o mestre. */
         $id = 'mestre';
         $t = ['tipo' => 'mestre', 'nome' => 'Mestre', 'cor' => '#4a4a5a'];
-        $privado = true;
+        $privado = empty((lerEstado('acao') ?? [])['ativo']);
     } elseif ($id === null) {
         erro('Ninguém pode rolar dados agora.', 409);
     } else {
@@ -1140,7 +1140,7 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
         }
         $sel = dadosLista(array_values($sel));
         $campo['rolN'] = (int)($campo['rolN'] ?? 0) + 1;
-        $campo['rolagem'] = $sel ? ['n' => $campo['rolN'], 'estado' => 'escolhido', 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => null, 'v' => null, 't' => time(), 'estilo' => estiloDado($t)] : null;
+        $campo['rolagem'] = $sel ? ['n' => $campo['rolN'], 'estado' => 'escolhido', 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => null, 'v' => null, 't' => time(), 'priv' => $privado, 'estilo' => estiloDado($t)] : null;
         return;
     }
     if (!$sel) erro('Escolha os dados antes de rolar.', 409);
@@ -1150,10 +1150,10 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
     $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'rolado', 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time()] + $r;
     /* Token oculto: nem a rolagem nem o registro vão para os jogadores. */
     $txt = count($sel) === 1 ? "$nome rolou d$sel[0]: $vs[0]" : "$nome rolou " . dadosResumo($sel) . ': ' . implode(' + ', $vs) . " = $total";
-    campoEvento($campo, $txt, !$privado && tokenVisivel($t, $campo) ? $txt : null);
+    campoEvento($campo, $txt, !$privado && ($id === 'mestre' || tokenVisivel($t, $campo)) ? $txt : null);
     /* Histórico das últimas 30 rolagens (cada um só enxerga as de tokens visíveis; as do mestre sem alvo ficam só com o mestre). */
     $hist = array_values(array_filter((array)($campo['hist'] ?? []), 'is_array'));
-    $hist[] = ['n' => $campo['rolN'], 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time()];
+    $hist[] = ['n' => $campo['rolN'], 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time(), 'priv' => $privado];
     $campo['hist'] = array_slice($hist, -30);
 }
 
@@ -1163,10 +1163,11 @@ function rolagemPublica(array $campo, array $tokens, array $vis, ?string $euId):
     $quem = rolaAgora($campo, lerEstado('acao') ?? [], $tokens);
     $r = $campo['rolagem'] ?? null;
     $out = null;
-    if (is_array($r) && isset($vis[(string)($r['tok'] ?? '')])) {
+    $veTok = fn(array $x) => ($x['tok'] ?? '') === 'mestre' ? empty($x['priv']) : isset($vis[(string)($x['tok'] ?? '')]);
+    if (is_array($r) && $veTok($r)) {
         $idade = time() - (int)($r['t'] ?? 0);
         $escolhido = ($r['estado'] ?? '') === 'escolhido';
-        if ($escolhido ? ($idade <= 60 && $quem === (string)$r['tok']) : $idade <= 30) {
+        if ($escolhido ? ($idade <= 60 && ($quem === (string)$r['tok'] || $r['tok'] === 'mestre')) : $idade <= 30) {
             $out = ['n' => (int)$r['n'], 'estado' => $escolhido ? 'escolhido' : 'rolado', 'tok' => (string)$r['tok'], 'nome' => (string)($r['nome'] ?? ''), 'tipo' => (string)($r['tipo'] ?? ''),
                 'dados' => dadosLista($r['dados'] ?? []), 'vs' => $escolhido ? null : array_map('intval', (array)($r['vs'] ?? [])), 'v' => $escolhido ? null : (int)$r['v'], 'idade' => max(0, $idade),
                 'estilo' => ['cor' => corHex($r['estilo']['cor'] ?? null, '#2a6fc9'), 'num' => corHex($r['estilo']['num'] ?? null, '#ffffff'), 'img' => ($r['estilo']['img'] ?? null) ? (int)$r['estilo']['img'] : null]];
@@ -1174,7 +1175,7 @@ function rolagemPublica(array $campo, array $tokens, array $vis, ?string $euId):
     }
     $hist = [];
     foreach (array_reverse(array_values((array)($campo['hist'] ?? []))) as $h) {
-        if (!is_array($h) || !isset($vis[(string)($h['tok'] ?? '')])) continue;
+        if (!is_array($h) || !$veTok($h)) continue;
         $hist[] = ['n' => (int)($h['n'] ?? 0), 'nome' => mb_substr((string)($h['nome'] ?? ''), 0, 60), 'tipo' => (string)($h['tipo'] ?? ''), 'dados' => dadosLista($h['dados'] ?? []),
             'vs' => array_map('intval', (array)($h['vs'] ?? [])), 'v' => (int)($h['v'] ?? 0), 'ha' => max(0, time() - (int)($h['t'] ?? 0))];
         if (count($hist) >= 30) break;
