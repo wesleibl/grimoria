@@ -3608,7 +3608,9 @@ function somRampa(a, destino, dur, fim) {
   var inicio = Number(a.volume), t0 = Date.now();
   a._somRampa = setInterval(function () {
     var f = Math.min(1, (Date.now() - t0) / dur);
-    try { a.volume = Math.max(0, Math.min(1, inicio + (destino - inicio) * f)); } catch (e) { a.muted = destino === 0; }
+    var v = Math.max(0, Math.min(1, inicio + (destino - inicio) * f));
+    try { a.volume = v; if (Math.abs(a.volume - v) > .02) a.muted = destino === 0; else a.muted = false; }
+    catch (e) { a.muted = destino === 0; }
     if (f >= 1) { clearInterval(a._somRampa); a._somRampa = null; if (fim) fim(); }
   }, 50);
 }
