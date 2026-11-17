@@ -4665,16 +4665,20 @@ function somLinhaMestre(s) {
 }
 function somControlesMestre(c, titulo) {
   var t = somEstado && somEstado[c], ativo = t && t.id;
-  return '<div class="som-ctl"><h2>' + titulo + '</h2>' +
+  return '<div class="som-ctl' + (c === 'efeito' ? ' som-ctl-efeito' : '') + '"><h2>' + titulo + '</h2>' +
     (c !== 'efeito' ? '<button type="button" data-sompausa="' + c + '"' + (ativo ? '' : ' disabled') + '>' + (t && t.estado === 'pausado' ? 'Retomar' : 'Pausar') + '</button><button type="button" data-somparar="' + c + '"' + (ativo ? '' : ' disabled') + '>Parar</button>' : '') +
     '<label>Volume <input type="range" min="0" max="100" data-somvol="' + c + '" value="' + (c === 'efeito' ? (somEstado && somEstado.efeito_vol != null ? somEstado.efeito_vol : 80) : t && t.vol != null ? t.vol : somEstado && somEstado.volumes ? somEstado.volumes[c] : 70) + '"></label></div>';
 }
 function somConteudoMestre() {
   if (!somCatalogo) return '<p class="mdica">Carregando catálogo…</p>' + (somAvisoMestre ? '<p role="alert">' + esc(somAvisoMestre) + '</p>' : '');
   var a = acaoEst(), env = (ENVIADAS || []).find(function (x) { return x.id === a.envio; });
-  var nome = env ? env.nome : '', sug = nome ? somCatalogo.filter(function (s) {
-    return (s.cenarios || []).some(function (c) { return nome.toLowerCase().indexOf(String(c).toLowerCase()) !== -1 || String(c).toLowerCase().indexOf(nome.toLowerCase()) !== -1; });
+  var nome = env ? env.nome : '', normalizar = function (x) { return String(x).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); };
+  var sug = nome ? somCatalogo.filter(function (s) {
+    return (s.cenarios || []).some(function (c) { return normalizar(c) === normalizar(nome) || String(c) === String(env.id); });
   }) : [];
+  if (!sug.length && nome) sug = somCatalogo.filter(function (s) {
+    return (s.cenarios || []).some(function (c) { return normalizar(nome).indexOf(normalizar(c)) !== -1; });
+  });
   var h = somAvisoMestre ? '<p role="alert">' + esc(somAvisoMestre) + '</p>' : '';
   if (sug.length) h += '<h2>Sugestões para ' + esc(nome) + '</h2><div class="som-lista">' + sug.map(somLinhaMestre).join('') + '</div>';
   [['musica', 'Música'], ['ambiente', 'Ambiente'], ['efeito', 'Efeitos']].forEach(function (p) {
