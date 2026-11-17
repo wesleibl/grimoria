@@ -6,6 +6,7 @@ ini_set('display_errors', '0');
    contrário vale a pasta "privado" ao lado deste arquivo. Fora da raiz pública, ninguém a alcança pela internet. */
 define('PRIVADO', is_dir(dirname(__DIR__) . '/grimoria_privado') ? dirname(__DIR__) . '/grimoria_privado' : __DIR__ . '/privado');
 require PRIVADO . '/lib.php';
+require PRIVADO . '/sons.php';
 
 iniciarSessao();
 
@@ -27,6 +28,9 @@ try {
         'GET img' => acaoImg(),
         'GET acao' => acaoAcao(),
         'GET xp_status' => acaoXpStatus(),
+        'GET som' => acaoSom(),
+        'GET som_catalogo' => acaoSomCatalogo(),
+        'POST som_op' => acaoSomOp(),
         'POST aprimoramento_pedir' => acaoAprimoramentoPedir(),
         'POST aprimoramento_decidir' => acaoAprimoramentoDecidir(),
         'GET cenas' => acaoCenas(),
@@ -71,6 +75,31 @@ try {
     /* Com debug=1 no .env, o erro real aparece na tela. Desligue depois de resolver. */
     $debug = (lerEnv(caminhoEnv())['debug'] ?? '') === '1';
     erro($debug ? get_class($e) . ': ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')' : 'Erro no servidor. Tente de novo em instantes.', 500);
+}
+
+/* O som é independente da cena ativa e permanece disponível em qualquer aba. */
+function acaoSom(): never
+{
+    exigirLogin();
+    $s = somLer();
+    $v = $_GET['v'] ?? null;
+    if ($v !== null && ctype_digit((string)$v) && (int)$v === (int)$s['v']) {
+        responder(['v' => (int)$s['v'], 'agora_ms' => (int)round(microtime(true) * 1000), 'igual' => true]);
+    }
+    responder(somPublico($s));
+}
+
+function acaoSomCatalogo(): never
+{
+    exigirMestre();
+    responder(['sons' => somCatalogoPublico()]);
+}
+
+function acaoSomOp(): never
+{
+    exigirMestre();
+    $c = corpo();
+    responder(somOperar((string)($c['op'] ?? ''), $c));
 }
 
 /* ============================ CONTA ============================ */

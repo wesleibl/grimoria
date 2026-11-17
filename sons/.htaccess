@@ -1,0 +1,8 @@
+Options -Indexes
+AddType audio/mpeg .mp3
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  <FilesMatch "\.mp3$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>
