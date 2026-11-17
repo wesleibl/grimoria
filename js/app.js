@@ -3632,24 +3632,24 @@ function somPosicao(t) {
 }
 function somPar(c) {
   if (somPares[c]) return somPares[c];
-  var p = { id: null, estado: null, ativo: 0, audios: [somAudio(""), somAudio("")], ultimaCorrecao: 0, cruzando: false };
+  var p = { id: null, arquivo: null, estado: null, ativo: 0, audios: [somAudio(""), somAudio("")], ultimaCorrecao: 0, cruzando: false };
   somPares[c] = p; return p;
 }
 function somParar(c) {
   var p = somPar(c);
   p.audios.forEach(function (a) { somRampa(a, 0, 1500, function () { a.pause(); }); });
-  p.id = null; p.estado = null; p.cruzando = false;
+  p.id = null; p.arquivo = null; p.estado = null; p.cruzando = false;
 }
 function somAplicarCamada(c) {
   var t = somEstado && somEstado[c], p = somPar(c);
   if (!t || !t.id) { if (p.id) somParar(c); return; }
   if (!somLiberado) return;
   var alvo = somVolume(c), a = p.audios[p.ativo];
-  if (p.id !== t.id) {
+  if (p.id !== t.id || p.arquivo !== t.arquivo) {
     p.audios.forEach(function (old) { somRampa(old, 0, 1500, function () { old.pause(); }); });
     p.ativo = 1 - p.ativo; a = p.audios[p.ativo];
     a.src = t.arquivo; a.loop = t.dur < 6 && t.loop !== false; a.currentTime = Math.max(0, Math.min(t.dur - 0.05, somPosicao(t)));
-    a.volume = 0; p.id = t.id; p.cruzando = false;
+    a.volume = 0; p.id = t.id; p.arquivo = t.arquivo; p.cruzando = false;
     if (t.estado === "tocando" && !(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { somTocarAudio(a); somRampa(a, alvo, 1500); }
   } else if (p.estado !== t.estado) {
     if (t.estado === "pausado") p.audios.forEach(function (x) { somRampa(x, 0, 400, function () { x.pause(); }); });
@@ -3732,7 +3732,7 @@ function somDado(tipo, qtd, atraso) {
   if (!somLiberado || somLocal.mudo || !somLocal.fx) return;
   var arquivos = { escolher: ["d01", "d06"], rolar: ["d02", "d07", "d08"], pousar: ["d03", "d09", "d10"], critico: ["d04"], falha: ["d05"] }[tipo];
   if (!arquivos) return;
-  if (!somDadosPool[tipo]) somDadosPool[tipo] = [0, 1, 2, 3].map(function (i) { return somAudio("sons/dado/" + arquivos[i % arquivos.length] + ".mp3?v=mesa2"); });
+  if (!somDadosPool[tipo]) somDadosPool[tipo] = [0, 1, 2, 3].map(function (i) { return somAudio("sons/dado/" + arquivos[i % arquivos.length] + ".mp3?v=mesa3"); });
   qtd = Math.min(qtd || 1, tipo === "pousar" ? 4 : 3);
   for (var i = 0; i < qtd; i++) (function (j) {
     setTimeout(function () {

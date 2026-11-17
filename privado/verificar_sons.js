@@ -16,7 +16,8 @@ for (const [, id, tipo, arquivo, dur, cenarios] of linhas) {
   const mp3 = bytes.subarray(0, 3).toString() === "ID3" || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
   if (bytes.length > 3_000_000 || bytes.length < 1000 || !mp3)
     throw Error(`MP3 ausente, inválido ou grande demais: ${id}`);
-  if (Number(dur) !== 32 && tipo !== "efeito") throw Error(`Duração inesperada: ${id}`);
+  if ((tipo === "ambiente" && Number(dur) !== 32) || (tipo === "musica" && Number(dur) < 120) || (tipo === "efeito" && Number(dur) > 10))
+    throw Error(`Duração inesperada: ${id}`);
   const c = [...cenarios.matchAll(/'([^']+)'/g)].map(x => x[1]);
   if (tipo === "musica") c.forEach(x => musicas.add(x));
   if (tipo === "ambiente" && id !== "a01") {
@@ -27,4 +28,8 @@ for (const [, id, tipo, arquivo, dur, cenarios] of linhas) {
 for (const nome of nomes) if (!ambientes.has(nome)) throw Error(`Falta ambiente: ${nome}`);
 for (const nome of nomes) if (!musicas.has(nome)) throw Error(`Falta música sugerida: ${nome}`);
 if (ambientes.size !== nomes.length) throw Error("Catálogo tem cenário desconhecido");
-console.log(`${nomes.length} cenários com ambiente único e música sugerida; ${linhas.length} MP3 do catálogo presentes.`);
+for (let n = 1; n <= 10; n++) {
+  const id = `d${String(n).padStart(2, "0")}`, file = path.join(root, "sons", "dado", `${id}.mp3`);
+  if (!fs.existsSync(file) || fs.statSync(file).size < 1000) throw Error(`Falta som de dado: ${id}`);
+}
+console.log(`${nomes.length} cenários com ambiente único e música sugerida; ${linhas.length} MP3 do catálogo e 10 dados presentes.`);

@@ -83,8 +83,8 @@ function acaoSom(): never
     exigirLogin();
     $s = somLer();
     $v = $_GET['v'] ?? null;
-    if ($v !== null && ctype_digit((string)$v) && (int)$v === (int)$s['v']) {
-        responder(['v' => (int)$s['v'], 'agora_ms' => (int)round(microtime(true) * 1000), 'igual' => true]);
+    if ($v !== null && ctype_digit((string)$v) && (int)$v === somVersao($s)) {
+        responder(['v' => somVersao($s), 'agora_ms' => (int)round(microtime(true) * 1000), 'igual' => true]);
     }
     responder(somPublico($s));
 }
