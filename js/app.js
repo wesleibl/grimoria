@@ -1510,6 +1510,7 @@ function pseudoCheia(box) {
   zoomTab = { z: 1, tx: 0, ty: 0 };
   aplicarZoom(false);
   atualizarHud();
+  somPainelAtualizar();
 }
 function entrarTelaCheia() {
   var box = caixaTab();
@@ -1517,7 +1518,7 @@ function entrarTelaCheia() {
   var req = box.requestFullscreen || box.webkitRequestFullscreen, r = null;
   if (req) { try { r = req.call(box); } catch (e) { r = null; } }
   if (r && r.then) {
-    r.then(function () { box.classList.add("tc"); travarPaisagem(); zoomTab = { z: 1, tx: 0, ty: 0 }; aplicarZoom(false); atualizarHud(); }, function () { pseudoCheia(box); });
+    r.then(function () { box.classList.add("tc"); travarPaisagem(); zoomTab = { z: 1, tx: 0, ty: 0 }; aplicarZoom(false); atualizarHud(); somPainelAtualizar(); }, function () { pseudoCheia(box); });
   } else pseudoCheia(box);
 }
 function sairTelaCheia() {
@@ -1529,11 +1530,13 @@ function sairTelaCheia() {
   try { if (window.screen && screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* ignora */ }
   zoomTab = { z: 1, tx: 0, ty: 0 };
   aplicarZoom(false);
+  somPainelAtualizar();
 }
 document.addEventListener("fullscreenchange", function () {
   var box = caixaTab();
   if (box && !document.fullscreenElement && !box.classList.contains("cheia")) { box.classList.remove("tc"); zoomTab = { z: 1, tx: 0, ty: 0 }; }
   aplicarZoom(false);
+  somPainelAtualizar();
 });
 window.addEventListener("resize", function () { aplicarZoom(false); });
 
@@ -3576,6 +3579,7 @@ document.getElementById("themeBtn").addEventListener("click", function () {
 var somV = -1, somEstado = null, somRelogio = 0, somMedida = Infinity, somTimer = null;
 var somLiberado = false, somErro = "", somAberto = false, somEfeitoN = -1;
 var somPares = {}, somDadosPool = {}, somDadosIndice = {};
+var somPainelEl = null;
 var somLocal = { mudo: false, mus: 60, amb: 60, fx: 80 };
 function somLerLocal() {
   try {
@@ -3711,7 +3715,14 @@ function somIcone() {
   return somLocal.mudo ? "🔇" : !somLiberado && tocando ? "🔈" : "🔊";
 }
 function somPainelAtualizar() {
-  var b = document.getElementById("somBtn"), p = document.getElementById("somPainel");
+  var b = document.getElementById("somBtn"), p = document.getElementById("somPainel") || somPainelEl;
+  if (p) somPainelEl = p; /* a view do mapa pode ser redesenhada com o painel dentro: a referência o recupera */
+  /* Em tela cheia só o que está dentro da caixa do mapa aparece (e recebe toques): leva o painel para lá. */
+  if (p) {
+    var cx = caixaTab();
+    if (cx && emTelaCheia(cx)) { if (p.parentNode !== cx) cx.appendChild(p); p.classList.add("em-cheia"); }
+    else { if (p.parentNode !== document.body) document.body.insertBefore(p, document.getElementById("app")); p.classList.remove("em-cheia"); }
+  }
   if (b) { b.textContent = somIcone(); b.setAttribute("aria-label", "Controle de som: " + (somLocal.mudo ? "mudo" : !somLiberado ? "aguardando toque" : "ligado")); }
   var dica = document.getElementById("somDica");
   if (dica) dica.hidden = !USUARIO || somLiberado || somLocal.mudo || !(somEstado && ["musica", "ambiente"].some(function (c) { return somEstado[c] && somEstado[c].estado === "tocando"; }));
