@@ -1135,7 +1135,7 @@ function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (C
 function tabuleiroHTML(src, alt) {
   return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div>' +
     '<div class="zoom-ctl"><button type="button" data-zoom="mais" aria-label="Aproximar o mapa">+</button><button type="button" data-zoom="menos" aria-label="Afastar o mapa">−</button>' +
-    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="ini" aria-label="Mostrar ou ocultar a ordem de iniciativa" aria-pressed="false" title="Ordem de iniciativa">⚔</button><button type="button" data-zoom="dados" class="bt-dado" aria-label="Rolar dados" aria-pressed="false" title="Rolar dados" hidden>' + ic("dado") + '</button><button type="button" data-zoom="hist" aria-label="Histórico dos dados rolados" aria-pressed="false" title="Histórico dos dados">' + ic("relogio") + '</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="ini" aria-label="Mostrar ou ocultar a ordem de iniciativa" aria-pressed="false" title="Ordem de iniciativa">⚔</button><button type="button" data-zoom="dados" class="bt-dado" aria-label="Rolar dados" aria-pressed="false" title="Rolar dados" hidden>' + ic("dado") + '</button><button type="button" data-zoom="hist" aria-label="Histórico dos dados rolados" aria-pressed="false" title="Histórico dos dados">' + ic("relogio") + '</button><button type="button" class="som-abrir" aria-label="Abrir controle de som" aria-controls="somPainel">🔊</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
     '<aside class="ini-painel" id="iniPainel" aria-label="Ordem de iniciativa" hidden></aside><aside class="dados-painel" id="dadosPainel" aria-label="Rolar dados" hidden></aside><aside class="ini-painel hist-painel" id="histPainel" aria-label="Histórico dos dados" hidden></aside><div class="tok-card" id="tokCard" hidden></div>' +
     '<div class="tab-hud" id="tabHud" aria-live="polite"></div><div class="gire-dica">Gire o aparelho para o modo paisagem</div></div>';
 }
@@ -1421,7 +1421,7 @@ function ligarZoom(box) {
   if (box.dataset) box.dataset.zoomLigado = "1";
   var ptrs = {}, modo = null, ini = null, soltarTudo = false;
   function lista() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
-  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .dados-painel, .hist-painel, .tok-card, .dado-ov.toque")); }
+  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .som-painel, .tab-hud, .ini-painel, .dados-painel, .hist-painel, .tok-card, .dado-ov.toque")); }
   box.addEventListener("pointerdown", function (ev) {
     if (ignorar(ev) || (ev.pointerType === "mouse" && ev.button !== 0)) return;
     zoomSuprimir = false;
@@ -1960,6 +1960,10 @@ function dadoReceber(r, idade) {
   var eraEsc = dadoSt.ativo && dadoSt.estado === "escolhido", rolado = r.estado === "rolado";
   var dados = r.dados.filter(function (d) { return !!DADO_FORMAS[d]; });
   if (!dados.length || (rolado && idade > DADO_IDADE_MAX) || (!rolado && idade > 60)) { dadoSt = { n: r.n, ativo: false }; return; }
+  if (idade <= DADO_IDADE_MAX) {
+    if (rolado && idade < DADO_ROL_MS / 1000) somDado("rolar", Math.min(3, dados.length));
+    else if (!rolado) somDado("escolher", 1);
+  }
   /* Trocar a seleção (mais um dado, menos um) não repete a entrada animada. */
   dadoSt = { n: r.n, ativo: true, estado: rolado ? "rolado" : "escolhido", dados: dados, vs: r.vs || [], v: r.v, nome: r.nome || "", estilo: r.estilo || {}, ini: Date.now() - idade * 1000, prox: 0, quieto: !rolado && (idade > DADO_IDADE_MAX || eraEsc) };
 }
@@ -2006,6 +2010,12 @@ function dadoTick() {
   }
   var antes = ov.getAttribute("data-fase"), uns = ov.querySelectorAll(".dado-un");
   if (antes !== fase) {
+    if (fase === "pronto" && st.estado === "rolado" && !st.somPousou && Date.now() - st.ini < DADO_IDADE_MAX * 1000) {
+      st.somPousou = true;
+      somDado("pousar", Math.min(4, qtd));
+      if (st.dados.some(function (d, i) { return d === 20 && st.vs[i] === 20; })) somDado("critico", 1, 250);
+      else if (st.dados.some(function (d, i) { return d === 20 && st.vs[i] === 1; })) somDado("falha", 1, 250);
+    }
     var cls = "dado-ov " + fase;
     if (fase === "esc" && st.quieto) cls += " quieto";
     if (fase === "pronto" && (antes === "rol" || (antes === "" && dec - DADO_ROL_MS < 400))) cls += " pop";
@@ -2318,10 +2328,10 @@ function opcoes(lista, atual, valorIdx) {
   }).join("");
 }
 
-function api(acao, dados) {
+function api(acao, dados, query) {
   var op = { credentials: "same-origin", headers: { "X-Grimoria": "1" } };
   if (dados !== undefined) { op.method = "POST"; op.headers["Content-Type"] = "application/json"; op.body = JSON.stringify(dados); }
-  return fetch(API + "?a=" + encodeURIComponent(acao), op).then(function (r) {
+  return fetch(API + "?a=" + encodeURIComponent(acao) + (query || ""), op).then(function (r) {
     return r.text().then(function (t) {
       var j = null;
       try { j = JSON.parse(t); } catch (x) { j = null; }
@@ -2398,6 +2408,8 @@ function montarTopo() {
   var c = document.getElementById("conta");
   if (!c) return;
   c.innerHTML = USUARIO ? '<span class="conta-nome" title="' + esc(USUARIO.email) + '">' + esc(USUARIO.nome) + (souMestre() ? " (mestre)" : "") + '</span><button type="button" id="sairBtn">Sair</button>' : "";
+  document.getElementById("somBtn").hidden = !USUARIO;
+  somPainelAtualizar();
 }
 
 function carregarScript(src) {
@@ -2414,6 +2426,7 @@ function carregar(aposLogin) {
   app.innerHTML = '<p class="mdica">Carregando…</p>';
   api("inicio").then(function (d) {
     USUARIO = d.usuario;
+    somIniciar();
     if (!USUARIO) {
       if (aposLogin) contaMsg = "A conta foi aceita, mas o servidor não manteve a sessão. Provável causa: a pasta de sessões do PHP na hospedagem não é gravável.";
       renderizar();
@@ -3558,5 +3571,189 @@ document.getElementById("themeBtn").addEventListener("click", function () {
     (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
   root.setAttribute("data-theme", escuro ? "light" : "dark");
 });
+
+/* ============================ SOM DA SESSÃO ============================ */
+var somV = -1, somEstado = null, somRelogio = 0, somMedida = Infinity, somTimer = null;
+var somLiberado = false, somErro = "", somAberto = false, somEfeitoN = -1;
+var somPares = {}, somDadosPool = {}, somDadosIndice = {};
+var somLocal = { mudo: false, mus: 60, amb: 60, fx: 80 };
+function somLerLocal() {
+  try {
+    somLocal.mudo = localStorage.getItem("grimoria_som_mudo") === "1";
+    [["mus", 60], ["amb", 60], ["fx", 80]].forEach(function (p) {
+      var n = Number(localStorage.getItem("grimoria_som_" + p[0]));
+      if (localStorage.getItem("grimoria_som_" + p[0]) !== null && Number.isFinite(n)) somLocal[p[0]] = Math.max(0, Math.min(100, n));
+    });
+  } catch (e) { /* armazenamento opcional */ }
+}
+function somGuardarLocal(k, v) {
+  somLocal[k] = v;
+  try { localStorage.setItem("grimoria_som_" + (k === "mudo" ? "mudo" : k), k === "mudo" ? (v ? "1" : "0") : String(v)); } catch (e) { /* opcional */ }
+  somVolumeAplicar();
+  if (k === "mudo") somPainelAtualizar();
+}
+function somAudio(src) {
+  var a = src ? new Audio(src) : new Audio(); a.preload = "auto";
+  a.onerror = function () { somErro = "Um arquivo de som não carregou."; somPainelAtualizar(); };
+  return a;
+}
+function somTocarAudio(a) { var p = a.play(); if (p && p.catch) p.catch(function () {
+  if (a.error) { somErro = "Um arquivo de som não carregou."; a.pause(); }
+  else somLiberado = false;
+  somPainelAtualizar();
+}); }
+function somRampa(a, destino, dur, fim) {
+  if (!a) return;
+  clearInterval(a._somRampa);
+  var inicio = Number(a.volume), t0 = Date.now();
+  a._somRampa = setInterval(function () {
+    var f = Math.min(1, (Date.now() - t0) / dur);
+    var v = Math.max(0, Math.min(1, inicio + (destino - inicio) * f));
+    try { a.volume = v; if (Math.abs(a.volume - v) > .02) a.muted = destino === 0; else a.muted = false; }
+    catch (e) { a.muted = destino === 0; }
+    if (f >= 1) { clearInterval(a._somRampa); a._somRampa = null; if (fim) fim(); }
+  }, 50);
+}
+function somVolume(camada) {
+  var k = camada === "musica" ? "mus" : "amb", t = somEstado && somEstado[camada];
+  return somLocal.mudo ? 0 : (somLocal[k] / 100) * ((t && t.vol != null ? t.vol : 70) / 100);
+}
+function somVolumeAplicar() {
+  ["musica", "ambiente"].forEach(function (c) {
+    var p = somPares[c]; if (!p) return;
+    p.audios.forEach(function (a, i) { if (i === p.ativo && !a.paused) somRampa(a, somVolume(c), 300); });
+  });
+}
+function somPosicao(t) {
+  if (!t || !t.dur) return 0;
+  if (t.estado === "pausado") return (t.pos_pausa_ms || 0) / 1000;
+  return (((Date.now() + somRelogio - t.inicio_ms) / 1000) % t.dur + t.dur) % t.dur;
+}
+function somPar(c) {
+  if (somPares[c]) return somPares[c];
+  var p = { id: null, estado: null, ativo: 0, audios: [somAudio(""), somAudio("")], ultimaCorrecao: 0, cruzando: false };
+  somPares[c] = p; return p;
+}
+function somParar(c) {
+  var p = somPar(c);
+  p.audios.forEach(function (a) { somRampa(a, 0, 1500, function () { a.pause(); }); });
+  p.id = null; p.estado = null; p.cruzando = false;
+}
+function somAplicarCamada(c) {
+  var t = somEstado && somEstado[c], p = somPar(c);
+  if (!t || !t.id) { if (p.id) somParar(c); return; }
+  if (!somLiberado) return;
+  var alvo = somVolume(c), a = p.audios[p.ativo];
+  if (p.id !== t.id) {
+    p.audios.forEach(function (old) { somRampa(old, 0, 1500, function () { old.pause(); }); });
+    p.ativo = 1 - p.ativo; a = p.audios[p.ativo];
+    a.src = t.arquivo; a.loop = t.dur < 6; a.currentTime = Math.max(0, Math.min(t.dur - 0.05, somPosicao(t)));
+    a.volume = 0; p.id = t.id; p.cruzando = false;
+    if (t.estado === "tocando") { somTocarAudio(a); somRampa(a, alvo, 1500); }
+  } else if (p.estado !== t.estado) {
+    if (t.estado === "pausado") p.audios.forEach(function (x) { somRampa(x, 0, 400, function () { x.pause(); }); });
+    else { a.currentTime = somPosicao(t); a.volume = 0; somTocarAudio(a); somRampa(a, alvo, 400); }
+  } else if (t.estado === "tocando" && !a.paused && Date.now() - p.ultimaCorrecao > 30000) {
+    var esperado = somPosicao(t), dif = Math.abs(a.currentTime - esperado);
+    if (Math.min(dif, t.dur - dif) > 1.5) { somRampa(a, 0, 250, function () { a.currentTime = esperado; somRampa(a, alvo, 250); }); p.ultimaCorrecao = Date.now(); }
+  }
+  p.estado = t.estado;
+}
+function somLoopar(c) {
+  var p = somPares[c], t = somEstado && somEstado[c];
+  if (!p || !t || t.estado !== "tocando" || !somLiberado || t.dur < 6 || p.cruzando) return;
+  var a = p.audios[p.ativo], resto = t.dur - a.currentTime;
+  if (a.paused) {
+    if (!a.error) { a.currentTime = somPosicao(t); somTocarAudio(a); somRampa(a, somVolume(c), 300); }
+    return;
+  }
+  if (resto > 1.8 || resto < 0) return;
+  var outro = p.audios[1 - p.ativo]; p.cruzando = true;
+  outro.src = t.arquivo; outro.currentTime = 0; outro.volume = 0;
+  somTocarAudio(outro); somRampa(a, 0, Math.max(100, resto * 1000), function () { a.pause(); });
+  somRampa(outro, somVolume(c), Math.max(100, resto * 1000), function () { p.ativo = 1 - p.ativo; p.cruzando = false; });
+}
+function somEfeito(src, vol) {
+  if (!somLiberado || somLocal.mudo || !somLocal.fx || !src) return;
+  var a = somAudio(src); a.volume = Math.min(1, vol * somLocal.fx / 100); somTocarAudio(a);
+}
+function somAplicar(s) {
+  somEstado = s;
+  somAplicarCamada("musica"); somAplicarCamada("ambiente");
+  if (s.efeito && s.efeito.n !== somEfeitoN) {
+    if (Math.abs(Date.now() + somRelogio - s.efeito.t_ms) < 5000) somEfeito(s.efeito.arquivo, (s.efeito_vol == null ? 80 : s.efeito_vol) / 100);
+    somEfeitoN = s.efeito.n;
+  }
+  somPainelAtualizar();
+  if (MESTRE && typeof somAtualizarView === "function") somAtualizarView();
+}
+function somSondar() {
+  if (!USUARIO) return;
+  clearTimeout(somTimer);
+  var t0 = Date.now();
+  api("som", undefined, somV >= 0 ? "&v=" + somV : "").then(function (r) {
+    var rtt = Date.now() - t0;
+    if (rtt <= somMedida + 100) { somMedida = Math.min(somMedida, rtt); somRelogio = r.agora_ms - (t0 + rtt / 2); }
+    if (!r.igual) { somV = r.v; somAplicar(r); }
+  }, function () { somErro = "Sem conexão com o som. Tentando novamente."; somPainelAtualizar(); }).then(function () {
+    somTimer = setTimeout(somSondar, document.hidden ? 15000 : 4000);
+  });
+}
+function somDesbloquear() {
+  if (!USUARIO || somLiberado) return;
+  var a = somAudio("sons/silencio.mp3"); a.volume = 0;
+  var p = a.play();
+  if (p && p.then) p.then(function () { somLiberado = true; somErro = ""; if (somEstado) somAplicar(somEstado); somSondar(); }, function () { somPainelAtualizar(); });
+}
+function somIcone() {
+  var tocando = somEstado && ["musica", "ambiente"].some(function (c) { return somEstado[c] && somEstado[c].estado === "tocando"; });
+  return somLocal.mudo ? "🔇" : !somLiberado && tocando ? "🔈" : "🔊";
+}
+function somPainelAtualizar() {
+  var b = document.getElementById("somBtn"), p = document.getElementById("somPainel");
+  if (b) { b.textContent = somIcone(); b.setAttribute("aria-label", "Controle de som: " + (somLocal.mudo ? "mudo" : !somLiberado ? "aguardando toque" : "ligado")); }
+  var dica = document.getElementById("somDica");
+  if (dica) dica.hidden = !USUARIO || somLiberado || somLocal.mudo || !(somEstado && ["musica", "ambiente"].some(function (c) { return somEstado[c] && somEstado[c].estado === "tocando"; }));
+  document.querySelectorAll(".som-abrir").forEach(function (x) { x.textContent = somIcone(); });
+  if (p) {
+    p.hidden = !somAberto || !USUARIO;
+    p.innerHTML = '<label><input type="checkbox" id="somMudo"' + (somLocal.mudo ? " checked" : "") + '> Mudo</label>' +
+      [["mus", "Música"], ["amb", "Ambiente"], ["fx", "Efeitos e dados"]].map(function (x) { return '<label>' + x[1] + ' <output>' + somLocal[x[0]] + '%</output><input type="range" min="0" max="100" data-somlocal="' + x[0] + '" value="' + somLocal[x[0]] + '"></label>'; }).join("") +
+      (!somLiberado && somEstado && (somEstado.musica || somEstado.ambiente) ? '<p>Toque para ligar o som.</p>' : "") + (somErro ? '<p role="status">' + esc(somErro) + '</p>' : "");
+  }
+}
+function somIniciar() {
+  if (!USUARIO) { clearTimeout(somTimer); somV = -1; somEstado = null; somPainelAtualizar(); return; }
+  if (somV >= 0) return;
+  somLerLocal(); somPainelAtualizar(); somSondar();
+}
+function somDado(tipo, qtd, atraso) {
+  if (!somLiberado || somLocal.mudo || !somLocal.fx) return;
+  var src = "sons/dado/" + ({ escolher: "d01", rolar: "d02", pousar: "d03", critico: "d04", falha: "d05" }[tipo] || "") + ".mp3";
+  if (!somDadosPool[tipo]) somDadosPool[tipo] = [somAudio(src), somAudio(src), somAudio(src), somAudio(src)];
+  qtd = Math.min(qtd || 1, tipo === "pousar" ? 4 : 3);
+  for (var i = 0; i < qtd; i++) (function (j) {
+    setTimeout(function () {
+      if (!somLiberado || somLocal.mudo) return;
+      var k = somDadosIndice[tipo] = ((somDadosIndice[tipo] || 0) + 1) % 4, a = somDadosPool[tipo][k];
+      a.pause(); a.currentTime = 0; a.volume = somLocal.fx / 100;
+      a.playbackRate = tipo === "rolar" ? 0.95 + Math.random() * 0.1 : 1;
+      somTocarAudio(a);
+    }, (atraso || 0) + j * (tipo === "rolar" ? 80 : 50));
+  })(i);
+}
+document.addEventListener("pointerdown", somDesbloquear, { passive: true });
+document.addEventListener("keydown", somDesbloquear);
+document.addEventListener("visibilitychange", function () { if (USUARIO && !document.hidden) somSondar(); });
+setInterval(function () { somLoopar("musica"); somLoopar("ambiente"); }, 250);
+document.addEventListener("click", function (e) {
+  if (e.target.closest && e.target.closest("#somBtn, .som-abrir")) { somAberto = !somAberto; somPainelAtualizar(); }
+  else if (somAberto && !e.target.closest("#somPainel")) { somAberto = false; somPainelAtualizar(); }
+});
+document.addEventListener("input", function (e) { if (e.target.dataset && e.target.dataset.somlocal) {
+  var k = e.target.dataset.somlocal; somGuardarLocal(k, Number(e.target.value));
+  var o = e.target.parentNode.querySelector("output"); if (o) o.textContent = e.target.value + "%";
+} });
+document.addEventListener("change", function (e) { if (e.target.id === "somMudo") somGuardarLocal("mudo", e.target.checked); });
 
 carregar();
