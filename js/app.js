@@ -1757,32 +1757,54 @@ function modeloDadosJogador() {
 
 function alternarDados() { dadosAberto = !dadosAberto; dadosMsg = ""; atualizarDados(); }
 
+/* Contagem por tipo de dado e resumo ("2d6 + d20"). */
+function dadoCont(l) { var c = {}; (l || []).forEach(function (d) { c[d] = (c[d] || 0) + 1; }); return c; }
+function dadosResumo(l) {
+  var c = dadoCont(l);
+  return DADOS.filter(function (d) { return c[d]; }).map(function (d) { return (c[d] > 1 ? c[d] : "") + "d" + d; }).join(" + ");
+}
+function dadosSel(r, tok) { return r && r.estado === "escolhido" && (tok == null || r.tok === tok) ? r.dados || [] : []; }
+
+/* Um dado da grade: clicar acrescenta mais um do mesmo (como no Google); o "−" tira um. marca: "sel" (escolhido), "ult" (último rolado). */
+function dadoCelHTML(d, est, qtd, marca, pode, idc) {
+  var tag = pode ? 'button type="button" data-dado="' + d + '"' : "span", fim = pode ? "button" : "span";
+  var h = '<div class="dado-cel"><' + tag + ' class="dado-op' + (marca ? " " + marca : "") + '" aria-label="' + (pode ? "Acrescentar d" : "d") + d + (qtd ? ", quantidade " + qtd : "") + '">' +
+    (qtd ? '<i class="dado-qtd">×' + qtd + "</i>" : "") + dadoSVG(d, est, String(d), idc + d) + "<span>d" + d + "</span></" + fim + ">";
+  if (pode && marca === "sel" && qtd) h += '<button type="button" class="dado-menos" data-dado-menos="' + d + '" aria-label="Tirar um d' + d + '">−</button>';
+  return h + "</div>";
+}
+
 function dadosPainelHTML(m) {
-  var sel = m.rolagem && m.rolagem.estado === "escolhido" && m.rolagem.tok === m.tok ? m.rolagem.dado : 0;
+  var sel = dadosSel(m.rolagem, m.tok), cs = dadoCont(sel);
   /* O botão Rolar fica logo no alto: em mapa pequeno (celular) o painel rola e o botão continua à vista. */
   var h = '<div class="dados-cab"><b>' + ic("dado") + 'Dados</b><button type="button" class="dados-x" data-dados-fechar aria-label="Fechar o painel de dados">✕</button></div>' +
-    '<p class="dados-quem">' + esc(m.nome || "") + '</p><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel ? " d" + sel : "") + '</button><div class="dados-grade">';
-  DADOS.forEach(function (d) {
-    h += '<button type="button" class="dado-op' + (sel === d ? " sel" : "") + '" data-dado="' + d + '" aria-pressed="' + (sel === d ? "true" : "false") + '" aria-label="Escolher o d' + d + '">' +
-      dadoSVG(d, m.estilo, String(d), "p" + d) + "<span>d" + d + "</span></button>";
-  });
+    '<p class="dados-quem">' + esc(m.nome || "") + '</p><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel.length && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel.length ? " " + esc(dadosResumo(sel)) : "") + "</button>" +
+    (sel.length ? '<button type="button" class="dados-limpar" data-dados-limpar>Limpar</button>' : "") + '<div class="dados-grade">';
+  DADOS.forEach(function (d) { h += dadoCelHTML(d, m.estilo, cs[d] || 0, cs[d] ? "sel" : "", true, "p"); });
   return h + "</div>" + (dadosMsg ? '<p class="dados-msg" role="status">' + esc(dadosMsg) + "</p>" : "");
 }
 
-/* Seção fixa "Dados" ao lado do mapa (aba Ação): mostra os 6 dados, qual foi escolhido e o último resultado. Quem pode rolar também clica aqui. */
+/* Texto da última rolagem: "rolou 2d6 + d20: 3 + 5 + 17 = 25" (com um dado só: "rolou d20: 17"). */
+function rolagemTextoHTML(r) {
+  var nome = "<b>" + esc(r.nome || "Alguém") + "</b>", l = r.dados || [], vs = (r.vs || []).map(function (x) { return esc(String(x)); });
+  if (r.estado === "escolhido") return nome + " escolheu <b>" + esc(dadosResumo(l)) + "</b>.";
+  if (l.length === 1) return nome + " rolou d" + l[0] + ": <b>" + esc(String(r.v)) + "</b>";
+  return nome + " rolou " + esc(dadosResumo(l)) + ": " + vs.join(" + ") + " = <b>" + esc(String(r.v)) + "</b>";
+}
+
+/* Seção fixa "Dados" ao lado do mapa (aba Ação): mostra os 6 dados, o que foi escolhido (com a quantidade) e o último resultado. Quem pode rolar também clica aqui. */
 function dadosLadoHTML(m) {
-  var r = m.rolagem, esc1 = r && r.estado === "escolhido" ? r.dado : 0, est = (r && r.estilo) || m.estilo || {}, pode = !!m.pode;
+  var r = m.rolagem, pode = !!m.pode, sel = dadosSel(r), est = (r && r.estilo) || m.estilo || {};
+  var cs = dadoCont(sel), ult = r && r.estado === "rolado" ? dadoCont(r.dados) : {};
   var h = '<section class="panel dados-lado"><h3>' + ic("dado") + "Dados</h3><div class=\"dados-grade\">";
-  DADOS.forEach(function (d) {
-    var on = esc1 === d || (r && r.estado === "rolado" && r.dado === d);
-    h += '<' + (pode ? 'button type="button" data-dado="' + d + '"' : "span") + ' class="dado-op' + (esc1 === d ? " sel" : on ? " ult" : "") + '"' + (pode ? ' aria-pressed="' + (esc1 === d) + '"' : "") + ' aria-label="d' + d + (esc1 === d ? ", escolhido" : "") + '">' +
-      dadoSVG(d, est, String(d), "l" + d) + "<span>d" + d + "</span></" + (pode ? "button" : "span") + ">";
-  });
+  DADOS.forEach(function (d) { h += dadoCelHTML(d, est, cs[d] || ult[d] || 0, cs[d] ? "sel" : ult[d] ? "ult" : "", pode, "l"); });
   h += "</div>";
-  if (r && r.estado === "escolhido") h += '<p class="dados-status"><b>' + esc(r.nome || "Alguém") + "</b> escolheu o <b>d" + r.dado + "</b>.</p>";
-  else if (r) h += '<p class="dados-status"><b>' + esc(r.nome || "Alguém") + "</b> rolou d" + r.dado + ": <b>" + esc(String(r.v)) + "</b></p>";
-  else h += '<p class="mdica">' + (pode ? "Escolha um dado." : "Nenhum dado escolhido.") + "</p>";
-  if (pode) h += '<button type="button" class="primary dados-rolar" data-dados-rolar' + (esc1 && !dadosOcup ? "" : " disabled") + ">Rolar" + (esc1 ? " d" + esc1 : "") + "</button>" + (dadosMsg ? '<p class="tok-aviso">' + esc(dadosMsg) + "</p>" : "");
+  if (r && r.dados && r.dados.length) h += '<p class="dados-status">' + rolagemTextoHTML(r) + "</p>";
+  else h += '<p class="mdica">' + (pode ? "Toque num dado para escolher. Toque de novo para somar outro igual." : MESTRE ? "Escolha em “Quem pode rolar” um aliado ou inimigo para poder clicar nos dados." : "Nenhum dado escolhido.") + "</p>";
+  if (pode) {
+    h += '<p class="dados-acoes"><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel.length && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel.length ? " " + esc(dadosResumo(sel)) : "") + "</button>" +
+      (sel.length ? '<button type="button" data-dados-limpar>Limpar</button>' : "") + "</p>" + (dadosMsg ? '<p class="tok-aviso">' + esc(dadosMsg) + "</p>" : "");
+  }
   return h + "</section>";
 }
 
@@ -1820,18 +1842,21 @@ function atualizarDados() {
 
 /* Detecta rolagem nova pelo n. Uma rolagem de mais de ~8 s (ao recarregar a página) não anima: fica só no registro. */
 function dadoReceber(r, idade) {
-  if (!r) { dadoSt.ativo = false; return; }
+  if (!r || !r.dados || !r.dados.length) { dadoSt.ativo = false; return; }
   if (r.n === dadoSt.n) return;
   idade = idade || 0;
-  if ((r.estado === "rolado" && idade > DADO_IDADE_MAX) || (r.estado !== "rolado" && idade > 60)) { dadoSt = { n: r.n, ativo: false }; return; }
-  dadoSt = { n: r.n, ativo: true, estado: r.estado === "rolado" ? "rolado" : "escolhido", lados: r.dado, v: r.v, nome: r.nome || "", estilo: r.estilo || {}, ini: Date.now() - idade * 1000, prox: 0, quieto: r.estado !== "rolado" && idade > DADO_IDADE_MAX };
+  var eraEsc = dadoSt.ativo && dadoSt.estado === "escolhido", rolado = r.estado === "rolado";
+  var dados = r.dados.filter(function (d) { return !!DADO_FORMAS[d]; });
+  if (!dados.length || (rolado && idade > DADO_IDADE_MAX) || (!rolado && idade > 60)) { dadoSt = { n: r.n, ativo: false }; return; }
+  /* Trocar a seleção (mais um dado, menos um) não repete a entrada animada. */
+  dadoSt = { n: r.n, ativo: true, estado: rolado ? "rolado" : "escolhido", dados: dados, vs: r.vs || [], v: r.v, nome: r.nome || "", estilo: r.estilo || {}, ini: Date.now() - idade * 1000, prox: 0, quieto: !rolado && (idade > DADO_IDADE_MAX || eraEsc) };
 }
 
 function semMovimento() { try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
 function dadoRemoverOv() { var ov = document.getElementById("dadoOv"); if (ov && ov.parentNode) ov.parentNode.removeChild(ov); }
 function dadoParar() { dadoSt.ativo = false; dadoRemoverOv(); if (dadoTimer) { clearInterval(dadoTimer); dadoTimer = null; } }
 
-/* Redesenha o dado do meio do mapa a partir das variáveis (não depende do redesenho completo da view). */
+/* Redesenha os dados do meio do mapa a partir das variáveis (não depende do redesenho completo da view). */
 function dadoTick() {
   var st = dadoSt, box = caixaTab();
   if (!st.ativo) { dadoParar(); return; }
@@ -1841,34 +1866,46 @@ function dadoTick() {
   if ((st.estado === "rolado" && dec > DADO_ROL_MS + DADO_FICA_MS) || (st.estado === "escolhido" && dec > 60000)) { dadoParar(); return; }
   var fase = st.estado === "rolado" ? (dec < DADO_ROL_MS && !reduz ? "rol" : "pronto") : "esc";
   if (ov && ov.getAttribute("data-n") !== String(st.n)) { dadoRemoverOv(); ov = null; }
-  var lados = DADO_FORMAS[st.lados] ? st.lados : 20;
+  var qtd = st.dados.length;
   if (!ov) {
+    var tam = qtd === 1 ? 150 : qtd <= 2 ? 120 : qtd <= 4 ? 96 : qtd <= 6 ? 80 : 64;
     ov = document.createElement("div");
     ov.id = "dadoOv";
     ov.setAttribute("data-n", String(st.n));
     ov.setAttribute("aria-hidden", "true");
-    ov.innerHTML = '<div class="dado-quica"><div class="dado-gira"><div class="dado-fig">' + dadoSVG(lados, st.estilo, st.estado === "rolado" ? String(st.v) : "d" + lados, "ov") + '</div></div></div><div class="dado-nome"></div>';
-    ov.querySelector(".dado-nome").textContent = (st.nome || "Dado") + " · d" + lados;
+    ov.style.setProperty("--tam", tam + "px");
+    ov.innerHTML = '<div class="dado-fila">' + st.dados.map(function (l, i) {
+      return '<div class="dado-un" data-l="' + l + '"><div class="dado-quica"><div class="dado-gira"><div class="dado-fig">' +
+        dadoSVG(l, st.estilo, st.estado === "rolado" ? String(st.vs[i] != null ? st.vs[i] : st.v) : "d" + l, "ov" + i) + "</div></div></div></div>";
+    }).join("") + '</div><div class="dado-nome"></div><div class="dado-total" hidden></div>';
+    ov.querySelector(".dado-nome").textContent = (st.nome || "Dado") + " · " + dadosResumo(st.dados);
     ov.style.setProperty("--atraso", (-Math.max(0, dec)) + "ms");
     box.appendChild(ov);
     ov.setAttribute("data-fase", "");
   }
-  var antes = ov.getAttribute("data-fase");
+  var antes = ov.getAttribute("data-fase"), uns = ov.querySelectorAll(".dado-un");
   if (antes !== fase) {
     var cls = "dado-ov " + fase;
     if (fase === "esc" && st.quieto) cls += " quieto";
-    if (fase === "pronto") {
-      if (antes === "rol" || (antes === "" && dec - DADO_ROL_MS < 400)) cls += " pop";
-      if (lados === 20 && st.v === 20) cls += " crit";
-      if (lados === 20 && st.v === 1) cls += " falha";
-    }
+    if (fase === "pronto" && (antes === "rol" || (antes === "" && dec - DADO_ROL_MS < 400))) cls += " pop";
     ov.className = cls;
     ov.setAttribute("data-fase", fase);
-    if (fase === "pronto") { var nm = ov.querySelector(".dado-num"); if (nm) nm.textContent = String(st.v); }
+    if (fase === "pronto") {
+      Array.prototype.forEach.call(uns, function (u, i) {
+        var l = st.dados[i], v = st.vs[i] != null ? st.vs[i] : st.v, nm = u.querySelector(".dado-num");
+        if (nm) nm.textContent = String(v);
+        if (l === 20 && v === 20) u.classList.add("crit");
+        if (l === 20 && v === 1) u.classList.add("falha");
+      });
+      var tt = ov.querySelector(".dado-total");
+      if (tt && qtd > 1) { tt.textContent = "Total " + st.v; tt.hidden = false; }
+    }
   }
   if (fase === "rol" && agora >= st.prox) {
-    var nm2 = ov.querySelector(".dado-num");
-    if (nm2) nm2.textContent = String(1 + Math.floor(Math.random() * lados)); /* só visual: nunca é o resultado */
+    Array.prototype.forEach.call(uns, function (u, i) {
+      var nm2 = u.querySelector(".dado-num");
+      if (nm2) nm2.textContent = String(1 + Math.floor(Math.random() * st.dados[i])); /* só visual: nunca é o resultado */
+    });
     var fr = Math.min(1, dec / DADO_ROL_MS);
     st.prox = agora + 50 + 230 * fr * fr;
   }
@@ -1876,16 +1913,25 @@ function dadoTick() {
 }
 
 /* Escolher o dado e rolar: o servidor confere tudo (quem pode, qual dado, o resultado). */
+var dadoFila = [];
 function dadoOp(op, dados, aoOk) {
-  if (dadosOcup) return;
+  /* Cliques rápidos nos dados esperam a vez (o servidor aplica um de cada vez). */
+  if (dadosOcup) { if (op === "escolher_dado" && dadoFila.length < 12) dadoFila.push([op, dados, aoOk]); return; }
   dadosOcup = true;
   dadosMsg = "";
   var p;
   if (MESTRE) p = campoOp(op, dados).then(function (r) { if (!r) dadosMsg = "Não foi possível agora. Tente de novo."; else if (aoOk) aoOk(); });
   else p = api("campo_op", extras({ op: op }, dados || {})).then(function () { if (aoOk) aoOk(); }, function (e) { dadosMsg = e.message; });
-  p.then(function () { return MESTRE ? null : buscarAcaoAgora(true); }).then(function () { dadosOcup = false; atualizarDados(); });
+  p.then(function () { return MESTRE ? null : buscarAcaoAgora(true); }).then(function () {
+    dadosOcup = false;
+    if (dadosMsg) dadoFila = [];
+    var prox = dadoFila.shift();
+    atualizarDados();
+    if (prox) dadoOp(prox[0], prox[1], prox[2]);
+  });
 }
-function escolherDado(d) { if (DADOS.indexOf(d) !== -1) dadoOp("escolher_dado", { dado: d }); }
+/* delta: 1 acrescenta um dado, -1 tira um. */
+function escolherDado(d, delta) { if (DADOS.indexOf(d) !== -1) dadoOp("escolher_dado", { dado: d, delta: delta || 1 }); }
 /* O painel fecha sozinho quando a rolagem começa (depois de o servidor aceitar). */
 function rolarDado() { dadoOp("rolar", null, function () { dadosAberto = false; }); }
 
@@ -3278,7 +3324,9 @@ app.addEventListener("click", function (e) {
   if (b.id === "tentarDeNovo") { carregar(); return; }
   if (!MESTRE && cliqueMeusDados(b)) return;
   if (b.dataset.zoom) { zoomBotao(b.dataset.zoom); return; }
+  if (b.dataset.dadoMenos) { escolherDado(parseInt(b.dataset.dadoMenos, 10), -1); return; }
   if (b.dataset.dado) { escolherDado(parseInt(b.dataset.dado, 10)); return; }
+  if (b.hasAttribute("data-dados-limpar")) { dadoOp("escolher_dado", { delta: 0 }); return; }
   if (b.hasAttribute("data-dados-rolar")) { rolarDado(); return; }
   if (b.hasAttribute("data-dados-fechar")) { dadosAberto = false; atualizarDados(); return; }
   if (b.dataset.virar && !MESTRE) { virarJogador(b.dataset.virar); return; }

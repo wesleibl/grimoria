@@ -490,9 +490,13 @@ body.sem-rolagem { overflow: hidden; }
 .dado-op .dado-svg { width: 44px; height: 44px; display: block; }
 .dados-rolar { width: 100%; min-height: 48px; margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; }
 .dados-msg { margin: 6px 0 0; color: #ffb4a8; }
-.dado-ov { position: absolute; left: 50%; top: 50%; z-index: 4; width: clamp(96px, 28%, 180px); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; line-height: 1.2; transition: opacity .5s; }
+.dado-ov { position: absolute; left: 50%; top: 50%; z-index: 4; width: max-content; max-width: 92%; transform: translate(-50%, -50%); pointer-events: none; line-height: 1.2; transition: opacity .5s; }
 .dado-ov.some { opacity: 0; }
+.dado-fila { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; }
+.dado-un { width: min(var(--tam, 150px), 30vw); aspect-ratio: 1; }
 .dado-quica, .dado-gira, .dado-fig { width: 100%; height: 100%; }
+.dado-total { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 10px; padding: 4px 16px; border-radius: 999px; background: #f5c43c; color: #231a00; font-weight: 800; font-size: 1.25rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, .5); animation: dPop .45s cubic-bezier(.3, 1.6, .5, 1); }
+.dado-total[hidden] { display: none; }
 .dado-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .dado-fig { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .55)); }
 .dado-num { font-family: inherit; }
@@ -518,11 +522,13 @@ body.sem-rolagem { overflow: hidden; }
   84% { transform: translateY(-5%); animation-timing-function: cubic-bezier(.5, 0, 1, .6); }
   100% { transform: translateY(0) scale(1); } }
 @keyframes dGira { 0% { transform: rotate(0); } 100% { transform: rotate(1080deg); } }
+@keyframes dGiraR { 0% { transform: rotate(0); } 100% { transform: rotate(-1080deg); } }
+.dado-ov.rol .dado-un:nth-child(even) .dado-gira { animation-name: dGiraR; }
 .dado-ov.pronto.pop .dado-fig { animation: dPop .45s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes dPop { 0% { transform: scale(.82); } 55% { transform: scale(1.22); } 100% { transform: scale(1); } }
-.dado-ov.crit .dado-fig { animation: dPop .45s cubic-bezier(.3, 1.6, .5, 1), dOuro 1.1s ease-in-out .45s infinite; }
+.dado-ov.pronto .dado-un.crit .dado-fig { animation: dPop .45s cubic-bezier(.3, 1.6, .5, 1), dOuro 1.1s ease-in-out .45s infinite; }
 @keyframes dOuro { 0%, 100% { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .55)) drop-shadow(0 0 8px rgba(255, 200, 40, .8)); } 50% { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .55)) drop-shadow(0 0 26px rgba(255, 215, 70, 1)); } }
-.dado-ov.falha .dado-gira { animation: dTrem .5s linear .1s 1; }
+.dado-ov.pronto .dado-un.falha .dado-gira { animation: dTrem .5s linear .1s 1; }
 @keyframes dTrem { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6%) rotate(-4deg); } 40% { transform: translateX(6%) rotate(4deg); } 60% { transform: translateX(-4%) rotate(-2deg); } 80% { transform: translateX(3%); } }
 @media (prefers-reduced-motion: reduce) { .dado-ov, .dado-ov *, .zoom-ctl button.destaque { animation: none !important; } .dado-ov { transition: opacity .3s; } }
 /* Meus dados */
@@ -545,7 +551,13 @@ body.sem-rolagem { overflow: hidden; }
 .dados-lado .dado-op .dado-svg { width: 48px; height: 48px; }
 .dados-lado button.dado-op { cursor: pointer; }
 .dados-status { margin: .6rem 0 0; }
-.dados-lado .dados-rolar { margin: .6rem 0 0; }
+.dados-lado .dados-rolar { margin: 0; flex: 1 1 auto; }
+.dados-acoes { display: flex; gap: 8px; margin: .6rem 0 0; }
+.dado-cel { position: relative; display: flex; }
+.dado-cel .dado-op { flex: 1; }
+.dado-qtd { position: absolute; top: 2px; left: 4px; font-style: normal; font-weight: 800; font-size: .8rem; padding: 0 5px; border-radius: 999px; background: #f5c43c; color: #231a00; line-height: 1.4; }
+.dado-menos { position: absolute; top: 2px; right: 2px; min-width: 28px; min-height: 28px; width: 28px; height: 28px; padding: 0; border-radius: 50%; font-weight: 800; line-height: 1; background: rgba(0, 0, 0, .6); color: #fff; border: 1px solid rgba(255, 255, 255, .5); }
+.dados-limpar { width: 100%; margin: 0 0 8px; min-height: 36px; }
 /* Painel de iniciativa (⚔), card do token e efeitos: ficam dentro do .tab-box (valem em tela cheia) */
 .zoom-ctl button[aria-pressed="true"][data-zoom="ini"] { background: var(--accent); color: var(--accent-ink); }
 .ini-painel { position: absolute; top: 58px; right: 8px; z-index: 5; width: min(250px, calc(100% - 16px)); max-height: calc(100% - 66px); overflow-y: auto; box-sizing: border-box; padding: 8px 10px; border-radius: 10px; background: rgba(20, 30, 33, .82); color: #fff; font-size: .88rem; line-height: 1.35; }

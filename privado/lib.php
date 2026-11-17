@@ -1006,9 +1006,32 @@ function iniDigitada(mixed $v): array
 /* ============================ ROLADOR DE DADOS ============================ */
 
 /* campo.rolador = id do token que o mestre liberou para rolar (fora de combate). Em combate, rola quem está na vez.
-   campo.rolagem = {n, estado: escolhido|rolado, tok, nome, tipo, dado, v, t, estilo}. O resultado sai SÓ de random_int aqui:
+   campo.rolagem = {n, estado: escolhido|rolado, tok, nome, tipo, dados: [lados...], vs: [resultados]|null, v: total|null, t, estilo}.
+   Vários dados de uma vez (até DADOS_MAX, inclusive repetidos). O resultado sai SÓ de random_int aqui:
    o navegador nunca envia o valor. campo.rolN conta as mudanças, para os navegadores detectarem novidade. */
 const DADOS_VALIDOS = [4, 6, 8, 10, 12, 20];
+const DADOS_MAX = 10;
+
+/* Lista de dados limpa: só lados válidos, no máximo DADOS_MAX, em ordem crescente. */
+function dadosLista(mixed $l): array
+{
+    $out = [];
+    foreach (is_array($l) ? $l : [] as $d) {
+        if (is_int($d) && in_array($d, DADOS_VALIDOS, true)) $out[] = $d;
+    }
+    sort($out);
+    return array_slice($out, 0, DADOS_MAX);
+}
+
+/* "2d6 + d20": o resumo de uma lista de dados. */
+function dadosResumo(array $lista): string
+{
+    $n = array_count_values($lista);
+    ksort($n);
+    $p = [];
+    foreach ($n as $lados => $q) $p[] = ($q > 1 ? $q : '') . 'd' . $lados;
+    return implode(' + ', $p);
+}
 
 function dadoValido(mixed $d): int
 {
@@ -1084,25 +1107,44 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
     /* Limite por usuário (guardado no campo, dentro da transação): 1 rolagem por segundo; a troca de dado é um pouco mais folgada. */
     $agora = microtime(true);
     $rl = is_array($campo['rl'] ?? null) ? $campo['rl'] : [];
-    if ($agora - (float)($rl[$uid][$op] ?? 0) < ($op === 'rolar' ? 1.0 : 0.3)) erro('Calma: devagar com os dados.', 429);
+    if ($agora - (float)($rl[$uid][$op] ?? 0) < ($op === 'rolar' ? 1.0 : 0.05)) erro('Calma: devagar com os dados.', 429);
     $rl[$uid][$op] = $agora;
     foreach ($rl as $k => $v) if ($agora - max(array_map('floatval', $v)) > 60) unset($rl[$k]);
     $campo['rl'] = $rl;
 
     $nome = mb_substr((string)($t['nome'] ?? ''), 0, 60);
+    $r = $campo['rolagem'] ?? null;
+    /* A seleção em andamento deste token (a escolha vale por 60 s). */
+    $sel = is_array($r) && ($r['estado'] ?? '') === 'escolhido' && ($r['tok'] ?? '') === $id && time() - (int)($r['t'] ?? 0) <= 60 ? dadosLista($r['dados'] ?? []) : [];
     if ($op === 'escolher_dado') {
+        /* delta: 1 acrescenta um dado, -1 tira um, 0 limpa tudo. */
+        $delta = $c['delta'] ?? 1;
+        if (is_string($delta) && preg_match('/^-?[01]$/D', $delta)) $delta = (int)$delta;
+        if (!is_int($delta) || !in_array($delta, [-1, 0, 1], true)) erro('Operação de dado inválida.');
+        if ($delta === 0) {
+            $sel = [];
+        } else {
+            $d = dadoValido($c['dado'] ?? null);
+            if ($delta === 1) {
+                if (count($sel) >= DADOS_MAX) erro('No máximo ' . DADOS_MAX . ' dados de uma vez.', 409);
+                $sel[] = $d;
+            } else {
+                $i = array_search($d, $sel, true);
+                if ($i !== false) unset($sel[$i]);
+            }
+        }
+        $sel = dadosLista(array_values($sel));
         $campo['rolN'] = (int)($campo['rolN'] ?? 0) + 1;
-        $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'escolhido', 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dado' => dadoValido($c['dado'] ?? null), 'v' => null, 't' => time(), 'estilo' => estiloDado($t)];
+        $campo['rolagem'] = $sel ? ['n' => $campo['rolN'], 'estado' => 'escolhido', 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => null, 'v' => null, 't' => time(), 'estilo' => estiloDado($t)] : null;
         return;
     }
-    $r = $campo['rolagem'] ?? null;
-    if (!is_array($r) || ($r['estado'] ?? '') !== 'escolhido' || ($r['tok'] ?? '') !== $id || time() - (int)($r['t'] ?? 0) > 60) erro('Escolha o dado antes de rolar.', 409);
-    $d = dadoValido($r['dado'] ?? null);
-    $v = random_int(1, $d);
+    if (!$sel) erro('Escolha os dados antes de rolar.', 409);
+    $vs = array_map(fn($d) => random_int(1, $d), $sel);
+    $total = array_sum($vs);
     $campo['rolN'] = (int)($campo['rolN'] ?? 0) + 1;
-    $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'rolado', 'v' => $v, 't' => time()] + $r;
+    $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'rolado', 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time()] + $r;
     /* Token oculto: nem a rolagem nem o registro vão para os jogadores. */
-    $txt = "$nome rolou d$d: $v";
+    $txt = count($sel) === 1 ? "$nome rolou d$sel[0]: $vs[0]" : "$nome rolou " . dadosResumo($sel) . ': ' . implode(' + ', $vs) . " = $total";
     campoEvento($campo, $txt, tokenVisivel($t, $campo) ? $txt : null);
 }
 
@@ -1117,7 +1159,7 @@ function rolagemPublica(array $campo, array $tokens, array $vis, ?string $euId):
         $escolhido = ($r['estado'] ?? '') === 'escolhido';
         if ($escolhido ? ($idade <= 60 && $quem === (string)$r['tok']) : $idade <= 30) {
             $out = ['n' => (int)$r['n'], 'estado' => $escolhido ? 'escolhido' : 'rolado', 'tok' => (string)$r['tok'], 'nome' => (string)($r['nome'] ?? ''), 'tipo' => (string)($r['tipo'] ?? ''),
-                'dado' => (int)$r['dado'], 'v' => $escolhido ? null : (int)$r['v'], 'idade' => max(0, $idade),
+                'dados' => dadosLista($r['dados'] ?? []), 'vs' => $escolhido ? null : array_map('intval', (array)($r['vs'] ?? [])), 'v' => $escolhido ? null : (int)$r['v'], 'idade' => max(0, $idade),
                 'estilo' => ['cor' => corHex($r['estilo']['cor'] ?? null, '#2a6fc9'), 'num' => corHex($r['estilo']['num'] ?? null, '#ffffff'), 'img' => ($r['estilo']['img'] ?? null) ? (int)$r['estilo']['img'] : null]];
         }
     }
