@@ -4648,6 +4648,7 @@ function desenharPersonagens() {
 /* ============================ LIGAÇÃO COM O APP ============================ */
 
 var somCatalogo = null, somAvisoMestre = "", somPrevia = null;
+var somEscolha = { musica: { id: "", loop: true }, ambiente: { id: "", loop: true }, efeito: { id: "", loop: false } };
 function somCarregarCatalogo() {
   if (somCatalogo !== null) return;
   api("som_catalogo").then(function (r) { somCatalogo = r.sons || []; somAtualizarView(); }, function (e) { somAvisoMestre = e.message; somAtualizarView(); });
@@ -4691,14 +4692,41 @@ function somAtualizarView() {
   var el = document.getElementById('somConteudo'); if (el) el.innerHTML = somConteudoMestre();
   var mini = document.getElementById('somMini'); if (mini) mini.innerHTML = somMiniHTML();
 }
-function somMiniHTML() { return '<div class="som-ctl">Som da sessão: ' + ['musica', 'ambiente'].map(function (c) {
-  var t = somEstado && somEstado[c]; return '<button type="button" data-sompausa="' + c + '"' + (t && t.id ? '' : ' disabled') + '>' + (c === 'musica' ? 'Música' : 'Ambiente') + ': ' + (t && t.estado === 'pausado' ? 'retomar' : 'pausar') + '</button>';
-}).join('') + '<a href="#sons">Abrir Sons</a></div>'; }
+function somSugeridos() {
+  var a = acaoEst(), env = (ENVIADAS || []).find(function (x) { return x.id === a.envio; });
+  if (!env || !somCatalogo) return [];
+  var n = function (x) { return String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); };
+  return somCatalogo.filter(function (s) { return (s.cenarios || []).some(function (c) { return n(c) === n(env.nome) || String(c) === String(env.id); }); });
+}
+function somMiniHTML() {
+  var sug = somSugeridos(), ids = sug.map(function (s) { return s.id; });
+  var h = '<div class="som-acao"><div class="som-acao-tit">Som da sessão <a href="#sons">Abrir Sons</a></div>';
+  [['musica', 'Música'], ['ambiente', 'Ambiente'], ['efeito', 'Efeito']].forEach(function (p) {
+    var c = p[0], t = somEstado && somEstado[c], ativo = c !== 'efeito' && t && t.id, esc_ = somEscolha[c];
+    var lista = (somCatalogo || []).filter(function (s) { return s.tipo === c; });
+    var nomeAtivo = ativo ? ((somCatalogo || []).find(function (s) { return s.id === t.id; }) || {}).nome : '';
+    var opt = function (s) { return '<option value="' + esc(s.id) + '"' + (esc_.id === s.id ? ' selected' : '') + '>' + esc(s.nome) + '</option>'; };
+    var sugL = lista.filter(function (s) { return ids.indexOf(s.id) !== -1; }), resto = lista.filter(function (s) { return ids.indexOf(s.id) === -1; });
+    h += '<div class="som-acao-linha"><b>' + p[1] + '</b>' +
+      '<select class="sorteio-in" data-somesc="' + c + '" aria-label="Escolher ' + p[1].toLowerCase() + '"' + (somCatalogo ? '' : ' disabled') + '><option value="">' + (somCatalogo ? 'Escolha…' : 'Carregando…') + '</option>' +
+      (sugL.length ? '<optgroup label="Sugeridos para este cenário">' + sugL.map(opt).join('') + '</optgroup><optgroup label="Todos">' + resto.map(opt).join('') + '</optgroup>' : lista.map(opt).join('')) + '</select>' +
+      (c !== 'efeito' ? '<label class="som-loop"><input type="checkbox" data-somloop="' + c + '"' + (esc_.loop ? ' checked' : '') + '> Repetir</label>' : '') +
+      '<button type="button" data-somtocarsel="' + c + '">' + (c === 'efeito' ? 'Disparar' : 'Tocar') + '</button>' +
+      (c !== 'efeito' ? '<button type="button" data-sompausa="' + c + '"' + (ativo ? '' : ' disabled') + '>' + (t && t.estado === 'pausado' ? 'Retomar' : 'Pausar') + '</button><button type="button" data-somparar="' + c + '"' + (ativo ? '' : ' disabled') + '>Parar</button>' : '') +
+      (nomeAtivo ? '<small>Agora: ' + esc(nomeAtivo) + (t.loop === false ? ' (uma vez)' : ' (em loop)') + '</small>' : '') + '</div>';
+  });
+  return h + (somAvisoMestre ? '<p role="alert">' + esc(somAvisoMestre) + '</p>' : '') + '</div>';
+}
 function somClickMestre(b) {
   var d = b.dataset || {}, s;
   if (d.somtocar) {
     s = (somCatalogo || []).find(function (x) { return x.id === d.somtocar; });
-    if (s) somOperacaoMestre(s.tipo === 'efeito' ? 'som_efeito' : 'som_tocar', { camada: s.tipo, id: s.id }); return true;
+    if (s) somOperacaoMestre(s.tipo === 'efeito' ? 'som_efeito' : 'som_tocar', { camada: s.tipo, id: s.id, loop: somEscolha[s.tipo].loop }); return true;
+  }
+  if (d.somtocarsel) {
+    var c = d.somtocarsel, e = somEscolha[c];
+    if (e.id) somOperacaoMestre(c === 'efeito' ? 'som_efeito' : 'som_tocar', { camada: c, id: e.id, loop: e.loop });
+    return true;
   }
   if (d.sompausa) { var t = somEstado && somEstado[d.sompausa]; if (t && t.id) somOperacaoMestre(t.estado === 'pausado' ? 'som_retomar' : 'som_pausar', { camada: d.sompausa }); return true; }
   if (d.somparar) { somOperacaoMestre('som_parar', { camada: d.somparar }); return true; }
@@ -4774,13 +4802,15 @@ MESTRE = {
     if (r === "grimorios") desenharGrimorios();
     if (r === "bestiario") desenharBestiario();
     if (r === "personagens") desenharPersonagens();
-    if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
+    if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); somCarregarCatalogo(); }
     if (r === "cenarios") desenharCenPreview();
     if (r === "sons") somCarregarCatalogo();
   },
 
   change: function (el) {
     var d = el.dataset || {};
+    if (d.somesc) { somEscolha[d.somesc].id = el.value; return; }
+    if (d.somloop) { somEscolha[d.somloop].loop = el.checked; return; }
     if (d.somvol) { somOperacaoMestre('som_volume', { camada: d.somvol, vol: Number(el.value) }); return; }
     if (el.hasAttribute && el.hasAttribute("data-dropjog")) {
       dropAlvo = el.value;

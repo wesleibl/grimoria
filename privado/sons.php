@@ -69,7 +69,7 @@ function somPublico(array $s): array
         if (!$id || !isset(SONS_CATALOGO[$id]) || SONS_CATALOGO[$id]['tipo'] !== $camada) continue;
         $cat = SONS_CATALOGO[$id];
         $out[$camada] = ['id' => $id, 'arquivo' => 'sons/' . $cat['arquivo'], 'dur' => (int)$cat['dur'], 'estado' => $t['estado'] ?? null,
-            'inicio_ms' => (int)($t['inicio_ms'] ?? 0), 'pos_pausa_ms' => (int)($t['pos_pausa_ms'] ?? 0), 'vol' => (int)($t['vol'] ?? 70)];
+            'inicio_ms' => (int)($t['inicio_ms'] ?? 0), 'pos_pausa_ms' => (int)($t['pos_pausa_ms'] ?? 0), 'vol' => (int)($t['vol'] ?? 70), 'loop' => ($t['loop'] ?? true) !== false];
     }
     $e = $s['efeito'];
     if (is_array($e) && isset(SONS_CATALOGO[$e['id'] ?? '']) && SONS_CATALOGO[$e['id']]['tipo'] === 'efeito') {
@@ -106,18 +106,18 @@ function somOperar(string $op, array $c): array
                 if ($op === 'som_tocar') {
                     $id = (string)($c['id'] ?? '');
                     somFaixa($id, $camada);
-                    $t = ['id' => $id, 'estado' => 'tocando', 'inicio_ms' => $agora, 'pos_pausa_ms' => 0, 'vol' => (int)($t['vol'] ?? 70)];
+                    $t = ['id' => $id, 'estado' => 'tocando', 'inicio_ms' => $agora, 'pos_pausa_ms' => 0, 'vol' => (int)($t['vol'] ?? 70), 'loop' => ($c['loop'] ?? true) !== false];
                 } elseif ($op === 'som_pausar') {
                     if (empty($t['id']) || ($t['estado'] ?? null) !== 'tocando') erro('Não há faixa tocando nesta camada.', 409);
                     $dur = (int)SONS_CATALOGO[$t['id']]['dur'] * 1000;
-                    $t['pos_pausa_ms'] = (($agora - (int)$t['inicio_ms']) % $dur + $dur) % $dur;
+                    $t['pos_pausa_ms'] = ($t['loop'] ?? true) === false ? max(0, min($dur, $agora - (int)$t['inicio_ms'])) : (($agora - (int)$t['inicio_ms']) % $dur + $dur) % $dur;
                     $t['estado'] = 'pausado';
                 } elseif ($op === 'som_retomar') {
                     if (empty($t['id']) || ($t['estado'] ?? null) !== 'pausado') erro('Não há faixa pausada nesta camada.', 409);
                     $t['inicio_ms'] = $agora - (int)($t['pos_pausa_ms'] ?? 0);
                     $t['estado'] = 'tocando';
                 } elseif ($op === 'som_parar') {
-                    $t = ['id' => null, 'estado' => null, 'vol' => (int)($t['vol'] ?? 70)];
+                    $t = ['id' => null, 'estado' => null, 'vol' => (int)($t['vol'] ?? 70), 'loop' => true];
                 } else erro('Operação de som inválida.', 404);
                 $s[$camada] = $t;
             }

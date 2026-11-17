@@ -205,6 +205,15 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
 .som-painel p { margin: 8px 0 0; font-size: .9em; }
 .som-lista { display: grid; gap: 8px; margin: 12px 0 24px; }
 .som-linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.som-acao { margin: 10px 0 14px; display: grid; gap: 8px; }
+.som-acao-tit { font-weight: 600; }
+.som-acao-tit a { margin-left: 10px; font-weight: normal; }
+.som-acao-linha { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.som-acao-linha > b { width: 78px; font-weight: 600; }
+.som-acao-linha select { flex: 1 1 220px; max-width: 360px; }
+.som-acao-linha .som-loop { display: flex; align-items: center; gap: 6px; }
+.som-acao-linha small { flex: 1 1 100%; padding-left: 86px; opacity: .8; }
+@media (max-width: 600px) { .som-acao-linha > b { width: 100%; } .som-acao-linha small { padding-left: 0; } }
 .som-linha.ativo { border-color: var(--accent); }
 .som-linha strong { flex: 1 1 190px; }
 .som-linha small { display: block; font-weight: normal; }

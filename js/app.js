@@ -3627,6 +3627,7 @@ function somVolumeAplicar() {
 function somPosicao(t) {
   if (!t || !t.dur) return 0;
   if (t.estado === "pausado") return (t.pos_pausa_ms || 0) / 1000;
+  if (t.loop === false) return Math.max(0, Math.min(t.dur, (Date.now() + somRelogio - t.inicio_ms) / 1000));
   return (((Date.now() + somRelogio - t.inicio_ms) / 1000) % t.dur + t.dur) % t.dur;
 }
 function somPar(c) {
@@ -3647,13 +3648,13 @@ function somAplicarCamada(c) {
   if (p.id !== t.id) {
     p.audios.forEach(function (old) { somRampa(old, 0, 1500, function () { old.pause(); }); });
     p.ativo = 1 - p.ativo; a = p.audios[p.ativo];
-    a.src = t.arquivo; a.loop = t.dur < 6; a.currentTime = Math.max(0, Math.min(t.dur - 0.05, somPosicao(t)));
+    a.src = t.arquivo; a.loop = t.dur < 6 && t.loop !== false; a.currentTime = Math.max(0, Math.min(t.dur - 0.05, somPosicao(t)));
     a.volume = 0; p.id = t.id; p.cruzando = false;
-    if (t.estado === "tocando") { somTocarAudio(a); somRampa(a, alvo, 1500); }
+    if (t.estado === "tocando" && !(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { somTocarAudio(a); somRampa(a, alvo, 1500); }
   } else if (p.estado !== t.estado) {
     if (t.estado === "pausado") p.audios.forEach(function (x) { somRampa(x, 0, 400, function () { x.pause(); }); });
-    else { a.currentTime = somPosicao(t); a.volume = 0; somTocarAudio(a); somRampa(a, alvo, 400); }
-  } else if (t.estado === "tocando" && !a.paused && Date.now() - p.ultimaCorrecao > 30000) {
+    else if (!(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { a.currentTime = Math.min(somPosicao(t), t.dur - 0.05); a.volume = 0; somTocarAudio(a); somRampa(a, alvo, 400); }
+  } else if (t.estado === "tocando" && t.loop !== false && !a.paused && Date.now() - p.ultimaCorrecao > 30000) {
     var esperado = somPosicao(t), dif = Math.abs(a.currentTime - esperado);
     if (Math.min(dif, t.dur - dif) > 1.5) { somRampa(a, 0, 250, function () { a.currentTime = esperado; somRampa(a, alvo, 250); }); p.ultimaCorrecao = Date.now(); }
   }
@@ -3661,7 +3662,7 @@ function somAplicarCamada(c) {
 }
 function somLoopar(c) {
   var p = somPares[c], t = somEstado && somEstado[c];
-  if (!p || !t || t.estado !== "tocando" || !somLiberado || t.dur < 6 || p.cruzando) return;
+  if (!p || !t || t.estado !== "tocando" || t.loop === false || !somLiberado || t.dur < 6 || p.cruzando) return;
   var a = p.audios[p.ativo], resto = t.dur - a.currentTime;
   if (a.paused) {
     if (!a.error) { a.currentTime = somPosicao(t); somTocarAudio(a); somRampa(a, somVolume(c), 300); }
