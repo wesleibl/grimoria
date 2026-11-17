@@ -3608,12 +3608,13 @@ function somLigarGanho(a) {
   try {
     if (!somCtx) somCtx = new (window.AudioContext || window.webkitAudioContext)();
     var src = somCtx.createMediaElementSource(a), g = somCtx.createGain();
-    src.connect(g); g.connect(somCtx.destination); a._gain = g;
+    src.connect(g); g.connect(somCtx.destination); a._gain = g; somCtxEstado();
   } catch (e) { a._gain = null; }
 }
 function somVol(a, v) { if (a._gain) a._gain.gain.value = v; else a.volume = v; }
 function somVolAtual(a) { return a._gain ? a._gain.gain.value : Number(a.volume); }
-function somRetomarCtx() { if (somCtx && somCtx.state !== "running") { try { somCtx.resume(); } catch (e) { /* ignora */ } } }
+function somCtxEstado() { if (somCtx && !somCtx._obs) { somCtx._obs = true; somCtx.onstatechange = function () { somPainelAtualizar(); }; } }
+function somRetomarCtx() { somCtxEstado(); if (somCtx && somCtx.state !== "running") { try { somCtx.resume(); } catch (e) { /* ignora */ } } }
 ['pointerdown', 'touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, somRetomarCtx, { passive: true }); });
 function somAudio(src) {
   var a = src ? new Audio(src) : new Audio(); a.preload = "auto"; somLigarGanho(a);
@@ -3750,7 +3751,7 @@ function somPainelAtualizar() {
     p.hidden = !somAberto || !USUARIO;
     p.innerHTML = '<label><input type="checkbox" id="somMudo"' + (somLocal.mudo ? " checked" : "") + '> Mudo</label>' +
       [["mus", "Música"], ["amb", "Ambiente"], ["fx", "Efeitos e dados"]].map(function (x) { return '<label>' + x[1] + ' <output>' + somLocal[x[0]] + '%</output><input type="range" min="0" max="100" data-somlocal="' + x[0] + '" value="' + somLocal[x[0]] + '"></label>'; }).join("") +
-      (!somLiberado && somEstado && (somEstado.musica || somEstado.ambiente) ? '<p>Toque para ligar o som.</p>' : "") + (somErro ? '<p role="status">' + esc(somErro) + '</p>' : "");
+      (!somLiberado && somEstado && (somEstado.musica || somEstado.ambiente) ? '<p>Toque para ligar o som.</p>' : "") + '<p class="som-diag">Áudio: ' + (somGanhoModo ? 'Web Audio (' + (somCtx ? somCtx.state : 'sem contexto') + ')' : 'direto') + ' · build som5</p>' + (somErro ? '<p role="status">' + esc(somErro) + '</p>' : "");
   }
 }
 function somIniciar() {
