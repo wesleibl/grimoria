@@ -478,7 +478,7 @@ body.sem-rolagem { overflow: hidden; }
 .zoom-ctl button[aria-pressed="true"][data-zoom="dados"] { background: var(--accent); color: var(--accent-ink); }
 .zoom-ctl button.destaque { animation: dBtnPulso .7s ease-in-out 4; box-shadow: 0 0 0 3px #f5c43c; }
 @keyframes dBtnPulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
-.dados-painel { position: absolute; top: 58px; left: 8px; z-index: 5; width: 138px; max-height: calc(100% - 66px); overflow-y: auto; box-sizing: border-box; padding: 8px; border-radius: 10px; background: rgba(20, 30, 33, .88); color: #fff; font-size: .85rem; line-height: 1.3; }
+.dados-painel { position: absolute; top: 58px; left: 8px; z-index: 5; width: 172px; max-height: calc(100% - 66px); overflow-y: auto; box-sizing: border-box; padding: 8px; border-radius: 10px; background: rgba(20, 30, 33, .88); color: #fff; font-size: .85rem; line-height: 1.3; }
 .tab-box.tc .dados-painel { max-height: calc(100% - 66px - var(--hud-h, 0px)); }
 .dados-painel[hidden] { display: none; }
 .dados-cab { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin: 0 0 4px; }
@@ -557,7 +557,25 @@ body.sem-rolagem { overflow: hidden; }
 .dado-cel .dado-op { flex: 1; }
 .dado-qtd { position: absolute; top: 2px; left: 4px; font-style: normal; font-weight: 800; font-size: .8rem; padding: 0 5px; border-radius: 999px; background: #f5c43c; color: #231a00; line-height: 1.4; }
 .dado-menos { position: absolute; top: 2px; right: 2px; min-width: 28px; min-height: 28px; width: 28px; height: 28px; padding: 0; border-radius: 50%; font-weight: 800; line-height: 1; background: rgba(0, 0, 0, .6); color: #fff; border: 1px solid rgba(255, 255, 255, .5); }
-.dados-limpar { width: 100%; margin: 0 0 8px; min-height: 36px; }
+.dados-limpar { min-height: 48px; padding: 0 12px; }
+.dados-acoes2 { display: flex; gap: 6px; margin: 0 0 8px; }
+.dados-acoes2 .dados-rolar { flex: 1; margin: 0; }
+.dados-painel .dado-op .dado-svg { width: 52px; height: 52px; }
+.dados-painel .dado-op { min-height: 78px; }
+/* Celular: o painel vira uma folha na base do mapa, com os dados grandes em 3 colunas */
+@media (max-width: 700px) {
+  .dados-painel { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: calc(100% - 16px); padding: 8px 10px; }
+  .tab-box.tc .dados-painel { max-height: calc(100% - 16px - var(--hud-h, 0px)); }
+  .dados-painel .dados-grade { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dados-painel .dado-op { min-height: 86px; font-size: .95rem; }
+  .dados-painel .dado-op .dado-svg { width: 56px; height: 56px; }
+  .dados-painel .dados-rolar { min-height: 54px; font-size: 1.1rem; }
+  .dados-painel .dados-x { min-width: 44px; min-height: 44px; }
+  .dado-menos { min-width: 40px; min-height: 40px; width: 40px; height: 40px; font-size: 1.3rem; }
+  .dado-qtd { font-size: .95rem; padding: 0 7px; }
+  .dados-quem { display: none; }
+  .dados-cab { margin: 0 0 6px; }
+}
 /* Painel de iniciativa (⚔), card do token e efeitos: ficam dentro do .tab-box (valem em tela cheia) */
 .zoom-ctl button[aria-pressed="true"][data-zoom="ini"] { background: var(--accent); color: var(--accent-ink); }
 .ini-painel { position: absolute; top: 58px; right: 8px; z-index: 5; width: min(250px, calc(100% - 16px)); max-height: calc(100% - 66px); overflow-y: auto; box-sizing: border-box; padding: 8px 10px; border-radius: 10px; background: rgba(20, 30, 33, .82); color: #fff; font-size: .88rem; line-height: 1.35; }

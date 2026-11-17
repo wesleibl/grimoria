@@ -1778,8 +1778,8 @@ function dadosPainelHTML(m) {
   var sel = dadosSel(m.rolagem, m.tok), cs = dadoCont(sel);
   /* O botão Rolar fica logo no alto: em mapa pequeno (celular) o painel rola e o botão continua à vista. */
   var h = '<div class="dados-cab"><b>' + ic("dado") + 'Dados</b><button type="button" class="dados-x" data-dados-fechar aria-label="Fechar o painel de dados">✕</button></div>' +
-    '<p class="dados-quem">' + esc(m.nome || "") + '</p><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel.length && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel.length ? " " + esc(dadosResumo(sel)) : "") + "</button>" +
-    (sel.length ? '<button type="button" class="dados-limpar" data-dados-limpar>Limpar</button>' : "") + '<div class="dados-grade">';
+    '<p class="dados-quem">' + esc(m.nome || "") + '</p><div class="dados-acoes2"><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel.length && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel.length ? " " + esc(dadosResumo(sel)) : "") + "</button>" +
+    (sel.length ? '<button type="button" class="dados-limpar" data-dados-limpar>Limpar</button>' : "") + '</div><div class="dados-grade">';
   DADOS.forEach(function (d) { h += dadoCelHTML(d, m.estilo, cs[d] || 0, cs[d] ? "sel" : "", true, "p"); });
   return h + "</div>" + (dadosMsg ? '<p class="dados-msg" role="status">' + esc(dadosMsg) + "</p>" : "");
 }
