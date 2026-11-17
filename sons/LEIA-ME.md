@@ -1,17 +1,22 @@
 # Sons da sessão
 
-Os 18 ambientes `a02` a `a19` e as seis trilhas `m02` a `m07` foram sintetizados originalmente para os cenários genéricos. O código de geração está em `privado/gerar_sons.js` e exige Node e FFmpeg apenas durante o preparo. `m01`, `a01` e `e01` são exemplos anteriores mantidos para sessões que já os usam.
+Os 18 ambientes foram refeitos a partir de gravações de campo e efeitos reais, sem as camadas de ruído branco da primeira versão. As sete músicas são composições completas. Os dez sons de dados usam tomadas de dados sobre uma mesa. `privado/gerar_sons.js` contém a receita e monta os MP3 com FFmpeg; o site reproduz somente os arquivos prontos.
 
-Os sons físicos de dados `d01`, `d02`, `d03` e `d06` a `d10` vêm do pacote [Casino Audio de Kenney](https://opengameart.org/content/54-casino-sound-effects-cards-dice-chips), distribuído sob **CC0**. Foram convertidos de OGG para MP3 mono, com filtro de graves/agudos e ajuste de volume. `d04` (20 natural) e `d05` (1 natural) são alertas sintéticos originais. Crédito a Kenney é opcional pela licença, mas está registrado aqui para rastreabilidade.
+## Fontes CC0
 
-Mantenha os nomes neutros e os IDs da lista branca em `privado/sons.php`; o deploy por Git já leva a pasta `sons/` no `git pull`.
+- Músicas `m01` a `m07`: [Fantasy Song Pack Volume 1, troubadour](https://opengameart.org/content/fantasy-song-pack-volume-1). Na ordem: `back_to_nature`, `homestead`, `jaunt`, `springly_sprigs`, `bells_of_winter`, `fairy_lights`, `wandering_woodlands`.
+- Dados: [Flem0527, dados sobre madeira](https://freesound.org/people/Flem0527/sounds/629982/), [andresix, várias rolagens](https://freesound.org/people/andresix/sounds/347806/), [Zaxtor99, pouso](https://freesound.org/people/Zaxtor99/sounds/147531/). Os acentos do 20 e do 1 naturais usam as fontes de taça e passos abaixo.
+- [Floresta, greysound](https://freesound.org/people/greysound/sounds/547923/), [lareira, RyanKingArt](https://freesound.org/people/RyanKingArt/sounds/717579/), [conversa de taverna, dazzamoo](https://freesound.org/people/dazzamoo/sounds/651364/), [taverna, denkmal](https://freesound.org/people/denkmal/sounds/539811/), [grilos, JoelMcDaniel](https://freesound.org/people/JoelMcDaniel/sounds/829765/).
+- [Caverna, corkob](https://freesound.org/people/corkob/sounds/392668/), [água, guidofm](https://freesound.org/people/guidofm/sounds/509174/), [mercado, SamuelGremaud](https://freesound.org/people/SamuelGremaud/sounds/545756/), [carruagem, Kraftaggregat](https://freesound.org/people/Kraftaggregat/sounds/737643/).
+- [Bigorna, pablodavilla](https://freesound.org/people/pablodavilla/sounds/592111/), [correntes, Roxis_Boy](https://freesound.org/people/Roxis_Boy/sounds/401622/), [páginas, xkeril](https://freesound.org/people/xkeril/sounds/856497/), [sino, igroglaz](https://freesound.org/people/igroglaz/sounds/633208/).
+- [Passos em pedra, Fission9](https://freesound.org/people/Fission9/sounds/521590/), [porta, soundofsong](https://freesound.org/people/soundofsong/sounds/647646/), [madeira, claretcanelon](https://freesound.org/people/claretcanelon/sounds/346140/), [taça, AardsReal](https://freesound.org/people/AardsReal/sounds/842180/).
 
-Prepare os arquivos em MP3, sem metadados, até cerca de 3 MB por faixa. Para música use estéreo a 128 kb/s; para ambiente e efeitos use mono a 96 kb/s. O loop deve ter 30 a 180 segundos e começo e fim compatíveis para a emenda.
+As páginas dessas fontes declaram **CC0**. O gerador usa as prévias MP3 de alta qualidade do Freesound e os MP3 do OpenGameArt. Ele procura as fontes em `.audio-work/` com o número do som ou o nome da música, como `629982.mp3` e `homestead.mp3`. Essa pasta é temporária e não vai para o deploy. A lista de URLs das prévias pode ser obtida nas respectivas páginas.
 
 ```bash
-ffmpeg -i entrada.wav -ac 2 -b:a 128k -ar 44100 -map_metadata -1 -af loudnorm=I=-18:TP=-1.5 musica/m08.mp3
-ffmpeg -i entrada.wav -ac 1 -b:a 96k -ar 44100 -map_metadata -1 -af loudnorm=I=-18:TP=-1.5 ambiente/a20.mp3
-ffmpeg -i entrada.wav -ac 1 -b:a 96k -ar 44100 -map_metadata -1 -af "afade=t=in:d=0.05,afade=t=out:st=1.95:d=0.05,loudnorm=I=-18:TP=-1.5" efeito/e02.mp3
+node privado/gerar_sons.js caminho/para/ffmpeg
+node privado/verificar_sons.js
+node privado/auditar_sons.js caminho/para/ffmpeg
 ```
 
-Depois de copiar uma nova faixa, registre seu ID, tipo, caminho relativo, duração, rótulo, tags e cenários no catálogo privado. Não reutilize o mesmo nome de arquivo para áudio diferente: o cache é de 30 dias. Para cenários adicionais, acrescente entradas por agrupamento (taverna, cidade, ferraria, floresta, caverna, locais solenes, porto, água, ruínas e combate). O jogador recebe somente o ID e o caminho neutro da faixa ativa.
+O deploy por Git leva `sons/`. Ao trocar novamente um MP3, aumente `SONS_ASSET_REV` em `privado/sons.php` e a versão `mesa` dos dados em `js/app.js`, pois o cache público dura 30 dias.
