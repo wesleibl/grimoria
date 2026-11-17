@@ -208,8 +208,18 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
 .som-linha.ativo { border-color: var(--accent); }
 .som-linha strong { flex: 1 1 190px; }
 .som-linha small { display: block; font-weight: normal; }
-.som-ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
-.som-ctl input[type=range] { max-width: 180px; }
+.som-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+#somConteudo .som-ctl { display: grid; grid-template-columns: auto auto minmax(180px, 1fr); margin: 24px 0 10px; }
+#somConteudo .som-ctl h2 { grid-column: 1 / -1; margin: 0 0 2px; }
+#somConteudo .som-ctl label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#somConteudo .som-ctl input[type=range] { flex: 1; min-width: 90px; max-width: 260px; }
+#somConteudo .som-ctl-efeito label { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  #somConteudo .som-ctl { grid-template-columns: auto auto 1fr; justify-content: start; }
+  #somConteudo .som-ctl label { grid-column: 1 / -1; }
+  .som-linha strong { flex-basis: 100%; }
+  .som-linha button { flex: 1; }
+}
 
 main { max-width: 1040px; margin: 0 auto; padding: 36px 22px 90px; }
 .lead { font-size: 1.25rem; line-height: 1.6; color: var(--muted); max-width: 62ch; margin-bottom: 1.8rem; }
@@ -930,17 +940,28 @@ button.perigo:hover { background: var(--poder); color: #fff; }
 .gm-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 6px; background: var(--surface2); }
 .gm-nome { flex: 1 1 160px; width: auto; min-width: 120px; }
 @media (max-width: 720px) {
-  .topin { flex-wrap: wrap; }
+  .topin { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 6px 8px; padding: 8px 12px; }
+  .brand { grid-column: 1; }
   .menu-btn { display: inline-flex; }
-  nav { display: none; order: 5; flex-basis: 100%; }
+  #conta { grid-column: 3; min-width: 0; justify-self: end; }
+  .conta-topo { min-width: 0; }
+  .conta-nome { min-width: 0; }
+  #sairBtn { flex-shrink: 0; }
+  #somBtn { grid-column: 4; }
+  #themeBtn { grid-column: 5; }
+  #salvo { grid-column: 1 / -1; grid-row: 2; text-align: right; }
+  #salvo:empty, #somDica[hidden] { display: none; }
+  #somDica { grid-column: 1 / -1; grid-row: 3; }
+  nav { display: none; grid-column: 1 / -1; grid-row: 4; }
   header.top.menu-aberto nav { display: block; }
   nav ul { flex-direction: column; align-items: stretch; gap: 0; padding: 4px 0 8px; }
   nav a { padding: 10px 6px; }
   .grupo-btn { width: 100%; text-align: left; pointer-events: none; border: 0; font-weight: 700; color: var(--text); padding: 12px 6px 4px; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
   .grupo-btn span { display: none; }
   .submenu, .submenu[hidden] { position: static; display: block; box-shadow: none; border: 0; background: none; padding: 0 0 0 10px; }
-  .conta-topo { margin-left: auto; }
+  .conta-topo { margin-left: 0; }
 }
+@media (max-width: 380px) { .conta-nome { display: none; } }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 /* Inventário e itens */

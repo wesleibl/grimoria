@@ -3729,8 +3729,9 @@ function somIniciar() {
 }
 function somDado(tipo, qtd, atraso) {
   if (!somLiberado || somLocal.mudo || !somLocal.fx) return;
-  var src = "sons/dado/" + ({ escolher: "d01", rolar: "d02", pousar: "d03", critico: "d04", falha: "d05" }[tipo] || "") + ".mp3";
-  if (!somDadosPool[tipo]) somDadosPool[tipo] = [somAudio(src), somAudio(src), somAudio(src), somAudio(src)];
+  var arquivos = { escolher: ["d01", "d06"], rolar: ["d02", "d07", "d08"], pousar: ["d03", "d09", "d10"], critico: ["d04"], falha: ["d05"] }[tipo];
+  if (!arquivos) return;
+  if (!somDadosPool[tipo]) somDadosPool[tipo] = [0, 1, 2, 3].map(function (i) { return somAudio("sons/dado/" + arquivos[i % arquivos.length] + ".mp3?v=mesa2"); });
   qtd = Math.min(qtd || 1, tipo === "pousar" ? 4 : 3);
   for (var i = 0; i < qtd; i++) (function (j) {
     setTimeout(function () {
