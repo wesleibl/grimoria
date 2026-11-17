@@ -2966,7 +2966,7 @@ function combatePainelHTML0() {
   if (!cb) {
     return h + '<p class="mdica">Ao iniciar, os jogadores rolam a iniciativa (d20 + Destreza) e a ordem de turnos aparece para todos.</p>' +
       '<button type="button" class="primary" id="cmbIniciar">Iniciar combate</button>' +
-      (a.ativo ? "" : '<p class="mdica">A imersão está desligada: você pode iniciar o combate, mas os jogadores só o veem (e rolam a iniciativa) depois que você ativá-la.</p>') + "</section>";
+      (a.ativo ? "" : '<p class="mdica cmb-aviso">A imersão está desligada: você pode iniciar o combate, mas os jogadores só o veem (e rolam a iniciativa) depois que você ativá-la.</p>') + "</section>";
   }
   var ini = cb.ini || {};
   if (cb.fase === "ini") {
