@@ -1421,7 +1421,7 @@ function ligarZoom(box) {
   if (box.dataset) box.dataset.zoomLigado = "1";
   var ptrs = {}, modo = null, ini = null, soltarTudo = false;
   function lista() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
-  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .dados-painel, .hist-painel, .tok-card")); }
+  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .dados-painel, .hist-painel, .tok-card, .dado-ov.toque")); }
   box.addEventListener("pointerdown", function (ev) {
     if (ignorar(ev) || (ev.pointerType === "mouse" && ev.button !== 0)) return;
     zoomSuprimir = false;
@@ -1751,7 +1751,7 @@ document.addEventListener("error", function (e) {
 var DADOS = [4, 6, 8, 10, 12, 20];
 var DADO_ROL_MS = 1200, DADO_FICA_MS = 8000, DADO_IDADE_MAX = 8;
 var histAberto = false, dadoHist = [];
-var dadosAberto = false, dadosMsg = "", dadosOcup = false, dadoPodeAnt = null, dadoIdade = 0, dadoTimer = null;
+var dadosAberto = false, dadosMsg = "", dadosOcup = false, dadoPodeAnt = null, dadoIdade = 0, dadoTimer = null, dadoClicavel = false;
 var dadoSt = { n: -1, ativo: false };
 
 function corHexOu(c, padrao) { return typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : padrao; }
@@ -1939,6 +1939,8 @@ function atualizarDados() {
     }
   }
   dadoPodeAnt = pode;
+  /* Com dados escolhidos por mim (ou pelo mestre, se sou eu quem rola), tocar no dado do meio equivale a "Rolar". */
+  dadoClicavel = pode && dadosSel(m.rolagem, m.tok).length > 0;
   if (p) {
     if (!pode || !dadosAberto) p.hidden = true;
     else {
@@ -1987,18 +1989,27 @@ function dadoTick() {
     ov.innerHTML = '<div class="dado-fila">' + st.dados.map(function (l, i) {
       return '<div class="dado-un" data-l="' + l + '"><div class="dado-quica"><div class="dado-gira"><div class="dado-fig">' +
         dadoSVG(l, st.estilo, st.estado === "rolado" ? String(st.vs[i] != null ? st.vs[i] : st.v) : "d" + l, "ov" + i) + "</div></div></div></div>";
-    }).join("") + '</div><div class="dado-nome"></div><div class="dado-total" hidden></div>';
-    ov.querySelector(".dado-nome").textContent = (st.nome || "Dado") + " · " + dadosResumo(st.dados);
+    }).join("") + '</div><div class="dado-nome"><span class="dn-t"></span><span class="dn-dica" hidden> · toque para rolar</span></div><div class="dado-total" hidden></div>';
+    ov.querySelector(".dn-t").textContent = (st.nome || "Dado") + " · " + dadosResumo(st.dados);
     ov.style.setProperty("--atraso", (-Math.max(0, dec)) + "ms");
     box.appendChild(ov);
     ov.setAttribute("data-fase", "");
+  }
+  /* Toque só na fase "escolhido", para quem pode rolar, e não enquanto uma operação está em andamento. */
+  var toque = dadoClicavel && fase === "esc" && !dadosOcup, fila = ov.querySelector(".dado-fila"), dica = ov.querySelector(".dn-dica");
+  if (ov.classList.contains("toque") !== toque) {
+    ov.classList.toggle("toque", toque);
+    ov.setAttribute("aria-hidden", toque ? "false" : "true");
+    if (toque) { fila.setAttribute("role", "button"); fila.setAttribute("tabindex", "0"); fila.setAttribute("aria-label", "Rolar " + dadosResumo(st.dados)); }
+    else { fila.removeAttribute("role"); fila.removeAttribute("tabindex"); fila.removeAttribute("aria-label"); }
+    if (dica) dica.hidden = !toque;
   }
   var antes = ov.getAttribute("data-fase"), uns = ov.querySelectorAll(".dado-un");
   if (antes !== fase) {
     var cls = "dado-ov " + fase;
     if (fase === "esc" && st.quieto) cls += " quieto";
     if (fase === "pronto" && (antes === "rol" || (antes === "" && dec - DADO_ROL_MS < 400))) cls += " pop";
-    ov.className = cls;
+    ov.className = cls + (ov.getAttribute("aria-hidden") === "false" && fase === "esc" ? " toque" : "");
     ov.setAttribute("data-fase", fase);
     if (fase === "pronto") {
       Array.prototype.forEach.call(uns, function (u, i) {
@@ -2021,6 +2032,14 @@ function dadoTick() {
   }
   if (st.estado === "rolado" && dec > DADO_ROL_MS + DADO_FICA_MS - 500) ov.classList.add("some");
 }
+
+/* Tocar no dado do meio do mapa rola (o brilho dá a entender que é um botão). Também por teclado: Enter ou Espaço. */
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.closest && e.target.closest("#dadoOv.toque .dado-fila")) rolarDado();
+});
+document.addEventListener("keydown", function (e) {
+  if ((e.key === "Enter" || e.key === " ") && e.target && e.target.closest && e.target.closest("#dadoOv.toque .dado-fila")) { e.preventDefault(); rolarDado(); }
+});
 
 /* Escolher o dado e rolar: o servidor confere tudo (quem pode, qual dado, o resultado). */
 var dadoFila = [];
