@@ -3110,7 +3110,7 @@ function pollCampo(ger) {
 function viewAcaoMestre() {
   if (CENAS === null) carregarCenas();
   var a = acaoEst();
-  var h = "<h1>Ação</h1>" + '<p class="lead">Chame um cenário já criado na aba Cenários, escolha o mapa de grid e como mostrar, e posicione os tokens. O grid (colunas e linhas) vem do mapa de grid.</p>';
+  var h = "<h1>Ação</h1>" + '<p class="lead">Chame um cenário já criado na aba Cenários, escolha o mapa de grid e como mostrar, e posicione os tokens. O grid (colunas e linhas) vem do mapa de grid.</p>' + '<div id="somMini">' + somMiniHTML() + '</div>';
   if (CENAS === null) return h + '<p class="mdica">Procurando os cenários…</p>';
   if (!ENVIADAS.length) return h + '<div class="note"><p><b>Você ainda não tem cenários.</b> Crie o primeiro na aba <a href="#cenarios">Cenários</a>, com foto, resumo e mapas de grid.</p></div>';
   var env = a.envio ? acharEnvio(a.envio) : null, grids = gridsDe(env), g = gridAtivo(a);
@@ -4647,6 +4647,68 @@ function desenharPersonagens() {
 
 /* ============================ LIGAÇÃO COM O APP ============================ */
 
+var somCatalogo = null, somAvisoMestre = "", somPrevia = null;
+function somCarregarCatalogo() {
+  if (somCatalogo !== null) return;
+  api("som_catalogo").then(function (r) { somCatalogo = r.sons || []; somAtualizarView(); }, function (e) { somAvisoMestre = e.message; somAtualizarView(); });
+}
+function somOperacaoMestre(op, dados) {
+  api("som_op", extras({ op: op }, dados || {})).then(function (r) {
+    somV = r.v; somAvisoMestre = ""; somAplicar(r); somAtualizarView();
+  }, function (e) { somAvisoMestre = e.message; somAtualizarView(); });
+}
+function somLinhaMestre(s) {
+  var t = somEstado && somEstado[s.tipo], ativo = t && t.id === s.id;
+  return '<div class="som-linha' + (ativo ? ' ativo' : '') + '"><strong>' + esc(s.nome) + '<small>' + Math.floor(s.dur / 60) + ':' + ('0' + s.dur % 60).slice(-2) + ' · ' + esc((s.cenarios || []).join(', ') || (s.tags || []).join(', ')) + '</small></strong>' +
+    '<button type="button" data-somtocar="' + esc(s.id) + '">' + (s.tipo === 'efeito' ? 'Disparar' : ativo && t.estado === 'tocando' ? 'Reiniciar' : 'Tocar') + '</button>' +
+    '<button type="button" data-somprevia="' + esc(s.id) + '">Ouvir só eu</button></div>';
+}
+function somControlesMestre(c, titulo) {
+  var t = somEstado && somEstado[c], ativo = t && t.id;
+  return '<div class="som-ctl"><h2>' + titulo + '</h2>' +
+    (c !== 'efeito' ? '<button type="button" data-sompausa="' + c + '"' + (ativo ? '' : ' disabled') + '>' + (t && t.estado === 'pausado' ? 'Retomar' : 'Pausar') + '</button><button type="button" data-somparar="' + c + '"' + (ativo ? '' : ' disabled') + '>Parar</button>' : '') +
+    '<label>Volume <input type="range" min="0" max="100" data-somvol="' + c + '" value="' + (c === 'efeito' ? (somEstado && somEstado.efeito_vol != null ? somEstado.efeito_vol : 80) : t && t.vol != null ? t.vol : somEstado && somEstado.volumes ? somEstado.volumes[c] : 70) + '"></label></div>';
+}
+function somConteudoMestre() {
+  if (!somCatalogo) return '<p class="mdica">Carregando catálogo…</p>' + (somAvisoMestre ? '<p role="alert">' + esc(somAvisoMestre) + '</p>' : '');
+  var a = acaoEst(), env = (ENVIADAS || []).find(function (x) { return x.id === a.envio; });
+  var nome = env ? env.nome : '', sug = nome ? somCatalogo.filter(function (s) {
+    return (s.cenarios || []).some(function (c) { return nome.toLowerCase().indexOf(String(c).toLowerCase()) !== -1 || String(c).toLowerCase().indexOf(nome.toLowerCase()) !== -1; });
+  }) : [];
+  var h = somAvisoMestre ? '<p role="alert">' + esc(somAvisoMestre) + '</p>' : '';
+  if (sug.length) h += '<h2>Sugestões para ' + esc(nome) + '</h2><div class="som-lista">' + sug.map(somLinhaMestre).join('') + '</div>';
+  [['musica', 'Música'], ['ambiente', 'Ambiente'], ['efeito', 'Efeitos']].forEach(function (p) {
+    h += somControlesMestre(p[0], p[1]) + '<div class="som-lista">' + somCatalogo.filter(function (s) { return s.tipo === p[0]; }).map(somLinhaMestre).join('') + '</div>';
+  });
+  return h;
+}
+function viewSonsMestre() { return '<h1>Sons</h1><p class="lead">Música e ambiente tocam para todos na sessão. Cada pessoa ajusta o volume no próprio aparelho.</p><div id="somConteudo">' + somConteudoMestre() + '</div>'; }
+function somAtualizarView() {
+  var el = document.getElementById('somConteudo'); if (el) el.innerHTML = somConteudoMestre();
+  var mini = document.getElementById('somMini'); if (mini) mini.innerHTML = somMiniHTML();
+}
+function somMiniHTML() { return '<div class="som-ctl">Som da sessão: ' + ['musica', 'ambiente'].map(function (c) {
+  var t = somEstado && somEstado[c]; return '<button type="button" data-sompausa="' + c + '"' + (t && t.id ? '' : ' disabled') + '>' + (c === 'musica' ? 'Música' : 'Ambiente') + ': ' + (t && t.estado === 'pausado' ? 'retomar' : 'pausar') + '</button>';
+}).join('') + '<a href="#sons">Abrir Sons</a></div>'; }
+function somClickMestre(b) {
+  var d = b.dataset || {}, s;
+  if (d.somtocar) {
+    s = (somCatalogo || []).find(function (x) { return x.id === d.somtocar; });
+    if (s) somOperacaoMestre(s.tipo === 'efeito' ? 'som_efeito' : 'som_tocar', { camada: s.tipo, id: s.id }); return true;
+  }
+  if (d.sompausa) { var t = somEstado && somEstado[d.sompausa]; if (t && t.id) somOperacaoMestre(t.estado === 'pausado' ? 'som_retomar' : 'som_pausar', { camada: d.sompausa }); return true; }
+  if (d.somparar) { somOperacaoMestre('som_parar', { camada: d.somparar }); return true; }
+  if (d.somprevia) {
+    s = (somCatalogo || []).find(function (x) { return x.id === d.somprevia; });
+    if (s) {
+      if (somPrevia) { somPrevia.pause(); somPrevia = null; }
+      somPrevia = new Audio('sons/' + s.arquivo); somPrevia.volume = .5; somPrevia.play().catch(function () { somAvisoMestre = 'Não foi possível pré-escutar este arquivo.'; somAtualizarView(); });
+    }
+    return true;
+  }
+  return false;
+}
+
 VIEWFN.inicio = viewInicio;
 VIEWFN.grimorios = viewGrimorios;
 VIEWFN.bestiario = viewBestiario;
@@ -4659,10 +4721,11 @@ VIEWFN.acao = viewAcaoMestre;
 VIEWFN.itens = viewItens;
 VIEWFN.experiencia = viewXpMestre;
 VIEWFN.cenarios = viewCenarios;
+VIEWFN.sons = viewSonsMestre;
 
 MESTRE = {
   /* Menu em grupos (a barra tinha itens demais). Cada item é o id de uma aba, ou um grupo com seus ids. */
-  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "experiencia", "sorteio", "sessao-zero", "mestre"] }],
+  nav: ["inicio", { g: "Jogar", i: ["acao", "cenarios", "sons", "itens"] }, { g: "Mundo", i: ["mapa", "vilarejos", "bestiario", "personagens"] }, { g: "Regras", i: ["regras", "niveis", "grimorios"] }, { g: "Mesa", i: ["jogadores", "experiencia", "sorteio", "sessao-zero", "mestre"] }],
   niveis: viewNiveisMestre,
   pendencias: function (id) {
     if (id !== "experiencia") return 0;
@@ -4680,7 +4743,7 @@ MESTRE = {
   vilaRodape: vilaRodapeMestre,
   views: [
     ["inicio", "Início", "casa"], ["regras", "Regras", "prancheta"], ["niveis", "Níveis", "cima"], ["grimorios", "Grimórios", "livro"], ["bestiario", "Bestiário", "pata"], ["personagens", "Personagens", "grupo"],
-    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["experiencia", "Experiência", "cima"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
+    ["vilarejos", "Vilarejos", "pino"], ["mapa", "Mapa", "bussola"], ["cenarios", "Cenários", "bussola"], ["sons", "Sons", "relogio"], ["acao", "Ação", "espada"], ["itens", "Itens", "mochila"], ["sorteio", "Sorteio", "estrela"], ["jogadores", "Jogadores", "grupo"], ["experiencia", "Experiência", "cima"], ["sessao-zero", "Sessão Zero", "grupo"], ["mestre", "Mestre", "cadeado"]
   ],
 
   iniciar: function (d) {
@@ -4709,10 +4772,12 @@ MESTRE = {
     if (r === "personagens") desenharPersonagens();
     if (r === "acao") { renderAcaoUI(); iniciarCampoPoll(); }
     if (r === "cenarios") desenharCenPreview();
+    if (r === "sons") somCarregarCatalogo();
   },
 
   change: function (el) {
     var d = el.dataset || {};
+    if (d.somvol) { somOperacaoMestre('som_volume', { camada: d.somvol, vol: Number(el.value) }); return; }
     if (el.hasAttribute && el.hasAttribute("data-dropjog")) {
       dropAlvo = el.value;
       Array.prototype.forEach.call(document.querySelectorAll("[data-dropjog]"), function (o) { o.value = dropAlvo; });
@@ -4796,6 +4861,7 @@ MESTRE = {
   },
 
   click: function (b) {
+    if (somClickMestre(b)) return true;
     if (acoesXp(b) || acoesAprimoramento(b)) return true;
     if (acoesQuestionario(b)) return true;
     if (acoesDrops(b)) return true;
