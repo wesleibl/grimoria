@@ -2935,6 +2935,12 @@ function modeloDadosMestre() {
   return { rolagem: r, idade: idade, pode: true, tok: tok, nome: t ? t.nome || "" : "Mestre", estilo: estilo };
 }
 
+/* Histórico para o painel do mapa: tudo o que foi rolado, mais novo primeiro (inclusive as rolagens só do mestre). */
+function historicoDadosMestre() {
+  var agora = CAMPO.agora || Math.floor(Date.now() / 1000);
+  return (CAMPO.hist || []).slice().reverse().map(function (x) { return { nome: x.nome, tipo: x.tipo, dados: x.dados, vs: x.vs, v: x.v, ha: Math.max(0, agora - (x.t || 0)) }; });
+}
+
 /* Painel "Dados" ao lado do mapa: escolhe quem pode rolar fora de combate. */
 function dadosMestreHTML() {
   var a = acaoEst(), cb = CAMPO.combate;
@@ -4667,6 +4673,7 @@ MESTRE = {
   localExtra: localExtraMestre,
   hudHTML: hudMestre,
   modeloIni: modeloIniMestre,
+  historico: historicoDadosMestre,
   modeloDados: modeloDadosMestre,
   regrasExtra: regrasExtraMestre,
   vilaExtra: vilaExtraMestre,

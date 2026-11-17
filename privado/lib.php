@@ -1151,6 +1151,10 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
     /* Token oculto: nem a rolagem nem o registro vão para os jogadores. */
     $txt = count($sel) === 1 ? "$nome rolou d$sel[0]: $vs[0]" : "$nome rolou " . dadosResumo($sel) . ': ' . implode(' + ', $vs) . " = $total";
     campoEvento($campo, $txt, !$privado && tokenVisivel($t, $campo) ? $txt : null);
+    /* Histórico das últimas 30 rolagens (cada um só enxerga as de tokens visíveis; as do mestre sem alvo ficam só com o mestre). */
+    $hist = array_values(array_filter((array)($campo['hist'] ?? []), 'is_array'));
+    $hist[] = ['n' => $campo['rolN'], 'tok' => $id, 'nome' => $nome, 'tipo' => $t['tipo'], 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time()];
+    $campo['hist'] = array_slice($hist, -30);
 }
 
 /* A rolagem que o espectador pode ver, e se ele pode rolar agora. Ocultos e rolagens velhas ficam de fora. */
@@ -1168,7 +1172,14 @@ function rolagemPublica(array $campo, array $tokens, array $vis, ?string $euId):
                 'estilo' => ['cor' => corHex($r['estilo']['cor'] ?? null, '#2a6fc9'), 'num' => corHex($r['estilo']['num'] ?? null, '#ffffff'), 'img' => ($r['estilo']['img'] ?? null) ? (int)$r['estilo']['img'] : null]];
         }
     }
-    return ['rolagem' => $out, 'euRolo' => $euId !== null && $quem === $euId];
+    $hist = [];
+    foreach (array_reverse(array_values((array)($campo['hist'] ?? []))) as $h) {
+        if (!is_array($h) || !isset($vis[(string)($h['tok'] ?? '')])) continue;
+        $hist[] = ['n' => (int)($h['n'] ?? 0), 'nome' => mb_substr((string)($h['nome'] ?? ''), 0, 60), 'tipo' => (string)($h['tipo'] ?? ''), 'dados' => dadosLista($h['dados'] ?? []),
+            'vs' => array_map('intval', (array)($h['vs'] ?? [])), 'v' => (int)($h['v'] ?? 0), 'ha' => max(0, time() - (int)($h['t'] ?? 0))];
+        if (count($hist) >= 30) break;
+    }
+    return ['rolagem' => $out, 'euRolo' => $euId !== null && $quem === $euId, 'hist' => $hist];
 }
 
 /* O mestre recebe também a hora do servidor (para saber a idade da rolagem). */
@@ -1464,6 +1475,7 @@ function campoOpMestre(string $op, array $c, int $uid = 0): array
                 $campo['combate'] = null;
                 $campo['rolador'] = null;
                 $campo['rolagem'] = null;
+                $campo['hist'] = [];
                 $campo['eventos'] = [];
                 $campo['efeitos'] = [];
                 break;

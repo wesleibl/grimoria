@@ -1132,8 +1132,8 @@ function corToken(t) { return /^#[0-9a-fA-F]{6}$/.test(t.cor || "") ? t.cor : (C
 function tabuleiroHTML(src, alt) {
   return '<div class="tab-box"><div class="tab"><img id="tabImg" src="' + src + '" alt="' + esc(alt) + '"><svg id="tabSvg" class="tab-svg" role="img" aria-label="Grid do mapa"></svg></div>' +
     '<div class="zoom-ctl"><button type="button" data-zoom="mais" aria-label="Aproximar o mapa">+</button><button type="button" data-zoom="menos" aria-label="Afastar o mapa">−</button>' +
-    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="ini" aria-label="Mostrar ou ocultar a ordem de iniciativa" aria-pressed="false" title="Ordem de iniciativa">⚔</button><button type="button" data-zoom="dados" class="bt-dado" aria-label="Rolar dados" aria-pressed="false" title="Rolar dados" hidden>' + ic("dado") + '</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
-    '<aside class="ini-painel" id="iniPainel" aria-label="Ordem de iniciativa" hidden></aside><aside class="dados-painel" id="dadosPainel" aria-label="Rolar dados" hidden></aside><div class="tok-card" id="tokCard" hidden></div>' +
+    '<button type="button" data-zoom="reset" aria-label="Voltar ao tamanho original">Ajustar</button><button type="button" data-zoom="grade" aria-label="Mostrar ou ocultar as linhas e colunas do grid" aria-pressed="true">▦</button><button type="button" data-zoom="ini" aria-label="Mostrar ou ocultar a ordem de iniciativa" aria-pressed="false" title="Ordem de iniciativa">⚔</button><button type="button" data-zoom="dados" class="bt-dado" aria-label="Rolar dados" aria-pressed="false" title="Rolar dados" hidden>' + ic("dado") + '</button><button type="button" data-zoom="hist" aria-label="Histórico dos dados rolados" aria-pressed="false" title="Histórico dos dados">' + ic("relogio") + '</button><button type="button" data-zoom="cheia" aria-label="Tela cheia">⛶</button></div>' +
+    '<aside class="ini-painel" id="iniPainel" aria-label="Ordem de iniciativa" hidden></aside><aside class="dados-painel" id="dadosPainel" aria-label="Rolar dados" hidden></aside><aside class="ini-painel hist-painel" id="histPainel" aria-label="Histórico dos dados" hidden></aside><div class="tok-card" id="tokCard" hidden></div>' +
     '<div class="tab-hud" id="tabHud" aria-live="polite"></div><div class="gire-dica">Gire o aparelho para o modo paisagem</div></div>';
 }
 
@@ -1409,6 +1409,7 @@ function zoomBotao(k) {
   }
   else if (k === "ini") alternarIni();
   else if (k === "dados") alternarDados();
+  else if (k === "hist") alternarHist();
   else if (k === "cheia") { if (emTelaCheia(box)) sairTelaCheia(); else entrarTelaCheia(); }
 }
 
@@ -1417,7 +1418,7 @@ function ligarZoom(box) {
   if (box.dataset) box.dataset.zoomLigado = "1";
   var ptrs = {}, modo = null, ini = null, soltarTudo = false;
   function lista() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
-  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .dados-painel, .tok-card")); }
+  function ignorar(ev) { return !!(ev.target && ev.target.closest && ev.target.closest(".zoom-ctl, .tab-hud, .ini-painel, .dados-painel, .hist-painel, .tok-card")); }
   box.addEventListener("pointerdown", function (ev) {
     if (ignorar(ev) || (ev.pointerType === "mouse" && ev.button !== 0)) return;
     zoomSuprimir = false;
@@ -1583,6 +1584,7 @@ function virarBotoesHTML(atual) {
 
 function alternarIni() {
   iniAberto = !iniAberto;
+  if (iniAberto) histAberto = false; /* os dois painéis ficam no mesmo canto */
   try { localStorage.setItem("grimoria_ini_aberta", iniAberto ? "1" : "0"); } catch (e) { /* sem armazenamento: vale só nesta tela */ }
   atualizarIni();
 }
@@ -1609,7 +1611,7 @@ function atualizarIni() {
   var p = box.querySelector("#iniPainel"), b = box.querySelector('[data-zoom="ini"]');
   if (b) b.setAttribute("aria-pressed", iniAberto ? "true" : "false");
   if (p) {
-    if (!iniAberto) p.hidden = true;
+    if (!iniAberto || histAberto) p.hidden = true;
     else {
       var m = MESTRE ? MESTRE.modeloIni() : modeloIniJogador(), j = JSON.stringify(m);
       if (p.getAttribute("data-j") !== j) {
@@ -1673,6 +1675,7 @@ document.addEventListener("error", function (e) {
    o número que "troca rápido" durante a animação é só visual. As cores só entram no desenho depois de passar pelo regex. */
 var DADOS = [4, 6, 8, 10, 12, 20];
 var DADO_ROL_MS = 1200, DADO_FICA_MS = 6000, DADO_IDADE_MAX = 8;
+var histAberto = false, dadoHist = [];
 var dadosAberto = false, dadosMsg = "", dadosOcup = false, dadoPodeAnt = null, dadoIdade = 0, dadoTimer = null;
 var dadoSt = { n: -1, ativo: false };
 
@@ -1809,7 +1812,39 @@ function dadosLadoHTML(m) {
 }
 
 /* Chamado a cada desenho do mapa e depois de cada operação. Atualiza o botão, o painel e o dado no meio do mapa. */
+function alternarHist() {
+  histAberto = !histAberto;
+  if (histAberto) { iniAberto = false; try { localStorage.setItem("grimoria_ini_aberta", "0"); } catch (e) { /* vale só nesta tela */ } }
+  atualizarIni();
+}
+
+function haTexto(s) { s = Math.max(0, s | 0); return s < 45 ? "agora" : s < 3600 ? "há " + Math.max(1, Math.round(s / 60)) + " min" : "há " + Math.floor(s / 3600) + " h"; }
+
+/* Histórico (mais novo primeiro). O servidor já tirou o que este espectador não pode ver. */
+function histPainelHTML(lista) {
+  var h = '<div class="ini-cab"><b>' + ic("relogio") + "Histórico dos dados</b></div>";
+  if (!lista.length) return h + '<p class="mdica">Ninguém rolou dados ainda.</p>';
+  return h + '<ol class="hist-lista">' + lista.map(function (x) {
+    var l = x.dados || [], vs = (x.vs || []).map(function (v) { return esc(String(v)); });
+    return '<li><span class="hist-nome">' + esc(x.nome || "Alguém") + (x.tipo === "mestre" ? " <small>(só você)</small>" : "") + '</span><span class="hist-dados">' + esc(dadosResumo(l)) + "</span>" +
+      '<span class="hist-res">' + (l.length > 1 ? vs.join(" + ") + " = " : "") + "<b>" + esc(String(x.v)) + '</b></span><span class="hist-ha">' + haTexto(x.ha) + "</span></li>";
+  }).join("") + "</ol>";
+}
+
+function atualizarHist() {
+  var box = caixaTab();
+  if (!box || !box.querySelector) return;
+  var b = box.querySelector('[data-zoom="hist"]'), p = box.querySelector("#histPainel");
+  if (b) b.setAttribute("aria-pressed", histAberto ? "true" : "false");
+  if (!p) return;
+  if (!histAberto) { p.hidden = true; return; }
+  var h = histPainelHTML(MESTRE ? MESTRE.historico() : dadoHist);
+  if (p.getAttribute("data-j") !== h) { var rol = p.scrollTop; p.innerHTML = h; p.setAttribute("data-j", h); p.scrollTop = rol; }
+  p.hidden = false;
+}
+
 function atualizarDados() {
+  atualizarHist();
   var m = MESTRE ? MESTRE.modeloDados() : modeloDadosJogador();
   dadoReceber(m.rolagem, m.idade);
   var lado = document.getElementById("dadosLado");
@@ -2148,6 +2183,8 @@ function iniciarAcao() { if (!acaoRodando) { acaoRodando = true; buscarAcao(++ac
 function buscarAcaoAgora(forcar) {
   return api("acao").then(function (a) {
     /* A idade da rolagem muda a cada consulta: guarda à parte para não redesenhar o mapa à toa. */
+    dadoHist = a.hist || [];
+    delete a.hist; /* o "há quanto tempo" muda a cada consulta: não deve forçar o redesenho do mapa */
     dadoIdade = a.rolagem ? a.rolagem.idade || 0 : 0;
     if (a.rolagem) delete a.rolagem.idade;
     var j = JSON.stringify(a);
