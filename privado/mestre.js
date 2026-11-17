@@ -161,10 +161,13 @@ var GRIMORIOS = [
   { nome: "Grimório do Tempo", attr: "inteligencia", papel: "Suporte", sub: "suporte e controle", tier: "",
     spells: [
       sp("Pulso Temporal", 1, "ataque simples", "d20 + Inteligência, dano 1d4. Se acertar, o alvo fica com -1 no próximo ataque dele."),
-      sp("Pausa", 1, "básico", "Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior)."),
-      sp("Retrocesso", 2, "médio", "Um aliado refaz a última rolagem dele."),
-      sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima rodada inteira.", { limite: "1 uso por combate" })
-    ], futuras: [], nota: "Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho." },
+      sp("Pausa", 1, "básico", "Um aliado faz seu próximo teste com vantagem. Num inimigo, teste de Inteligência contra a Defesa dele: se acertar, ele faz o próximo teste com desvantagem. Não vale duas rodadas seguidas no mesmo alvo."),
+      sp("Retrocesso", 2, "médio", "Um aliado (não você) refaz a última rolagem dele e vale o novo resultado, mesmo que seja pior. Uma vez por aliado por combate."),
+      sp("Parada no Tempo", 4, "ultimate", "Um inimigo escolhido perde a próxima ação (o movimento ele mantém). Contra um inimigo comum, perde a rodada inteira.", { limite: "1 uso por combate" })
+    ], futuras: [
+      fu(1, "Visão do Instante", 1, "básico", "Você vê o instante seguinte: o mestre diz qual ataque e qual alvo um inimigo escolhido usará no próximo turno dele."),
+      fu(3, "Rebobinar", 2, "reação", "Quando um inimigo acerta um aliado, ele refaz o ataque e vale o novo resultado. Pode errar, ou acertar de novo. Uma vez por combate.", { limite: "1 uso por combate" })
+    ], nota: "Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho. O jogador do Tempo não pode refazer as suas próprias rolagens: ele conserta a falha dos outros, não a dele." },
 
   { nome: "Grimório de Espíritos", attr: "inteligencia", papel: "Suporte", sub: "conjuração", tier: "",
     spells: [
@@ -431,7 +434,7 @@ var NIVEL3 = {
   "Grimório Antimagia": fu(2, "Zona Nula", 3, "médio", "Cria uma área por 2 turnos onde nenhum feitiço pode ser lançado e os estados mágicos são removidos de quem estiver dentro."),
   "Grimório de Veneno": fu(2, "Veneno Paralisante", 2, "médio", "d20 + Destreza, dano 1d4. Se acertar, o alvo faz teste de Poder contra 13 ou fica com deslocamento 0 por 1 turno.", { aplica: ["Lento"] }),
   "Grimório de Gravidade": fu(2, "Leveza Forçada", 2, "médio", "Teste de Inteligência contra a Defesa do alvo. Se acertar, o inimigo flutua por 1 turno, com deslocamento 0 e -3 de Defesa."),
-  "Grimório do Tempo": fu(2, "Eco do Tempo", 2, "médio", "Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana."),
+  "Grimório do Tempo": fu(2, "Eco do Tempo", 2, "médio", "Um aliado repete o último ataque ou feitiço de 1 mana que usou (reações não valem), sem gastar mana. Uma vez por aliado por combate."),
   "Grimório de Lâminas": fu(2, "Corte Perfurante", 2, "médio", "d20 + Destreza, dano 1d8. O golpe ignora a redução de dano do alvo."),
   "Grimório de Sangue": fu(2, "Lâmina de Sangue", 3, "médio", "d20 + Poder, dano 2d6. Você pode pagar 3 de Vida para causar +1d6."),
   "Grimório do Gelo": fu(2, "Lança Gélida", 3, "médio", "d20 + Destreza, dano 2d6. Se o alvo estiver lento ou molhado, ele fica congelado por 1 turno.", { aplica: ["Congelado"] }),
@@ -442,7 +445,7 @@ var NIVEL3 = {
 };
 GRIMORIOS.forEach(function (g) {
   if (!g.elem) g.elem = ELEM_EXISTENTES[g.nome] || "Outro";
-  if (NIVEL3[g.nome]) g.futuras = (g.futuras || []).concat([NIVEL3[g.nome]]);
+  if (NIVEL3[g.nome]) g.futuras = (g.futuras || []).concat([NIVEL3[g.nome]]).sort(function (a, b) { return (a.marco || 0) - (b.marco || 0); });
   g.spells.concat(g.futuras || []).forEach(function (s) { extras(s, EXTRAS_EXISTENTES[s.nome]); });
 });
 var ELEMS = [];

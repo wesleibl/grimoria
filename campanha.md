@@ -397,11 +397,13 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 ### Grimório do Tempo (suporte, suporte e controle, usa Inteligência)
 *elemento: Cosmos*
 - **Pulso Temporal (1 mana, ataque simples):** d20 + Inteligência, dano 1d4. Se acertar, o alvo fica com -1 no próximo ataque dele.
-- **Pausa (1 mana, básico):** Um aliado ou inimigo faz seu próximo teste com vantagem ou desvantagem (rola 2 dados, fica com o melhor ou pior).
-- **Retrocesso (2 mana, médio):** Um aliado refaz a última rolagem dele.
-- **Parada no Tempo (4 mana, ultimate):** Um inimigo escolhido perde a próxima rodada inteira. (limite: 1 uso por combate)
-- Marco 2, **Eco do Tempo (2 mana, médio):** Um aliado repete o último feitiço de 1 mana que usou, sem gastar mana.
-- *Nota do mestre:* Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho.
+- **Pausa (1 mana, básico):** Um aliado faz seu próximo teste com vantagem. Num inimigo, teste de Inteligência contra a Defesa dele: se acertar, ele faz o próximo teste com desvantagem. Não vale duas rodadas seguidas no mesmo alvo.
+- **Retrocesso (2 mana, médio):** Um aliado (não você) refaz a última rolagem dele e vale o novo resultado, mesmo que seja pior. Uma vez por aliado por combate.
+- **Parada no Tempo (4 mana, ultimate):** Um inimigo escolhido perde a próxima ação (o movimento ele mantém). Contra um inimigo comum, perde a rodada inteira. (limite: 1 uso por combate)
+- Marco 1, **Visão do Instante (1 mana, básico):** Você vê o instante seguinte: o mestre diz qual ataque e qual alvo um inimigo escolhido usará no próximo turno dele.
+- Marco 2, **Eco do Tempo (2 mana, médio):** Um aliado repete o último ataque ou feitiço de 1 mana que usou (reações não valem), sem gastar mana. Uma vez por aliado por combate.
+- Marco 3, **Rebobinar (2 mana, reação):** Quando um inimigo acerta um aliado, ele refaz o ataque e vale o novo resultado. Pode errar, ou acertar de novo. (limite: 1 uso por combate)
+- *Nota do mestre:* Parada no Tempo vale 1 uso por combate. Retrocesso refaz o teste de um tank que falhou no Absorver, ou o Refletir do Espelho. O próprio jogador do Tempo não pode refazer as suas rolagens: ele conserta a falha dos outros, não a dele.
 
 ### Grimório de Espíritos (suporte, conjuração, usa Inteligência)
 *elemento: Espírito*
@@ -666,7 +668,7 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 
 | # | Grimório | Papel | PC | SIN | Total |
 |---|---|---|---|---|---|
-| 1 | Tempo | Suporte | 7,5 | 10 | **8,5** |
+| 1 | Tempo | Suporte | 7,5 | 9 | **8,1** |
 | 2 | Ferrugem | Dano | 8 | 9 | **8,4** |
 | 3 | Gelo | Dano | 8 | 8 | **8** |
 | 4 | Luz Vingativa | Dano | 7,5 | 8 | **7,8** |
@@ -717,7 +719,7 @@ Média dos reservados: PC 8,5 (contra 7,0 do sorteio). Isso é o esperado para l
 ### O que o ranking mostra (reflexão)
 
 1. **Controle sem teste manda no jogo.** Tempo (Parada no Tempo), Ilusão (Mundo Falso), Correntes (Jaula Total) e Gravidade (Singularidade) tiram turnos do inimigo sem rolagem. Os três primeiros agora valem só 1 uso por combate (as notas já pesam isso). Num combate de poucas rodadas e com chefe único, isso vale mais que qualquer dano. É coerente com Black Clover (Tempo e Espaço são magias raras e temidas), mas fazem o topo ficar dominado por suporte.
-2. **O Tempo sobe muito pela sinergia.** Retrocesso refaz a rolagem de um aliado, e a punição de falhar no Absorver do tank é enorme (perde o turno, 2 de mana). Com Eco do Tempo, qualquer feitiço de 1 mana vira de graça.
+2. **O Tempo sobe muito pela sinergia.** Retrocesso refaz a rolagem de um aliado, e a punição de falhar no Absorver do tank é enorme (perde o turno, 2 de mana). Com Eco do Tempo, um ataque ou feitiço de 1 mana vira de graça (uma vez por aliado por combate).
 3. **A Ferrugem é a melhor sinergia de dano.** Ela baixa a Defesa do alvo até -3 até o fim do combate: isso aumenta a chance de acerto de **todo o grupo**, e o Desmoronar faz 4d6 contra um alvo enferrujado, a maior explosão de um alvo só entre os de 4 mana.
 4. **Luz Curativa é fraca sozinha e essencial no grupo.** PC 6, mas SIN 9. Com as 3 salvaguardas (0 de Vida) e o descanso, o cuidador ganhou importância. Sangue + Luz Curativa é um combo natural (a cura devolve a Vida gasta).
 5. **Antimagia e Luz Curativa pesam mais nesta campanha.** O vilão é uma organização com uma marca de controle, e quebrar a marca depende de Corte Nulo (Antimagia) e de cura. Por isso a Antimagia sobe em sinergia (8) mesmo com dano comum.
