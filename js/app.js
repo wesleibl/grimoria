@@ -3596,8 +3596,27 @@ function somGuardarLocal(k, v) {
   somVolumeAplicar();
   if (k === "mudo") somPainelAtualizar();
 }
+/* iPhone: audio.volume é somente leitura. Lá o áudio passa por um GainNode (Web Audio), que aceita volume de verdade. */
+var somCtx = null, somGanhoModo = null;
+function somLigarGanho(a) {
+  if (somGanhoModo === null) {
+    var AC = window.AudioContext || window.webkitAudioContext, t = new Audio();
+    try { t.volume = 0.5; } catch (e) { /* ignora */ }
+    somGanhoModo = !!AC && Math.abs(t.volume - 0.5) > 0.01;
+  }
+  if (!somGanhoModo) return;
+  try {
+    if (!somCtx) somCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var src = somCtx.createMediaElementSource(a), g = somCtx.createGain();
+    src.connect(g); g.connect(somCtx.destination); a._gain = g;
+  } catch (e) { a._gain = null; }
+}
+function somVol(a, v) { if (a._gain) a._gain.gain.value = v; else a.volume = v; }
+function somVolAtual(a) { return a._gain ? a._gain.gain.value : Number(a.volume); }
+function somRetomarCtx() { if (somCtx && somCtx.state !== "running") { try { somCtx.resume(); } catch (e) { /* ignora */ } } }
+['pointerdown', 'touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, somRetomarCtx, { passive: true }); });
 function somAudio(src) {
-  var a = src ? new Audio(src) : new Audio(); a.preload = "auto";
+  var a = src ? new Audio(src) : new Audio(); a.preload = "auto"; somLigarGanho(a);
   a.onerror = function () { somErro = "Um arquivo de som não carregou."; somPainelAtualizar(); };
   return a;
 }
@@ -3609,11 +3628,11 @@ function somTocarAudio(a) { var p = a.play(); if (p && p.catch) p.catch(function
 function somRampa(a, destino, dur, fim) {
   if (!a) return;
   clearInterval(a._somRampa);
-  var inicio = Number(a.volume), t0 = Date.now();
+  var inicio = somVolAtual(a), t0 = Date.now();
   a._somRampa = setInterval(function () {
     var f = Math.min(1, (Date.now() - t0) / dur);
     var v = Math.max(0, Math.min(1, inicio + (destino - inicio) * f));
-    try { a.volume = v; if (Math.abs(a.volume - v) > .02) a.muted = destino === 0; else a.muted = false; }
+    try { somVol(a, v); if (a._gain) a.muted = false; else if (Math.abs(a.volume - v) > .02) a.muted = destino === 0; else a.muted = false; }
     catch (e) { a.muted = destino === 0; }
     if (f >= 1) { clearInterval(a._somRampa); a._somRampa = null; if (fim) fim(); }
   }, 50);
@@ -3653,11 +3672,11 @@ function somAplicarCamada(c) {
     p.audios.forEach(function (old) { somRampa(old, 0, 1500, function () { old.pause(); }); });
     p.ativo = 1 - p.ativo; a = p.audios[p.ativo];
     a.src = t.arquivo; a.loop = t.dur < 6 && t.loop !== false; a.currentTime = Math.max(0, Math.min(t.dur - 0.05, somPosicao(t)));
-    a.volume = 0; p.id = t.id; p.arquivo = t.arquivo; p.cruzando = false;
+    somVol(a, 0); p.id = t.id; p.arquivo = t.arquivo; p.cruzando = false;
     if (t.estado === "tocando" && !(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { somTocarAudio(a); somRampa(a, alvo, 1500); }
   } else if (p.estado !== t.estado) {
     if (t.estado === "pausado") p.audios.forEach(function (x) { somRampa(x, 0, 400, function () { x.pause(); }); });
-    else if (!(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { a.currentTime = Math.min(somPosicao(t), t.dur - 0.05); a.volume = 0; somTocarAudio(a); somRampa(a, alvo, 400); }
+    else if (!(t.loop === false && somPosicao(t) >= t.dur - 0.05)) { a.currentTime = Math.min(somPosicao(t), t.dur - 0.05); somVol(a, 0); somTocarAudio(a); somRampa(a, alvo, 400); }
   } else if (t.estado === "tocando" && t.loop !== false && !a.paused && Date.now() - p.ultimaCorrecao > 30000) {
     var esperado = somPosicao(t), dif = Math.abs(a.currentTime - esperado);
     if (Math.min(dif, t.dur - dif) > 1.5) { somRampa(a, 0, 250, function () { a.currentTime = esperado; somRampa(a, alvo, 250); }); p.ultimaCorrecao = Date.now(); }
@@ -3674,13 +3693,13 @@ function somLoopar(c) {
   }
   if (resto > 1.8 || resto < 0) return;
   var outro = p.audios[1 - p.ativo]; p.cruzando = true;
-  outro.src = t.arquivo; outro.currentTime = 0; outro.volume = 0;
+  outro.src = t.arquivo; outro.currentTime = 0; somVol(outro, 0);
   somTocarAudio(outro); somRampa(a, 0, Math.max(100, resto * 1000), function () { a.pause(); });
   somRampa(outro, somVolume(c), Math.max(100, resto * 1000), function () { p.ativo = 1 - p.ativo; p.cruzando = false; });
 }
 function somEfeito(src, vol) {
   if (!somLiberado || somLocal.mudo || !somLocal.fx || !src) return;
-  var a = somAudio(src); a.volume = Math.min(1, vol * somLocal.fx / 100); somTocarAudio(a);
+  var a = somAudio(src); somVol(a, Math.min(1, vol * somLocal.fx / 100)); somTocarAudio(a);
 }
 function somAplicar(s) {
   somEstado = s;
@@ -3706,7 +3725,7 @@ function somSondar() {
 }
 function somDesbloquear() {
   if (!USUARIO || somLiberado) return;
-  var a = somAudio("sons/silencio.mp3"); a.volume = 0;
+  var a = somAudio("sons/silencio.mp3"); somVol(a, 0);
   var p = a.play();
   if (p && p.then) p.then(function () { somLiberado = true; somErro = ""; if (somEstado) somAplicar(somEstado); somSondar(); }, function () { somPainelAtualizar(); });
 }
@@ -3749,7 +3768,7 @@ function somDado(tipo, qtd, atraso) {
     setTimeout(function () {
       if (!somLiberado || somLocal.mudo) return;
       var k = somDadosIndice[tipo] = ((somDadosIndice[tipo] || 0) + 1) % 4, a = somDadosPool[tipo][k];
-      a.pause(); a.currentTime = 0; a.volume = somLocal.fx / 100;
+      a.pause(); a.currentTime = 0; somVol(a, somLocal.fx / 100);
       a.playbackRate = tipo === "rolar" ? 0.95 + Math.random() * 0.1 : 1;
       somTocarAudio(a);
     }, (atraso || 0) + j * (tipo === "rolar" ? 80 : 50));
