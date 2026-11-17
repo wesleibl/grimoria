@@ -1097,12 +1097,17 @@ function rolaAgora(array $campo, array $a, array $tokens): ?string
 function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $mestre, ?string $meu, int $uid): void
 {
     $id = rolaAgora($campo, lerEstado('acao') ?? [], $tokens);
-    if ($id === null) erro('Ninguém pode rolar dados agora.', 409);
-    $t = $tokens[$id];
-    if ($mestre) {
-        if (($t['tipo'] ?? '') === 'jogador') erro('Quem rola é o jogador, na tela dele.', 409);
-    } elseif ($id !== $meu) {
-        erro('Não é a sua vez de rolar.', 409);
+    $privado = false;
+    if ($mestre && ($id === null || ($tokens[$id]['tipo'] ?? '') === 'jogador')) {
+        /* Sem aliado ou inimigo na vez, o mestre rola por ele mesmo: só ele vê (nada vai para os jogadores nem para o registro público). */
+        $id = 'mestre';
+        $t = ['tipo' => 'mestre', 'nome' => 'Mestre', 'cor' => '#4a4a5a'];
+        $privado = true;
+    } elseif ($id === null) {
+        erro('Ninguém pode rolar dados agora.', 409);
+    } else {
+        $t = $tokens[$id];
+        if (!$mestre && $id !== $meu) erro('Não é a sua vez de rolar.', 409);
     }
     /* Limite por usuário (guardado no campo, dentro da transação): 1 rolagem por segundo; a troca de dado é um pouco mais folgada. */
     $agora = microtime(true);
@@ -1145,7 +1150,7 @@ function campoOpDado(array &$campo, string $op, array $c, array $tokens, bool $m
     $campo['rolagem'] = ['n' => $campo['rolN'], 'estado' => 'rolado', 'dados' => $sel, 'vs' => $vs, 'v' => $total, 't' => time()] + $r;
     /* Token oculto: nem a rolagem nem o registro vão para os jogadores. */
     $txt = count($sel) === 1 ? "$nome rolou d$sel[0]: $vs[0]" : "$nome rolou " . dadosResumo($sel) . ': ' . implode(' + ', $vs) . " = $total";
-    campoEvento($campo, $txt, tokenVisivel($t, $campo) ? $txt : null);
+    campoEvento($campo, $txt, !$privado && tokenVisivel($t, $campo) ? $txt : null);
 }
 
 /* A rolagem que o espectador pode ver, e se ele pode rolar agora. Ocultos e rolagens velhas ficam de fora. */

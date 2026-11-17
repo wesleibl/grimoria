@@ -1800,7 +1800,7 @@ function dadosLadoHTML(m) {
   DADOS.forEach(function (d) { h += dadoCelHTML(d, est, cs[d] || ult[d] || 0, cs[d] ? "sel" : ult[d] ? "ult" : "", pode, "l"); });
   h += "</div>";
   if (r && r.dados && r.dados.length) h += '<p class="dados-status">' + rolagemTextoHTML(r) + "</p>";
-  else h += '<p class="mdica">' + (pode ? "Toque num dado para escolher. Toque de novo para somar outro igual." : MESTRE ? "Escolha em “Quem pode rolar” um aliado ou inimigo para poder clicar nos dados." : "Nenhum dado escolhido.") + "</p>";
+  else h += '<p class="mdica">' + (pode ? "Toque num dado para escolher. Toque de novo para somar outro igual." : "Nenhum dado escolhido.") + "</p>";
   if (pode) {
     h += '<p class="dados-acoes"><button type="button" class="primary dados-rolar" data-dados-rolar' + (sel.length && !dadosOcup ? "" : " disabled") + ">Rolar" + (sel.length ? " " + esc(dadosResumo(sel)) : "") + "</button>" +
       (sel.length ? '<button type="button" data-dados-limpar>Limpar</button>' : "") + "</p>" + (dadosMsg ? '<p class="tok-aviso">' + esc(dadosMsg) + "</p>" : "");
