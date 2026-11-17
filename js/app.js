@@ -1826,8 +1826,8 @@ function histPainelHTML(lista) {
   if (!lista.length) return h + '<p class="mdica">Ninguém rolou dados ainda.</p>';
   return h + '<ol class="hist-lista">' + lista.map(function (x) {
     var l = x.dados || [], vs = (x.vs || []).map(function (v) { return esc(String(v)); });
-    return '<li><span class="hist-nome">' + esc(x.nome || "Alguém") + (x.tipo === "mestre" ? " <small>(só você)</small>" : "") + '</span><span class="hist-dados">' + esc(dadosResumo(l)) + "</span>" +
-      '<span class="hist-res">' + (l.length > 1 ? vs.join(" + ") + " = " : "") + "<b>" + esc(String(x.v)) + '</b></span><span class="hist-ha">' + haTexto(x.ha) + "</span></li>";
+    return '<li><span class="hist-nome">' + esc(x.nome || "Alguém") + (x.tipo === "mestre" ? " <small>(só você)</small>" : "") + '</span><span class="hist-ha">' + haTexto(x.ha) + "</span>" +
+      '<span class="hist-dados">' + esc(dadosResumo(l)) + (l.length > 1 ? " <small>" + vs.join(" + ") + "</small>" : "") + '</span><span class="hist-res"><b>' + esc(String(x.v)) + "</b></span></li>";
   }).join("") + "</ol>";
 }
 
