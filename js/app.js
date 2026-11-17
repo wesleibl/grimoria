@@ -1674,7 +1674,7 @@ document.addEventListener("error", function (e) {
 /* Os dados são desenhados aqui (SVG próprio, sem imagens externas). O resultado vem sempre do servidor (campo.rolagem);
    o número que "troca rápido" durante a animação é só visual. As cores só entram no desenho depois de passar pelo regex. */
 var DADOS = [4, 6, 8, 10, 12, 20];
-var DADO_ROL_MS = 1200, DADO_FICA_MS = 6000, DADO_IDADE_MAX = 8;
+var DADO_ROL_MS = 1200, DADO_FICA_MS = 9000, DADO_IDADE_MAX = 8;
 var histAberto = false, dadoHist = [];
 var dadosAberto = false, dadosMsg = "", dadosOcup = false, dadoPodeAnt = null, dadoIdade = 0, dadoTimer = null;
 var dadoSt = { n: -1, ativo: false };
