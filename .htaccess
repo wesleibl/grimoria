@@ -27,6 +27,10 @@ Options -Indexes
 # do código, ele não conseguiria executar script. Se algo sumir do site, abra o console do navegador (F12) e procure por
 # "Content Security Policy"; é só ajustar a linha abaixo.
 <IfModule mod_headers.c>
+  # O app instalado no iPhone guardava o JavaScript antigo: "no-cache" faz o navegador revalidar (304 se nada mudou).
+  <FilesMatch "\.(js|html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "same-origin"
