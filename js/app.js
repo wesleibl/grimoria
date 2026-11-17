@@ -160,7 +160,7 @@ function viewRegras() {
     ["<b>Inteligência</b>", "Suporte, cura, controle, conhecimento, percepção e manter feitiços de efeito contínuo (barreiras, auras, invocações)."]
   ]);
 
-  h += "<h2>Perícias</h2>" + panel("Perícias do D&D", "<p>Teste de perícia: d20 + atributo, mais o bônus de proficiência se você for proficiente na perícia. O bônus é +2 nos níveis 1 e 2, e +3 do nível 3 em diante. Você é proficiente em 4 perícias no nível 1, mais 1 a cada 2 níveis (níveis 3 e 5). Marque no Perfil.</p>" +
+  h += "<h2>Perícias</h2>" + panel("Perícias do D&D", "<p>Teste de perícia: d20 + metade do atributo (arredondada para baixo: a cada 2 pontos do atributo, 1 na perícia), mais o bônus de proficiência se você for proficiente na perícia. O bônus é +2 nos níveis 1 e 2, e +3 do nível 3 em diante. Você é proficiente em 4 perícias no nível 1, mais 1 a cada 2 níveis (níveis 3 e 5). Marque no Perfil.</p>" +
     "<p>Sabedoria e Carisma viram Inteligência; Força e Constituição viram Poder. <b>Poder:</b> Atletismo. <b>Destreza:</b> Acrobacia, Furtividade, Prestidigitação. <b>Inteligência:</b> todas as outras.</p>");
 
   h += "<h2>Criar o personagem</h2>" + panel("Números", "<ul>" +
@@ -753,7 +753,7 @@ function manaJog(j) { return 10 + Math.floor(atrTotal(j, "inteligencia") / 2); }
 function sinal(n) { return (n >= 0 ? "+" : "") + n; }
 
 /* Perícias do D&D. Aqui só existem 3 atributos: Força e Constituição = Poder, Destreza = Destreza, Inteligência, Sabedoria e Carisma = Inteligência.
-   Teste de perícia: d20 + atributo + pontos da perícia. */
+   Teste de perícia: d20 + metade do atributo (arredondada para baixo) + bônus de proficiência. */
 var PERICIAS = [
   ["acrobacia", "Acrobacia", "destreza"], ["adestrar", "Adestrar Animais", "inteligencia"], ["arcanismo", "Arcanismo", "inteligencia"],
   ["atletismo", "Atletismo", "poder"], ["atuacao", "Atuação", "inteligencia"], ["enganacao", "Enganação", "inteligencia"],
@@ -768,6 +768,9 @@ var PER_ABR = { poder: "POD", destreza: "DES", inteligencia: "INT" };
 function profBonus(j) { var n = nivelJog(j); return n <= 2 ? 2 : n <= 8 ? 3 : n <= 12 ? 4 : n <= 16 ? 5 : 6; }
 function perOrcamento(j) { return 4 + Math.floor((nivelJog(j) - 1) / 2); }
 function perProf(j, id) { return (parseInt(j.pericias && j.pericias[id], 10) || 0) > 0; }
+/* A cada 2 pontos do atributo, 1 ponto na perícia. Total da perícia: metade do atributo + proficiência (se tiver). */
+function perMetade(j, atr) { return Math.floor(atrTotal(j, atr) / 2); }
+function perTotal(j, p) { return perMetade(j, p[2]) + perBonus(j, p[0]); }
 function perBonus(j, id) { return perProf(j, id) ? profBonus(j) : 0; }
 function perUsado(o) { return PERICIAS.reduce(function (s, p) { return s + ((parseInt(o[p[0]], 10) || 0) > 0 ? 1 : 0); }, 0); }
 var perRasc = null, salvandoPer = false, perMsg = "";
@@ -780,7 +783,7 @@ function periciasHTML(j) {
   if (!j.atrTravado) return "";
   if (!perRasc) perRasc = perCopia(j);
   var orc = perOrcamento(j), usado = perUsado(perRasc), bp = profBonus(j), sujo = perSuja(), resta = orc - usado;
-  var h = '<h2>Perícias</h2><section class="panel ficha"><p class="mdica">Teste de perícia: <b>d20 + atributo</b>, e mais o <b>bônus de proficiência (' + sinal(bp) + ")</b> se você for proficiente. A coluna Bônus mostra só o que a proficiência soma (zero se não for proficiente). Você é proficiente em <b>" + orc + " perícias</b> (4 no nível 1, mais 1 a cada 2 níveis). " +
+  var h = '<h2>Perícias</h2><section class="panel ficha"><p class="mdica">Teste de perícia: <b>d20 + metade do atributo</b> (arredondada para baixo: a cada 2 pontos do atributo, 1 na perícia), e mais o <b>bônus de proficiência (' + sinal(bp) + ")</b> se você for proficiente. A coluna Bônus mostra só o que a proficiência soma (zero se não for proficiente). Você é proficiente em <b>" + orc + " perícias</b> (4 no nível 1, mais 1 a cada 2 níveis). " +
     "Aqui só existem três atributos: Sabedoria e Carisma viram <b>Inteligência</b>, e Força e Constituição viram <b>Poder</b>. O mestre confere.</p>" +
     '<div class="per-lista">';
   PERICIAS.forEach(function (p) {
@@ -1635,19 +1638,18 @@ function fichaConteudoHTML() {
   if (!j) return '<p class="mdica">Crie o seu personagem na aba Perfil para ter uma ficha.</p>';
   if (fichaAba === "pericias") {
     var tem = PERICIAS.filter(function (p) { return perProf(j, p[0]); });
-    return '<p class="mdica">Teste: d20 + atributo + proficiência (' + sinal(profBonus(j)) + "). Você é proficiente em " + tem.length + " de " + perOrcamento(j) + ".</p>" +
+    return '<p class="mdica">Teste: d20 + total da perícia (metade do atributo, 2 pontos = 1, mais a proficiência ' + sinal(profBonus(j)) + "). Você é proficiente em " + tem.length + " de " + perOrcamento(j) + ".</p>" +
       (tem.length ? '<ul class="ficha-per">' + tem.map(function (p) {
-        return '<li style="--cor:var(--' + p[2] + ')"><span><b>' + esc(p[1]) + '</b> <small>' + PER_ABR[p[2]] + " + proficiência</small></span><b>" + sinal(atrTotal(j, p[2]) + profBonus(j)) + "</b></li>";
+        return '<li style="--cor:var(--' + p[2] + ')"><span><b>' + esc(p[1]) + '</b> <small>' + PER_ABR[p[2]] + " + proficiência</small></span><b>" + sinal(perTotal(j, p)) + "</b></li>";
       }).join("") + "</ul>" : '<p class="mdica">Nenhuma perícia marcada. Marque no Perfil.</p>');
   }
   if (fichaAba === "grimorio") {
     var g = PUB.grimorio;
     if (!g) return '<p class="mdica">O seu grimório ainda não foi revelado.</p>';
-    return legenda() + '<div class="cer-card">' + bookCard(g, true) + "</div>" + (g.spells.length ? "" : '<p class="mdica">Nenhuma magia liberada ainda.</p>');
+    return '<div class="cer-card">' + bookCard(g, true) + "</div>" + (g.spells.length ? "" : '<p class="mdica">Nenhuma magia liberada ainda.</p>');
   }
   return statsHTML(j) + '<h3>Atributos</h3><div class="stats">' + ATRS.map(function (a) {
-    var b = atrBonus(j, a[0]);
-    return statCaixa(a[1], sinal(atrTotal(j, a[0])) + (b ? " (" + sinal(atrBase(j, a[0])) + " " + sinal(b) + ")" : ""));
+    return statCaixa(a[1], sinal(atrTotal(j, a[0])));
   }).join("") + "</div>";
 }
 function renderFicha() {

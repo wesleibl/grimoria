@@ -26,7 +26,7 @@
 
 ### Perícias
 
-As 18 perícias do D&D, ligadas aos 3 atributos (Sabedoria e Carisma = Inteligência; Força e Constituição = Poder). Teste: **d20 + atributo**, mais o **bônus de proficiência** se o personagem for proficiente na perícia.
+As 18 perícias do D&D, ligadas aos 3 atributos (Sabedoria e Carisma = Inteligência; Força e Constituição = Poder). Teste: **d20 + metade do atributo** (arredondada para baixo: 2 pontos do atributo = 1 na perícia), mais o **bônus de proficiência** se o personagem for proficiente na perícia.
 
 - **Bônus de proficiência:** +2 nos níveis 1 e 2, +3 do nível 3 em diante.
 - **Proficiências:** 4 perícias no nível 1, +1 por nível.
