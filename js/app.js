@@ -1577,8 +1577,9 @@ function efeitosVezHTML() {
 }
 /* Botões de direção (N S L O). Quem os clica vira o próprio token: não custa movimento. */
 function virarBotoesHTML(atual) {
-  return '<span class="virar" role="group" aria-label="Virar o token">' + ["n", "s", "l", "o"].map(function (d) {
-    return '<button type="button" data-virar="' + d + '" aria-label="Virar para ' + NOME_DIR[d] + '" aria-pressed="' + (atual === d ? "true" : "false") + '">' + d.toUpperCase() + "</button>";
+  var seta = { n: "↑", s: "↓", l: "→", o: "←" };
+  return '<span class="virar" role="group" aria-label="Virar o token">' + ["o", "n", "s", "l"].map(function (d) {
+    return '<button type="button" data-virar="' + d + '" aria-label="Virar para ' + NOME_DIR[d] + '" title="' + NOME_DIR[d] + '" aria-pressed="' + (atual === d ? "true" : "false") + '">' + seta[d] + "</button>";
   }).join("") + "</span>";
 }
 
@@ -1626,6 +1627,62 @@ function atualizarIni() {
   atualizarCardTok();
   atualizarDados();
 }
+
+/* Ficha do próprio personagem num modal, sem sair da aba Ação: status, perícias marcadas e as habilidades do grimório. */
+var fichaAba = "status", fichaFoco = null;
+function fichaConteudoHTML() {
+  var j = PUB.jogador;
+  if (!j) return '<p class="mdica">Crie o seu personagem na aba Perfil para ter uma ficha.</p>';
+  if (fichaAba === "pericias") {
+    var tem = PERICIAS.filter(function (p) { return perProf(j, p[0]); });
+    return '<p class="mdica">Teste: d20 + atributo + proficiência (' + sinal(profBonus(j)) + "). Você é proficiente em " + tem.length + " de " + perOrcamento(j) + ".</p>" +
+      (tem.length ? '<ul class="ficha-per">' + tem.map(function (p) {
+        return '<li style="--cor:var(--' + p[2] + ')"><span><b>' + esc(p[1]) + '</b> <small>' + PER_ABR[p[2]] + " + proficiência</small></span><b>" + sinal(atrTotal(j, p[2]) + profBonus(j)) + "</b></li>";
+      }).join("") + "</ul>" : '<p class="mdica">Nenhuma perícia marcada. Marque no Perfil.</p>');
+  }
+  if (fichaAba === "grimorio") {
+    var g = PUB.grimorio;
+    if (!g) return '<p class="mdica">O seu grimório ainda não foi revelado.</p>';
+    return legenda() + '<div class="cer-card">' + bookCard(g, true) + "</div>" + (g.spells.length ? "" : '<p class="mdica">Nenhuma magia liberada ainda.</p>');
+  }
+  return statsHTML(j) + '<h3>Atributos</h3><div class="stats">' + ATRS.map(function (a) {
+    var b = atrBonus(j, a[0]);
+    return statCaixa(a[1], sinal(atrTotal(j, a[0])) + (b ? " (" + sinal(atrBase(j, a[0])) + " " + sinal(b) + ")" : ""));
+  }).join("") + "</div>";
+}
+function renderFicha() {
+  var m = document.getElementById("fichaModal"), j = PUB.jogador;
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "fichaModal";
+    m.className = "ficha-modal";
+    m.setAttribute("role", "dialog");
+    m.setAttribute("aria-modal", "true");
+    m.setAttribute("aria-label", "Ficha do personagem");
+    m.addEventListener("click", function (ev) {
+      var b = ev.target.closest ? ev.target.closest("[data-ficha-aba], [data-ficha-fechar]") : null;
+      if (ev.target === m || (b && b.hasAttribute("data-ficha-fechar"))) { fecharFicha(); return; }
+      if (b) { fichaAba = b.getAttribute("data-ficha-aba"); renderFicha(); }
+    });
+    var cx = caixaTab();
+    (cx && emTelaCheia(cx) ? cx : document.body).appendChild(m);
+  }
+  var abas = [["status", "Status"], ["pericias", "Perícias"], ["grimorio", "Grimório"]];
+  m.innerHTML = '<div class="ficha-caixa"><div class="ficha-cab"><h2>' + esc((j && (j.personagem || j.nome)) || "Ficha") + (j ? " <small>nível " + nivelJog(j) + "</small>" : "") + '</h2><button type="button" class="ficha-x" data-ficha-fechar aria-label="Fechar a ficha">✕</button></div>' +
+    '<div class="ficha-abas" role="tablist">' + abas.map(function (a) {
+      return '<button type="button" role="tab" data-ficha-aba="' + a[0] + '" aria-selected="' + (fichaAba === a[0]) + '">' + a[1] + "</button>";
+    }).join("") + '</div><div class="ficha-corpo">' + fichaConteudoHTML() + "</div></div>";
+  var foco = m.querySelector('[aria-selected="true"]');
+  if (foco) foco.focus({ preventScroll: true });
+}
+function abrirFicha() { fichaAba = "status"; fichaFoco = document.activeElement; renderFicha(); }
+function fecharFicha() {
+  var m = document.getElementById("fichaModal");
+  if (m && m.parentNode) m.parentNode.removeChild(m);
+  if (fichaFoco && fichaFoco.focus) { try { fichaFoco.focus({ preventScroll: true }); } catch (e) { /* o botão pode ter sumido */ } }
+  fichaFoco = null;
+}
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && document.getElementById("fichaModal")) fecharFicha(); });
 
 /* Card do token de outro (ou do próprio, pelo "Ver ficha"): imagem, tipo, casa, estado de vida em palavras e efeitos. */
 function cardTokHTML(t) {
@@ -3367,7 +3424,7 @@ app.addEventListener("click", function (e) {
   if (b.hasAttribute("data-dados-rolar")) { rolarDado(); return; }
   if (b.hasAttribute("data-dados-fechar")) { dadosAberto = false; atualizarDados(); return; }
   if (b.dataset.virar && !MESTRE) { virarJogador(b.dataset.virar); return; }
-  if (b.dataset.ficha !== undefined && !MESTRE) { abrirCardTok(b.dataset.ficha); return; }
+  if (b.dataset.ficha !== undefined && !MESTRE) { if (acaoPub && b.dataset.ficha === acaoPub.eu) abrirFicha(); else abrirCardTok(b.dataset.ficha); return; }
   if (b.hasAttribute("data-cardfechar")) { fecharCardTok(); return; }
   if (b.id === "iniRolar") { b.disabled = true; acaoOpJogador("ini", { rolar: true }); return; }
   if (b.id === "iniDigitar") {
