@@ -7,7 +7,13 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#192427">
+<!-- Instalado na Tela de Início, o site abre sem as barras do navegador (é o único jeito de ter tela cheia de verdade no iPhone). -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Grimória">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -783,6 +789,9 @@ main.imersivo .acao-lado { grid-template-columns: repeat(auto-fit, minmax(300px,
 .dir-esc button { width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; font-weight: 700; font-size: 1.5rem; }
 .dir-esc .dir-n { grid-area: n; } .dir-esc .dir-s { grid-area: s; } .dir-esc .dir-l { grid-area: l; } .dir-esc .dir-o { grid-area: o; }
 .dir-esc .dir-ok { grid-area: ok; background: var(--accent); color: var(--accent-ink, #111); border-color: var(--accent); }
+/* Aviso único para iPhone no Safari: lá não existe tela cheia de verdade para o mapa. */
+.tab-dica-app { position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--hud-h, 0px)); z-index: 7; display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(12, 18, 20, .94); border: 1px solid var(--accent); color: #fff; font-size: .85rem; line-height: 1.3; }
+.tab-dica-app button { flex: none; min-width: 36px; min-height: 36px; padding: 0 8px; }
 .tok-vida { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 .6rem; }
 .tok-vida .tok-num { align-items: center; gap: 6px; margin: 0; }
 .tok-vida .tok-num input { width: 5.2rem; font-size: 1.25rem; font-weight: 700; text-align: center; }
