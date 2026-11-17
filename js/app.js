@@ -1638,7 +1638,7 @@ function fichaConteudoHTML() {
   if (!j) return '<p class="mdica">Crie o seu personagem na aba Perfil para ter uma ficha.</p>';
   if (fichaAba === "pericias") {
     var tem = PERICIAS.filter(function (p) { return perProf(j, p[0]); });
-    return '<p class="mdica">Teste: d20 + total da perícia (metade do atributo, 2 pontos = 1, mais a proficiência ' + sinal(profBonus(j)) + "). Você é proficiente em " + tem.length + " de " + perOrcamento(j) + ".</p>" +
+    return '<p class="mdica">Teste: d20 + o total da perícia. O total é a metade do atributo (2 pontos = 1) mais a proficiência (' + sinal(profBonus(j)) + "). Você é proficiente em " + tem.length + " de " + perOrcamento(j) + ".</p>" +
       (tem.length ? '<ul class="ficha-per">' + tem.map(function (p) {
         return '<li style="--cor:var(--' + p[2] + ')"><span><b>' + esc(p[1]) + '</b> <small>' + PER_ABR[p[2]] + " + proficiência</small></span><b>" + sinal(perTotal(j, p)) + "</b></li>";
       }).join("") + "</ul>" : '<p class="mdica">Nenhuma perícia marcada. Marque no Perfil.</p>');
