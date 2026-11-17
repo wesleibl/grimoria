@@ -33,3 +33,8 @@ Options -Indexes
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 </IfModule>
+
+# Manifesto do app instalável (Tela de Início): precisa do tipo certo para o Android reconhecer.
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>

@@ -1487,8 +1487,24 @@ function travarPaisagem() {
     if (p && p.catch) p.catch(function () { /* o aparelho não deixa travar: fica a dica de girar */ });
   } catch (e) { /* sem suporte: ignora */ }
 }
+/* iPhone no Safari: o mapa só cobre a janela do navegador. Instalado na Tela de Início o site abre sem as barras; avisa uma vez. */
+function dicaInstalarApp(box) {
+  try {
+    var instalado = window.navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+    if (!/iPhone|iPod/.test(navigator.userAgent) || instalado || localStorage.getItem("grim_dica_app")) return;
+    localStorage.setItem("grim_dica_app", "1");
+  } catch (e) { return; }
+  var d = document.createElement("div");
+  d.className = "tab-dica-app";
+  d.setAttribute("role", "status");
+  d.innerHTML = '<span>Para tela cheia de verdade no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>, e abra o Grimória pelo ícone.</span><button type="button" aria-label="Fechar o aviso">✕</button>';
+  d.querySelector("button").onclick = function () { if (d.parentNode) d.parentNode.removeChild(d); };
+  box.appendChild(d);
+  setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 12000);
+}
 function pseudoCheia(box) {
   box.classList.add("cheia", "tc");
+  dicaInstalarApp(box);
   document.body.classList.add("sem-rolagem");
   travarPaisagem();
   zoomTab = { z: 1, tx: 0, ty: 0 };
