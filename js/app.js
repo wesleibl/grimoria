@@ -3602,7 +3602,9 @@ function somLigarGanho(a) {
   if (somGanhoModo === null) {
     var AC = window.AudioContext || window.webkitAudioContext, t = new Audio();
     try { t.volume = 0.5; } catch (e) { /* ignora */ }
-    somGanhoModo = !!AC && Math.abs(t.volume - 0.5) > 0.01;
+    /* No iPhone/iPad o teste do volume num áudio vazio engana; por isso a plataforma decide (iPad novo se apresenta como Mac com toque). */
+    var ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    somGanhoModo = !!AC && (ios || Math.abs(t.volume - 0.5) > 0.01);
   }
   if (!somGanhoModo) return;
   try {
@@ -3751,7 +3753,7 @@ function somPainelAtualizar() {
     p.hidden = !somAberto || !USUARIO;
     p.innerHTML = '<label><input type="checkbox" id="somMudo"' + (somLocal.mudo ? " checked" : "") + '> Mudo</label>' +
       [["mus", "Música"], ["amb", "Ambiente"], ["fx", "Efeitos e dados"]].map(function (x) { return '<label>' + x[1] + ' <output>' + somLocal[x[0]] + '%</output><input type="range" min="0" max="100" data-somlocal="' + x[0] + '" value="' + somLocal[x[0]] + '"></label>'; }).join("") +
-      (!somLiberado && somEstado && (somEstado.musica || somEstado.ambiente) ? '<p>Toque para ligar o som.</p>' : "") + '<p class="som-diag">Áudio: ' + (somGanhoModo ? 'Web Audio (' + (somCtx ? somCtx.state : 'sem contexto') + ')' : 'direto') + ' · build som5</p>' + (somErro ? '<p role="status">' + esc(somErro) + '</p>' : "");
+      (!somLiberado && somEstado && (somEstado.musica || somEstado.ambiente) ? '<p>Toque para ligar o som.</p>' : "") + '<p class="som-diag">Áudio: ' + (somGanhoModo ? 'Web Audio (' + (somCtx ? somCtx.state : 'sem contexto') + ')' : 'direto') + ' · build som6</p>' + (somErro ? '<p role="status">' + esc(somErro) + '</p>' : "");
   }
 }
 function somIniciar() {
