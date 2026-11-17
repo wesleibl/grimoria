@@ -346,16 +346,18 @@ São 27 grimórios no sorteio e 12 **lendários reservados** (o mestre entrega �
 - **Jato D’água (1 mana, básico):** d20 + Inteligência, dano 1d6. O alvo fica Molhado. (aplica: Molhado)
 - **Maré Protetora (2 mana, médio):** Um aliado ganha 1d6 de vida temporária. Se ele já estiver Molhado, também remove um estado negativo e ganha +1d4 de vida temporária. Depois, ele fica Molhado. (aplica: Molhado)
 - **Dilúvio (4 mana, ultimate):** Todos os inimigos e aliados próximos ficam Molhados, mas só os inimigos sofrem o efeito: eles fazem teste de Poder contra 13, e quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada). (aplica: Molhado)
-- Marco 2, **Bolha (2 mana, médio):** Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo dentro não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano. (aplica: Molhado)
-- *Nota do mestre:* Prepara o Molhado para os outros: Raios (o choque se espalha), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. Atenção: a Bolha é controle sem teste de acerto (só o teste de respiração depois), então use com moderação em chefes.
+- Marco 1, **Leitura da Maré (1 mana, básico):** O mestre revela algo útil sobre um inimigo (Defesa, estados, ponto fraco ou o que ele vai fazer). O próximo ataque de um aliado contra ele ganha +1 na rolagem.
+- Marco 2, **Bolha (2 mana, médio):** Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo precisa ser acertado: teste de Inteligência contra a Defesa dele. Se acertar, ele não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano. (aplica: Molhado)
+- Marco 3, **Fluir (2 mana, médio):** Você ou um aliado próximo remove um estado negativo e se move até 3 casas sem provocar nada. Se estiver Molhado, ganha +1 de Defesa até o fim da rodada.
+- *Nota do mestre:* Prepara o Molhado para os outros: Raios (um alvo Molhado já faz o teste do Eletrizado no primeiro choque), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. A Bolha agora exige teste de acerto contra inimigo.
 
 ### Grimório de Raios (dano, dano e velocidade, usa Destreza)
 *elemento: Raio*
-*Regra do Eletrizado: um alvo Eletrizado que sofrer dano de raio faz um teste de Poder contra 13. Se falhar, fica Atordoado por 1 turno (perde a ação). O estado dura até o fim do combate ou até o alvo ser atordoado.*
-- **Choque (1 mana, básico):** d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado, faz o teste de resistência. (aplica: Eletrizado)
+*Regra do Eletrizado: um alvo Eletrizado ou Molhado que sofrer dano de raio faz um teste de Poder contra 13. Se falhar, fica Atordoado por 1 turno (perde a ação). O estado dura até o fim do combate ou até o alvo ser atordoado.*
+- **Choque (1 mana, básico):** d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado ou Molhado, faz o teste de resistência. (aplica: Eletrizado)
 - **Relâmpago Veloz (2 mana, médio):** Age duas vezes neste turno. O segundo feitiço custa +1 de mana. (limite: 1 uso por combate)
 - **Passo Relâmpago (2 mana, médio):** Teleporta até 4 casas em linha reta. O primeiro inimigo no caminho sofre 1d6 e fica Eletrizado. (aplica: Eletrizado)
-- **Tempestade Trovejante (4 mana, ultimate):** d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado faz o teste de resistência. (aplica: Eletrizado)
+- **Tempestade Trovejante (4 mana, ultimate):** d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado ou Molhado faz o teste de resistência. (aplica: Eletrizado)
 - Marco 2, **Corrente Elétrica (2 mana, médio):** d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano. Cada alvo Eletrizado faz o teste de resistência; se algum ficar Atordoado, você ganha 1 de mana temporário (até o fim do combate). (aplica: Eletrizado)
 - Marco 3, **Reflexo Elétrico (1 mana, reação):** Quando um inimigo te atacar corpo a corpo, ele faz um teste de Destreza contra 13. Se falhar, sofre 1d4 e fica Eletrizado. (aplica: Eletrizado)
 - *Nota do mestre:* o estado Eletrizado é a base do grimório: o primeiro Choque prepara e o segundo pode atordoar. O atordoamento é por 1 turno para não virar controle sem teste.
@@ -679,7 +681,7 @@ Cenário de referência: 4 jogadores, níveis 1 a 5, mana de 10 a 13 (volta 1 po
 | 9 | Aço | Tank | 7,5 | 7,5 | **7,5** |
 | 9 | Luz Curativa | Suporte | 6,5 | 9 | **7,5** |
 | 12 | Espelho | Suporte | 7 | 8 | **7,4** |
-| 12 | Água | Suporte | 7 | 8 | **7,4** |
+| 12 | Água | Suporte | 7 | 8,5 | **7,6** |
 | 12 | Névoa | Tank | 7 | 8 | **7,4** |
 | 14 | Ilusão | Suporte | 7,5 | 7 | **7,3** |
 | 14 | Sangue | Dano | 7,5 | 7 | **7,3** |
@@ -733,7 +735,7 @@ Média dos reservados: PC 8,5 (contra 7,0 do sorteio). Isso é o esperado para l
 | Ferrugem + qualquer atacante | A Defesa menor ajuda todos. Com Lâminas (Corte Perfurante) ou Mercúrio, a redução de dano também cai |
 | Luz Curativa + Sangue | A cura devolve a Vida que o Sangue gasta; Pacto Rubro vira mana quase de graça |
 | Fortaleza + Luz Vingativa | O tank atrai os golpes, e Marca da Retribuição e Julgamento punem quem feriu um aliado |
-| Água ou Névoa (Molhado) + Raios ou Gelo | Raios aproveita o Molhado (a decidir) e a Lança Gélida congela quem está lento ou molhado |
+| Água ou Névoa (Molhado) + Raios ou Gelo | Raios aproveita o Molhado (o Choque já faz o teste de atordoar em alvo Molhado) e a Lança Gélida congela quem está lento ou molhado |
 | Correntes ou Gravidade (Lento/Preso) + Gelo | Lança Gélida congela alvo lento; o controle empilha |
 | Gravidade (Singularidade) + Chamas ou Gelo (área) | Junta os inimigos e a Explosão Solar ou a Nevasca pega todos |
 | Som (Silêncio) + Antimagia | Dois jeitos de anular o inimigo mago da organização |

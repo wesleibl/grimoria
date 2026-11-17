@@ -103,20 +103,23 @@ var GRIMORIOS = [
       sp("Jato D’água", 1, "básico", "d20 + Inteligência, dano 1d6. O alvo fica Molhado."),
       sp("Maré Protetora", 2, "médio", "Um aliado ganha 1d6 de vida temporária. Se ele já estiver Molhado, também remove um estado negativo e ganha +1d4 de vida temporária. Depois, ele fica Molhado.", { aplica: ["Molhado"] }),
       sp("Dilúvio", 4, "ultimate", "Todos os inimigos e aliados próximos ficam Molhados, mas só os inimigos sofrem o efeito: eles fazem teste de Poder contra 13, e quem falhar sofre 1d4, é arrastado 3 casas e cai (-2 de Defesa até o fim da próxima rodada).")
-    ], futuras: [], nota: "Prepara o Molhado para os outros: Raios (o choque se espalha), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. Atenção: a Bolha é controle sem teste de acerto (só o teste de respiração depois), então use com moderação em chefes." },
+    ], futuras: [
+      fu(1, "Leitura da Maré", 1, "básico", "O mestre revela algo útil sobre um inimigo (Defesa, estados, ponto fraco ou o que ele vai fazer). O próximo ataque de um aliado contra ele ganha +1 na rolagem."),
+      fu(3, "Fluir", 2, "médio", "Você ou um aliado próximo remove um estado negativo e se move até 3 casas sem provocar nada. Se estiver Molhado, ganha +1 de Defesa até o fim da rodada.")
+    ], nota: "Prepara o Molhado para os outros: Raios (um alvo Molhado já faz o teste do Eletrizado no primeiro choque), Gelo (congela com mais facilidade) e Planta (Semente Vital cura +1). Tem cura leve e remoção de estados, mas pouco dano. A Bolha agora exige teste de acerto contra inimigo." },
 
   { nome: "Grimório de Raios", attr: "destreza", papel: "Dano", sub: "dano e velocidade", tier: "",
     spells: [
-      sp("Choque", 1, "básico", "d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado, faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno."),
+      sp("Choque", 1, "básico", "d20 + Destreza, dano 1d6. O alvo fica Eletrizado. Se já estava Eletrizado ou Molhado, faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno."),
       sp("Relâmpago Veloz", 2, "médio", "Age duas vezes neste turno. O segundo feitiço custa +1 de mana.", { limite: "1 uso por combate" }),
       sp("Passo Relâmpago", 2, "médio", "Teleporta até 4 casas em linha reta. O primeiro inimigo no caminho sofre 1d6 e fica Eletrizado.", { aplica: ["Eletrizado"] }),
-      sp("Tempestade Trovejante", 4, "ultimate", "d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno.")
+      sp("Tempestade Trovejante", 4, "ultimate", "d20 + Destreza contra até 3 inimigos, dano 1d10 em quem for atingido. Quem já estava Eletrizado ou Molhado faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno.")
     ],
     futuras: [
       fu(2, "Corrente Elétrica", 2, "médio", "d20 + Destreza, dano 1d8. O raio salta para outro inimigo próximo, que sofre metade do dano. Cada alvo Eletrizado faz um teste de Poder contra 13; se algum ficar Atordoado, você ganha 1 de mana temporário (até o fim do combate).", { aplica: ["Eletrizado"] }),
       fu(3, "Reflexo Elétrico", "reação", "reação", "Quando um inimigo te atacar corpo a corpo, ele faz um teste de Destreza contra 13. Se falhar, sofre 1d4 e fica Eletrizado.", { aplica: ["Eletrizado"] })
     ],
-    nota: "Regra do Eletrizado: um alvo Eletrizado que sofrer dano de raio faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno. O atordoamento dura só 1 turno para não virar controle sem teste." },
+    nota: "Regra do Eletrizado: um alvo Eletrizado ou Molhado que sofrer dano de raio faz um teste de Poder contra 13; se falhar, fica Atordoado por 1 turno. O atordoamento dura só 1 turno para não virar controle sem teste." },
 
   { nome: "Grimório de Terra", attr: "inteligencia", papel: "Suporte", sub: "defesa e controle", tier: "",
     spells: [
@@ -428,7 +431,7 @@ var NIVEL3 = {
   "Grimório de Sombras": fu(2, "Fundir-se", 2, "médio", "Você entra na sombra de uma criatura e sai de outra sombra a até 6 casas, invisível até atacar."),
   "Grimório de Correntes": fu(2, "Elo de Aço", 2, "médio", "Liga você a um aliado por 2 turnos: o dano que ele sofrer é dividido entre vocês dois."),
   "Grimório de Reforço": fu(2, "Salto Demolidor", 3, "médio", "Salta até 6 casas e cai sobre um inimigo: d20 + Poder, dano 2d6. Os inimigos ao lado do alvo sofrem 1d6."),
-  "Grimório de Água": fu(2, "Bolha", 2, "médio", "Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo dentro não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano.", { aplica: ["Molhado"] }),
+  "Grimório de Água": fu(2, "Bolha", 2, "médio", "Prende um alvo numa bolha por 1 turno. Um aliado dentro não age, faz os testes de defesa com vantagem e recupera 1d4 de vida. Um inimigo precisa ser acertado: teste de Inteligência contra a Defesa dele. Se acertar, ele não age, fica Molhado e, no início do turno dele, faz um teste de Poder contra 13 para prender a respiração; se falhar, sofre 1d4 de dano.", { aplica: ["Molhado"] }),
   "Grimório de Terra": fu(2, "Armadilha de Pedra", 2, "médio", "Esconde uma armadilha em uma casa. O primeiro inimigo que pisar nela sofre 2d6 e fica preso por 1 turno.", { aplica: ["Preso"] }),
   "Grimório de Ilusão": fu(2, "Pânico", 2, "médio", "Um inimigo faz teste de Inteligência contra 13. Se falhar, ele se afasta o máximo que puder dos jogadores até o fim do próximo turno dele."),
   "Grimório Antimagia": fu(2, "Zona Nula", 3, "médio", "Cria uma área por 2 turnos onde nenhum feitiço pode ser lançado e os estados mágicos são removidos de quem estiver dentro."),
